@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>6 Minutes — Join the Founding Members List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --black: #0d0d0d;
+      --white: #ffffff;
+      --off-white: #f7f6f4;
+      --gray: #8a8a8a;
+      --gray-light: #d4d4d4;
+      --accent: #c8a96e;
+      --border: #e8e8e8;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--white);
+      color: var(--black);
+      font-size: 16px;
+      line-height: 1.6;
+      font-weight: 400;
+      min-height: 100vh;
+    }
+
+    /* ── LAYOUT ── */
+    .page {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    /* ── LEFT ── */
+    .left {
+      background: var(--black);
+      color: var(--white);
+      padding: 72px 56px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .logo {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: auto;
+    }
+
+    .left-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px 0;
+    }
+
+    .tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .headline {
+      font-size: clamp(2.6rem, 4vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 32px;
+    }
+
+    .body-text {
+      font-size: 0.92rem;
+      font-weight: 400;
+      color: #a0a0a0;
+      line-height: 1.85;
+      max-width: 400px;
+      margin-bottom: 36px;
+    }
+
+    .pull-quote {
+      border-left: 2px solid var(--accent);
+      padding-left: 20px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--white);
+      line-height: 1.65;
+      margin-bottom: 40px;
+      max-width: 380px;
+    }
+
+    .benefits {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .benefit-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: #a0a0a0;
+    }
+
+    .benefit-row::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-top: 8px;
+      flex-shrink: 0;
+    }
+
+    .left-footer {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #444;
+      letter-spacing: 0.05em;
+      border-top: 1px solid #1e1e1e;
+      padding-top: 24px;
+      text-transform: uppercase;
+    }
+
+    /* ── RIGHT ── */
+    .right {
+      background: var(--white);
+      padding: 72px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .form-head {
+      margin-bottom: 44px;
+    }
+
+    .form-head h2 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .form-head p {
+      font-size: 0.88rem;
+      color: var(--gray);
+      font-weight: 400;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 8px;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: #bbb;
+      margin-bottom: 10px;
+      font-weight: 400;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--black);
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      border-radius: 0;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--black);
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* borough grid */
+    .borough-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--border);
+    }
+
+    .borough-zone {
+      padding: 14px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .borough-zone:nth-child(2n) {
+      border-right: none;
+    }
+
+    .borough-zone:nth-last-child(-n+2) {
+      border-bottom: none;
+    }
+
+    .zone-label {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gray-light);
+      margin-bottom: 10px;
+    }
+
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #555;
+      font-weight: 400;
+    }
+
+    .check-item input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      cursor: pointer;
+      accent-color: var(--black);
+      border-radius: 0;
+    }
+
+    /* use checkboxes */
+    .use-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .use-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: #444;
+    }
+
+    .use-item input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+      accent-color: var(--black);
+    }
+
+    /* submit */
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+
+    .submit-btn:hover { opacity: 0.8; }
+
+    .form-note {
+      font-size: 0.72rem;
+      color: #bbb;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    /* ── SUCCESS ── */
+    #success-state {
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px 0;
+    }
+
+    #success-state.show { display: flex; }
+
+    .success-mark {
+      width: 48px;
+      height: 48px;
+      background: var(--black);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 28px;
+    }
+
+    #success-state h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    #success-state p {
+      font-size: 0.9rem;
+      color: var(--gray);
+      max-width: 380px;
+      line-height: 1.7;
+    }
+
+    .share-block {
+      margin-top: 32px;
+      padding: 20px 22px;
+      background: var(--off-white);
+      width: 100%;
+    }
+
+    .share-block p {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 8px;
+    }
+
+    .share-block a {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--black);
+      text-decoration: none;
+      border-bottom: 1px solid var(--gray-light);
+      padding-bottom: 1px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px) {
+      .page { grid-template-columns: 1fr; }
+      .left {
+        position: relative;
+        height: auto;
+        padding: 52px 32px 48px;
+      }
+      .right { padding: 52px 32px 64px; }
+      .two-col { grid-template-columns: 1fr; gap: 0; }
+    }
+
+    @media (max-width: 480px) {
+      .left { padding: 40px 20px; }
+      .right { padding: 40px 20px 56px; }
+      .borough-grid { grid-template-columns: 1fr; }
+      .borough-zone { border-right: none; border-bottom: 1px solid var(--border); }
+      .borough-zone:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ── LEFT ── -->
+  <div class="left">
+    <div class="logo">6 Minutes</div>
+
+    <div class="left-body">
+      <p class="tag">Founding Members &middot; London 2026</p>
+
+      <h1 class="headline">Own the<br>place.</h1>
+
+      <p class="body-text">
+        London keeps losing the spaces that make it worth living in. 
+        Venues close when the lease is up. The workshop disappears when 
+        the landlord sells. The scene moves on because it has to.
+      </p>
+
+      <div class="pull-quote">
+        "Community ownership is the only thing that's ever actually protected spaces like this."
+      </div>
+
+      <p class="body-text" style="margin-bottom: 0;">
+        We're building a space — weekday workshops, co-working, Saturday nights — 
+        owned from day one by the people who use it. Real shares. Real governance. 
+        Real stake in what it becomes.
+      </p>
+    </div>
+
+    <div>
+      <div class="benefits" style="margin-bottom: 28px;">
+        <div class="benefit-row">Actual equity — a share, not a loyalty card</div>
+        <div class="benefit-row">First vote on programming, pricing, and direction</div>
+        <div class="benefit-row">Founding-rate membership, locked in permanently</div>
+        <div class="benefit-row">Access before the public opening</div>
+      </div>
+
+      <div class="left-footer">London &middot; Opening 2027 &middot; Community-owned from day one</div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT ── -->
+  <div class="right">
+    <div id="form-container">
+      <div class="form-head">
+        <h2>Get on the list</h2>
+        <p>No money. No commitment. Just signal — and you'll be first to know when it moves.</p>
+      </div>
+
+      <form id="founding-form">
+
+        <div class="two-col" style="margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="field-label" for="name">Name</label>
+            <input type="text" id="name" name="name" required placeholder="Your name">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="field-label" for="email">Email</label>
+            <input type="email" id="email" name="email" required placeholder="you@email.com">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Which parts of London work for you?</label>
+          <p class="field-hint">Select all you'd travel to — helps us find the right spot.</p>
+          <div class="borough-grid">
+            <div class="borough-zone">
+              <p class="zone-label">South</p>
+              <div class="check-list">
+                <label class="check-item"><input type="checkbox" name="area" value="Lambeth"><span>Lambeth</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Lewisham"><span>Lewisham</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Southwark"><span>Southwark</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Greenwich"><span>Greenwich</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Wandsworth"><span>Wandsworth</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Croydon"><span>Croydon</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Bromley"><span>Bromley</span></label>
+              </div>
+            </div>
+            <div class="borough-zone">
+              <p class="zone-label">East</p>
+              <div class="check-list">
+                <label class="check-item"><input type="checkbox" name="area" value="Tower Hamlets"><span>Tower Hamlets</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Hackney"><span>Hackney</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Newham"><span>Newham</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Waltham Forest"><span>Waltham Forest</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Barking & Dagenham"><span>Barking &amp; Dagenham</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Redbridge"><span>Redbridge</span></label>
+              </div>
+            </div>
+            <div class="borough-zone">
+              <p class="zone-label">North &amp; Central</p>
+              <div class="check-list">
+                <label class="check-item"><input type="checkbox" name="area" value="Islington"><span>Islington</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Haringey"><span>Haringey</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Camden"><span>Camden</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Westminster"><span>Westminster</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Barnet"><span>Barnet</span></label>
+              </div>
+            </div>
+            <div class="borough-zone">
+              <p class="zone-label">West</p>
+              <div class="check-list">
+                <label class="check-item"><input type="checkbox" name="area" value="Hammersmith & Fulham"><span>Hammersmith &amp; Fulham</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Ealing"><span>Ealing</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Brent"><span>Brent</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Hounslow"><span>Hounslow</span></label>
+                <label class="check-item"><input type="checkbox" name="area" value="Kensington & Chelsea"><span>Kensington &amp; Chelsea</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">What would you use it for?</label>
+          <div class="use-grid">
+            <label class="use-item"><input type="checkbox" name="use" value="workshops"><span>Workshops &amp; classes (cooking, ceramics, music, writing...)</span></label>
+            <label class="use-item"><input type="checkbox" name="use" value="coworking"><span>Co-working / a desk near home</span></label>
+            <label class="use-item"><input type="checkbox" name="use" value="nights"><span>Saturday nights &amp; live music</span></label>
+            <label class="use-item"><input type="checkbox" name="use" value="teaching"><span>Run a class or workshop myself</span></label>
+            <label class="use-item"><input type="checkbox" name="use" value="events"><span>Host events or community gatherings</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="invest">Would you put in founding capital?</label>
+          <select id="invest" name="invest">
+            <option value="">Select one</option>
+            <option value="up-to-500">Yes — up to £500</option>
+            <option value="up-to-1000">Yes — up to £1,000</option>
+            <option value="up-to-2500">Yes — up to £2,500</option>
+            <option value="2500-plus">Yes — more than £2,500 (let's talk)</option>
+            <option value="not-yet">Not right now — just want to be involved</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="note">Anything else?</label>
+          <textarea id="note" name="note" placeholder="Optional — tell us what community ownership means to you, or what you'd want to see in the space."></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn">Join the Founding Members List &rarr;</button>
+        <p class="form-note">No spam. We'll only reach out when something real happens.</p>
+      </form>
+    </div>
+
+    <div id="success-state">
+      <div class="success-mark">✓</div>
+      <h2>You're in.</h2>
+      <p>We'll be in touch when things move. You'll be first — and that matters when the founding members help shape what this becomes.</p>
+      <div class="share-block">
+        <p>Share the page</p>
+        <a href="https://6minutes.london/join">6minutes.london/join</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('founding-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const areas = [...document.querySelectorAll('input[name="area"]:checked')].map(cb => cb.value);
+    const uses  = [...document.querySelectorAll('input[name="use"]:checked')].map(cb => cb.value);
+
+    const data = {
+      name:      document.getElementById('name').value,
+      email:     document.getElementById('email').value,
+      areas:     areas,
+      uses:      uses,
+      invest:    document.getElementById('invest').value,
+      note:      document.getElementById('note').value,
+      timestamp: new Date().toISOString(),
+      source:    '6-minutes-join-page'
+    };
+
+    fetch('/api/founding', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(data)
+    }).catch(() => {});
+
+    const list = JSON.parse(localStorage.getItem('6-minutes-founding') || '[]');
+    list.push(data);
+    localStorage.setItem('6-minutes-founding', JSON.stringify(list));
+
+    document.getElementById('form-container').style.display = 'none';
+    document.getElementById('success-state').classList.add('show');
+  });
+</script>
+
+</body>
+</html>
