@@ -251,6 +251,19 @@
       border-color: var(--black);
     }
 
+    input.invalid {
+      border-color: #c0392b;
+    }
+
+    .field-error {
+      font-size: 0.72rem;
+      color: #c0392b;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .field-error.show { display: block; }
+
     textarea { min-height: 90px; resize: vertical; }
 
     .two-col {
@@ -551,7 +564,8 @@
           </div>
           <div>
             <label class="field-label" for="email">Email</label>
-            <input type="email" id="email" name="email" required placeholder="you@email.com">
+            <input type="email" id="email" name="email" required placeholder="you@email.com" autocomplete="email">
+            <span class="field-error" id="email-error">Please enter a valid email address.</span>
           </div>
         </div>
 
@@ -681,8 +695,33 @@
   </div><!-- /wrap -->
 
   <script>
+    // Live email validation
+    document.getElementById('email').addEventListener('input', function() {
+      var emailInput = this;
+      var error = document.getElementById('email-error');
+      var valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value);
+      if (emailInput.value && !valid) {
+        emailInput.classList.add('invalid');
+        error.classList.add('show');
+      } else {
+        emailInput.classList.remove('invalid');
+        error.classList.remove('show');
+      }
+    });
+
     document.getElementById('founding-form').addEventListener('submit', function(e) {
       e.preventDefault();
+
+      // Validate email before submitting
+      var emailInput = document.getElementById('email');
+      var error = document.getElementById('email-error');
+      var valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value);
+      if (!valid) {
+        emailInput.classList.add('invalid');
+        error.classList.add('show');
+        emailInput.focus();
+        return;
+      }
 
       const areas = [...document.querySelectorAll('input[name="area"]:checked')].map(cb => cb.value);
       const uses  = [...document.querySelectorAll('input[name="use"]:checked')].map(cb => cb.value);
