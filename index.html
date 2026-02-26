@@ -697,8 +697,9 @@
         source:    '6-minutes-join-page'
       };
 
-      fetch('/api/founding', {
+      fetch('https://script.google.com/macros/s/AKfycbypfPgDyVzuXX6Lw5qJGBs7YoLhLqm8tgRvCAf9vwT4hHRonmZhbwn9u294pmdg8XKRpw/exec', {
         method:  'POST',
+        mode:    'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(data)
       }).catch(() => {});
