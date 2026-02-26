@@ -554,6 +554,28 @@
         </div>
 
         <div class="form-group">
+          <label class="field-label" for="profession">What do you do?</label>
+          <select id="profession" name="profession">
+            <option value="">Select one</option>
+            <option value="artist-maker">Artist / Maker</option>
+            <option value="musician-dj-producer">Musician / DJ / Producer</option>
+            <option value="designer">Designer</option>
+            <option value="architect">Architect</option>
+            <option value="photographer-filmmaker">Photographer / Filmmaker</option>
+            <option value="writer-journalist">Writer / Journalist</option>
+            <option value="chef-hospitality">Chef / Hospitality</option>
+            <option value="fashion">Fashion</option>
+            <option value="tech-product">Tech / Product</option>
+            <option value="entrepreneur-founder">Entrepreneur / Founder</option>
+            <option value="finance-business">Finance / Business</option>
+            <option value="academic-research">Academic / Research</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="education">Education</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label class="field-label">Which parts of London work for you?</label>
           <p class="field-hint">Select all you'd travel to — helps us find the right spot.</p>
           <div class="borough-grid">
@@ -664,9 +686,10 @@
       const uses  = [...document.querySelectorAll('input[name="use"]:checked')].map(cb => cb.value);
 
       const data = {
-        name:      document.getElementById('name').value,
-        email:     document.getElementById('email').value,
-        areas:     areas,
+        name:       document.getElementById('name').value,
+        email:      document.getElementById('email').value,
+        profession: document.getElementById('profession').value,
+        areas:      areas,
         uses:      uses,
         invest:    document.getElementById('invest').value,
         note:      document.getElementById('note').value,
