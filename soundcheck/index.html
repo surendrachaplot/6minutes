@@ -63,20 +63,17 @@
       color: var(--black);
       text-decoration: none;
     }
-    .logo .by {
-      font-weight: 500;
-      color: var(--gray);
-      margin-left: 4px;
-    }
     .logo:hover { color: var(--accent); }
-    .logo:hover .by { color: var(--gray); }
     .nav-tag {
       font-size: 0.65rem;
       font-weight: 600;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.12s;
     }
+    .nav-tag:hover { opacity: 0.7; }
 
     /* Date picker — centered just below the nav */
     .date-picker-wrap {
@@ -662,8 +659,8 @@
   <nav>
     <div class="wrap">
       <div class="nav-inner">
-        <a class="logo" href=".">SOUNDCHECK <span class="by">by 6 Minutes</span></a>
-        <span class="nav-tag">London &middot; Tonight</span>
+        <a class="logo" href=".">SOUNDCHECK</a>
+        <a class="nav-tag" href="https://6minutes.club" target="_blank" rel="noopener">by 6 Minutes</a>
       </div>
     </div>
   </nav>
