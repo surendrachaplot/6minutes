@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>soundcheck. · top 40 London tonight</title>
+  <title>soundcheck by 6 Minutes · London tonight</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -63,7 +63,13 @@
       color: var(--black);
       text-decoration: none;
     }
+    .logo .by {
+      font-weight: 500;
+      color: var(--gray);
+      margin-left: 4px;
+    }
     .logo:hover { color: var(--accent); }
+    .logo:hover .by { color: var(--gray); }
     .nav-tag {
       font-size: 0.65rem;
       font-weight: 600;
@@ -438,7 +444,7 @@
   <nav>
     <div class="wrap">
       <div class="nav-inner">
-        <a class="logo" href=".">SOUNDCHECK</a>
+        <a class="logo" href=".">SOUNDCHECK <span class="by">by 6 Minutes</span></a>
         <span class="nav-tag">London &middot; Tonight</span>
       </div>
     </div>
@@ -763,7 +769,7 @@
       async function load(date, opts) {
         opts = opts || {};
         stopActive();
-        document.title = 'soundcheck. · top 40 London · ' + date;
+        document.title = 'soundcheck by 6 Minutes · ' + date;
         history.replaceState(null, '', '?date=' + date);
         setStatus('<span class="spinner"></span> Fetching events and SoundCloud links for ' + escape(date) + '…');
         eventsEl.innerHTML = '';
