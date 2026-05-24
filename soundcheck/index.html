@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>soundcheck. · top 40 London tonight</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-soft: #f8faf6;
+      --fg: #0b0d0a;
+      --muted: #6b7280;
+      --accent: #16a34a;        /* green-600 */
+      --accent-hover: #15803d;  /* green-700 */
+      --accent-soft: #ecfdf5;   /* green-50 */
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.06), 0 6px 18px rgba(15, 23, 42, 0.05);
+      --brand-sc: #ff5500;
+      --brand-yt: #ff0000;
+    }
+    * { box-sizing: border-box; }
+    html, body { background: var(--bg); }
+    body {
+      margin: 0;
+      color: var(--fg);
+      font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 28px 24px 80px; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+    .brand {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--fg);
+      text-decoration: none;
+      line-height: 1;
+    }
+    .brand .accent-dot { color: var(--accent); }
+    .brand:hover { color: var(--accent); }
+
+    .date-picker {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      margin-left: auto;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .date-picker input,
+    .date-picker button {
+      background: var(--card);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 11px;
+      font: inherit;
+      font-weight: 500;
+    }
+    .date-picker input:focus,
+    .date-picker button:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+    .date-picker button { cursor: pointer; }
+    .date-picker button:hover { border-color: var(--accent); color: var(--accent); }
+
+    .hero { margin-bottom: 24px; }
+    h1 {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      margin: 0 0 6px;
+      line-height: 1.05;
+    }
+    h1 .accent { color: var(--accent); }
+    .meta {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 620px;
+      margin: 0;
+    }
+    .meta a {
+      color: var(--fg);
+      text-decoration: underline;
+      text-decoration-color: var(--border-strong);
+      text-underline-offset: 3px;
+    }
+    .meta a:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+    .status {
+      padding: 16px 0 22px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .status.error { color: #dc2626; }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 8px;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: -3px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .event {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+    }
+    .event:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+    .event header { display: flex; gap: 16px; align-items: baseline; }
+    .rank {
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 13px;
+      min-width: 40px;
+      border-radius: 6px;
+      text-align: center;
+      padding: 4px 8px;
+      letter-spacing: 0.01em;
+    }
+    .event h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+    .event h2 a { color: var(--fg); text-decoration: none; }
+    .event h2 a:hover { color: var(--accent); }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; font-weight: 500; }
+    .dot { padding: 0 6px; opacity: 0.55; }
+
+    .lineup { list-style: none; padding: 14px 0 0 56px; margin: 0; }
+    .lineup li {
+      padding: 5px 0;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .artist {
+      color: var(--fg);
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px dotted var(--border-strong);
+    }
+    .artist:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .play {
+      background: var(--card);
+      border-radius: 6px;
+      height: 24px;
+      padding: 0 7px;
+      font-size: 9px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.08s;
+    }
+    .play:hover { transform: translateY(-1px); }
+    .play:active { transform: translateY(0); }
+    .play .brand { width: 14px; height: 14px; display: block; flex-shrink: 0; }
+    .play .state { font-size: 10px; line-height: 1; }
+    .play.sc:hover,
+    .play.sc.playing {
+      color: var(--brand-sc);
+      border-color: var(--brand-sc);
+      background: rgba(255, 85, 0, 0.08);
+    }
+    .play.yt:hover,
+    .play.yt.playing {
+      color: var(--brand-yt);
+      border-color: var(--brand-yt);
+      background: rgba(255, 0, 0, 0.06);
+    }
+    .play[disabled] { opacity: 0.55; cursor: progress; }
+    .play.spinning .brand,
+    .play.spinning .state { visibility: hidden; }
+    .play.spinning { position: relative; }
+    .play.spinning::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      margin: -5px 0 0 -5px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .no-sc {
+      color: var(--border-strong);
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .player-row {
+      display: block !important;
+      padding: 10px 0 12px 56px !important;
+    }
+    .player-row iframe {
+      width: 100%;
+      max-width: 580px;
+      border: 0;
+      border-radius: 8px;
+      display: block;
+      box-shadow: var(--shadow-sm);
+    }
+    .player-row iframe.sc { height: 120px; }
+    .player-row iframe.yt { aspect-ratio: 16 / 9; height: auto; }
+    .player-row .yt-msg {
+      color: var(--muted);
+      font-size: 13px;
+      font-style: italic;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 40px;
+      text-align: center;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 560px) {
+      h1 { font-size: 30px; }
+      .wrap { padding: 20px 16px 64px; }
+      .event { padding: 16px 16px; }
+      .lineup { padding-left: 0; }
+      .player-row { padding-left: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <a class="brand" href="/">soundcheck<span class="accent-dot">.</span></a>
+      <div class="date-picker">
+        <label for="date-input">Date</label>
+        <input id="date-input" type="date" />
+        <button id="refresh-btn" title="Refresh (bypass cache)">&#x21bb;</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>London <span class="accent">Tonight</span>.</h1>
+      <p class="meta">Discover and listen to all artists playing tonight.</p>
+    </section>
+
+    <div id="status" class="status"></div>
+    <div id="events"></div>
+    <footer>
+      Event listings from <a href="https://ra.co/events/uk/london" target="_blank" rel="noopener" style="color:var(--muted)">Resident Advisor</a>.
+      Audio previews via SoundCloud and YouTube. Buy tickets on RA &mdash; this site is for previewing only.
+    </footer>
+  </main>
+  <script>
+    // Where the /api/* endpoints live. Set automatically based on host:
+    //   localhost -> '' (same origin)
+    //   anywhere else -> the Render URL below.
+    // After you deploy the API to Render, replace YOUR-RENDER-URL.onrender.com
+    // with the real URL Render gave you (no trailing slash).
+    var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? ''
+      : 'https://YOUR-RENDER-URL.onrender.com';
+
+    // SHA-256 of the gate password. Computed by:
+    //   printf 'yourpassword' | shasum -a 256 | cut -d' ' -f1
+    var GATE_HASH = '24e89c2dfb8268766b46a2a700715c6b64f7ddbe8c873fb556b9e080de41a823';
+
+    async function sha256(str) {
+      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf))
+        .map(function (b) { return b.toString(16).padStart(2, '0'); })
+        .join('');
+    }
+
+    async function passGate() {
+      try {
+        if (localStorage.getItem('sc_gate') === GATE_HASH) return true;
+      } catch (_) {}
+      document.body.style.visibility = 'hidden';
+      for (var i = 0; i < 3; i++) {
+        var pw = window.prompt('Enter password to access soundcheck.');
+        if (pw == null) break;
+        var h = await sha256(pw);
+        if (h === GATE_HASH) {
+          try { localStorage.setItem('sc_gate', h); } catch (_) {}
+          document.body.style.visibility = 'visible';
+          return true;
+        }
+      }
+      document.body.innerHTML =
+        '<div style="padding:80px 20px;text-align:center;font-family:-apple-system,system-ui,sans-serif;color:#6b7280">' +
+        'Access denied.</div>';
+      document.body.style.visibility = 'visible';
+      return false;
+    }
+
+    (async function () {
+      if (!(await passGate())) return;
+
+      var dateInput = document.getElementById('date-input');
+      var refreshBtn = document.getElementById('refresh-btn');
+      var statusEl = document.getElementById('status');
+      var eventsEl = document.getElementById('events');
+
+      function todayISO() {
+        var d = new Date();
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + dd;
+      }
+
+      function escape(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatTime(iso) {
+        if (!iso) return '';
+        // "2026-05-30T12:00:00.000" -> "12:00". Date context is implicit
+        // from the universal date picker; only the time is useful here.
+        var m = /T(\d{2}:\d{2})/.exec(iso);
+        return m ? m[1] : '';
+      }
+
+      function normaliseSc(url) {
+        if (!url) return null;
+        var u = url.trim();
+        if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+        // SC widget rejects www.soundcloud.com — collapse to bare host
+        u = u.replace(/^https?:\/\/www\.soundcloud\.com/i, 'https://soundcloud.com');
+        // strip trailing slash for tidiness
+        u = u.replace(/\/+$/, '');
+        return u;
+      }
+
+      // Official SimpleIcons brand marks (CC0). YT is hand-coloured as
+      // a 2-element SVG so the play triangle always shows white.
+      var SC_SVG = '<svg class="brand" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<path fill="#ff5500" d="M23.999 14.165c-.052 1.796-1.612 3.169-3.4 3.169h-8.18a.68.68 0 0 1-.675-.683V7.862a.747.747 0 0 1 .452-.724s.75-.513 2.333-.513a5.364 5.364 0 0 1 2.763.755 5.433 5.433 0 0 1 2.57 3.54c.282-.08.574-.121.868-.12.884 0 1.73.358 2.347.992s.948 1.49.922 2.373ZM10.721 8.421c.247 2.98.427 5.697 0 8.672a.264.264 0 0 1-.53 0c-.395-2.946-.22-5.718 0-8.672a.264.264 0 0 1 .53 0ZM9.072 9.448c.285 2.659.37 4.986-.006 7.655a.277.277 0 0 1-.55 0c-.331-2.63-.256-5.02 0-7.655a.277.277 0 0 1 .556 0Zm-1.663-.257c.27 2.726.39 5.171 0 7.904a.266.266 0 0 1-.532 0c-.38-2.69-.257-5.21 0-7.904a.266.266 0 0 1 .532 0Zm-1.647.77a26.108 26.108 0 0 1-.008 7.147.272.272 0 0 1-.542 0 27.955 27.955 0 0 1 0-7.147.275.275 0 0 1 .55 0Zm-1.67 1.769c.421 1.865.228 3.5-.029 5.388a.257.257 0 0 1-.514 0c-.21-1.858-.398-3.549 0-5.389a.272.272 0 0 1 .543 0Zm-1.655-.273c.388 1.897.26 3.508-.01 5.412-.026.28-.514.283-.54 0-.244-1.878-.347-3.54-.01-5.412a.283.283 0 0 1 .56 0Zm-1.668.911c.4 1.268.257 2.292-.026 3.572a.257.257 0 0 1-.514 0c-.241-1.262-.354-2.312-.023-3.572a.283.283 0 0 1 .563 0Z"/>' +
+        '</svg>';
+      var YT_SVG = '<svg class="brand" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<path fill="#ff0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>' +
+        '<polygon fill="#fff" points="9.545,15.568 9.545,8.432 15.818,12"/>' +
+        '</svg>';
+
+      function setState(btn, ch) {
+        var s = btn.querySelector('.state');
+        if (s) s.textContent = ch;
+      }
+
+      var active = null;
+      function stopActive() {
+        if (!active) return;
+        active.button.classList.remove('playing');
+        setState(active.button, '▶');
+        if (active.row && active.row.parentNode) active.row.remove();
+        active = null;
+      }
+
+      function openPlayer(btn, iframe) {
+        var li = document.createElement('li');
+        li.className = 'player-row';
+        li.appendChild(iframe);
+        btn.closest('li').insertAdjacentElement('afterend', li);
+        btn.classList.add('playing');
+        setState(btn, '■');
+        active = { button: btn, row: li };
+      }
+
+      function showInlineMessage(btn, text) {
+        var li = document.createElement('li');
+        li.className = 'player-row';
+        var span = document.createElement('span');
+        span.className = 'yt-msg';
+        span.textContent = text;
+        li.appendChild(span);
+        btn.closest('li').insertAdjacentElement('afterend', li);
+        setTimeout(function () { if (li.parentNode) li.remove(); }, 3000);
+      }
+
+      function playSc(btn) {
+        var iframe = document.createElement('iframe');
+        iframe.allow = 'autoplay';
+        iframe.className = 'sc';
+        iframe.src =
+          'https://w.soundcloud.com/player/?url=' +
+          encodeURIComponent(btn.dataset.sc) +
+          '&color=%2316a34a&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false';
+        openPlayer(btn, iframe);
+      }
+
+      function playYt(btn, videoId) {
+        var iframe = document.createElement('iframe');
+        iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.className = 'yt';
+        // Use youtube-nocookie.com so the embed doesn't inherit the user's
+        // signed-in Google session — avoids "Playback paused because your
+        // account is being used in another location" errors.
+        iframe.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(videoId) + '?autoplay=1&rel=0';
+        openPlayer(btn, iframe);
+      }
+
+      async function handleYtClick(btn) {
+        var wasMe = active && active.button === btn;
+        stopActive();
+        if (wasMe) return;
+
+        // Try cached videoId on the button first (set after a previous fetch)
+        if (btn.dataset.yt) {
+          playYt(btn, btn.dataset.yt);
+          return;
+        }
+
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        try {
+          var url = API_BASE + '/api/youtube?slug=' + encodeURIComponent(btn.dataset.slug) +
+                    '&name=' + encodeURIComponent(btn.dataset.name);
+          var res = await fetch(url);
+          var json = await res.json().catch(function () { return {}; });
+          if (res.status === 404) {
+            showInlineMessage(btn, 'No long-form YouTube set found for this artist.');
+            return;
+          }
+          if (!res.ok) {
+            showInlineMessage(btn, 'YouTube error: ' + (json.error || res.status));
+            return;
+          }
+          btn.dataset.yt = json.videoId;
+          playYt(btn, json.videoId);
+        } catch (err) {
+          showInlineMessage(btn, 'YouTube request failed: ' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.classList.remove('spinning');
+        }
+      }
+
+      function wirePlayButtons(scope) {
+        scope.querySelectorAll('.play.sc').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var wasMe = active && active.button === btn;
+            stopActive();
+            if (wasMe) return;
+            playSc(btn);
+          });
+        });
+        scope.querySelectorAll('.play.yt').forEach(function (btn) {
+          btn.addEventListener('click', function () { handleYtClick(btn); });
+        });
+      }
+
+      function renderEvents(data) {
+        active = null;
+        if (!data.events || data.events.length === 0) {
+          eventsEl.innerHTML = '<div class="status">No events found for ' + escape(data.date) + '.</div>';
+          return;
+        }
+        var html = '';
+        data.events.forEach(function (ev, i) {
+          var venue = ev.venue ? escape(ev.venue) : 'TBA';
+          var eventUrl = ev.contentUrl ? 'https://ra.co' + ev.contentUrl : '#';
+          var interested = (ev.attending || 0).toLocaleString();
+          var timeStr = formatTime(ev.startTime);
+          var startTime = timeStr ? '<span class="dot">·</span><span>' + timeStr + '</span>' : '';
+
+          var artistsHtml = '';
+          (ev.artists || []).forEach(function (a) {
+            var raUrl = a.contentUrl ? 'https://ra.co' + a.contentUrl : '#';
+            var slug = a.contentUrl ? a.contentUrl.split('/').filter(Boolean).pop() : '';
+            var nameLink = '<a class="artist" href="' + escape(raUrl) + '" target="_blank" rel="noopener">' + escape(a.name) + '</a>';
+            var sc = normaliseSc(a.soundcloud);
+            var scBtn = sc
+              ? '<button class="play sc" data-sc="' + escape(sc) + '" title="Play top SoundCloud track" aria-label="Play ' + escape(a.name) + ' on SoundCloud">' + SC_SVG + '<span class="state">&#9654;</span></button>'
+              : '<span class="no-sc" title="No SoundCloud on RA profile">&mdash;</span>';
+            var ytBtn = slug
+              ? '<button class="play yt" data-slug="' + escape(slug) + '" data-name="' + escape(a.name) + '" title="Play full DJ set on YouTube" aria-label="Play ' + escape(a.name) + ' DJ set on YouTube">' + YT_SVG + '<span class="state">&#9654;</span></button>'
+              : '';
+            artistsHtml += '<li>' + scBtn + ytBtn + ' ' + nameLink + '</li>';
+          });
+          if (!artistsHtml) artistsHtml = '<li><em>No lineup published</em></li>';
+
+          html +=
+            '<section class="event">' +
+              '<header>' +
+                '<div class="rank">#' + (i + 1) + '</div>' +
+                '<div class="event-meta">' +
+                  '<h2><a href="' + escape(eventUrl) + '" target="_blank" rel="noopener">' + escape(ev.title) + '</a></h2>' +
+                  '<div class="sub">' +
+                    '<span>' + venue + '</span>' +
+                    '<span class="dot">·</span>' +
+                    '<span>' + interested + ' interested</span>' +
+                    startTime +
+                  '</div>' +
+                '</div>' +
+              '</header>' +
+              '<ul class="lineup">' + artistsHtml + '</ul>' +
+            '</section>';
+        });
+        eventsEl.innerHTML = html;
+        wirePlayButtons(eventsEl);
+      }
+
+      function setStatus(html, isError) {
+        statusEl.innerHTML = html || '';
+        statusEl.className = 'status' + (isError ? ' error' : '');
+      }
+
+      async function load(date, opts) {
+        opts = opts || {};
+        stopActive();
+        document.title = 'soundcheck. · top 40 London · ' + date;
+        history.replaceState(null, '', '?date=' + date);
+        setStatus('<span class="spinner"></span> Fetching events and SoundCloud links for ' + escape(date) + '…');
+        eventsEl.innerHTML = '';
+        try {
+          var url = API_BASE + '/api/day?date=' + encodeURIComponent(date) + (opts.refresh ? '&refresh=1' : '');
+          var res = await fetch(url);
+          var json = await res.json();
+          if (!res.ok) throw new Error(json.error || ('HTTP ' + res.status));
+          renderEvents(json);
+          setStatus('');
+        } catch (err) {
+          setStatus('Error: ' + escape(err.message || String(err)), true);
+        }
+      }
+
+      var initial = new URLSearchParams(location.search).get('date') || todayISO();
+      dateInput.value = initial;
+      dateInput.addEventListener('change', function () {
+        if (dateInput.value) load(dateInput.value);
+      });
+      refreshBtn.addEventListener('click', function () {
+        if (dateInput.value) load(dateInput.value, { refresh: true });
+      });
+
+      load(initial);
+    })();
+  </script>
+</body>
+</html>
