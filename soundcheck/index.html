@@ -436,18 +436,19 @@
           .replace(/'/g, '&#39;');
       }
 
-      // Curated venues that get pulled into the "South London Picks" section.
+      // Curated venues that get pulled into the "Picks" section.
       // Matched as case-insensitive word-boundary patterns against ev.venue.
-      var SOUTH_LONDON_PATTERNS = [
+      var PICK_PATTERNS = [
         /\bm\.?\s?o\.?\s?t\b/i,   // M.O.T / MOT
         /\bphonox\b/i,
         /\bpalais\b/i,             // Peckham Palais
         /\bormside\b/i,            // Ormside Projects
-        /\bvespers?\b/i            // Vespers / Vespers Club
+        /\bvespers?\b/i,           // Vespers / Vespers Club
+        /\bfold\b/i                // FOLD (Canning Town)
       ];
       function isPickVenue(venue) {
         if (!venue) return false;
-        return SOUTH_LONDON_PATTERNS.some(function (re) { return re.test(venue); });
+        return PICK_PATTERNS.some(function (re) { return re.test(venue); });
       }
 
       function formatTime(iso) {
@@ -662,7 +663,7 @@
         var html = '';
         if (picks.length > 0) {
           html += '<section class="section-picks">' +
-            '<h2 class="section-eyebrow">South London Picks</h2>' +
+            '<h2 class="section-eyebrow">Picks</h2>' +
             '<div class="picks-carousel">';
           picks.forEach(function (ev) { html += renderEventCard(ev, null); });
           html += '</div></section>';
