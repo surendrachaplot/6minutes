@@ -428,6 +428,126 @@
       border-top: 1px solid var(--border);
     }
 
+    /* Inline email signup section (bottom of page) */
+    .email-signup {
+      margin: 56px 0 0;
+      padding: 40px 28px;
+      background: var(--off-white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      text-align: center;
+    }
+    .email-signup .signup-eyebrow {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 12px;
+    }
+    .email-signup h3 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin: 0 0 8px;
+      line-height: 1.1;
+    }
+    .email-signup .signup-desc {
+      color: var(--gray);
+      font-size: 0.95rem;
+      margin: 0 0 22px;
+      max-width: 380px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .email-form.inline-form {
+      max-width: 380px;
+      margin: 0 auto;
+    }
+    .signup-success {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin: 0;
+      letter-spacing: 0.02em;
+    }
+
+    /* Now-playing bar — fixed to bottom of viewport */
+    .now-playing {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--black);
+      color: var(--white);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 999;
+      font-size: 0.88rem;
+      font-weight: 500;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .now-playing.show { transform: translateY(0); }
+    .now-playing .np-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      animation: np-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes np-pulse {
+      0%, 100% { opacity: 0.35; transform: scale(0.85); }
+      50%      { opacity: 1;    transform: scale(1.15); }
+    }
+    .now-playing .np-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+    .now-playing .np-name {
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .now-playing .np-source {
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .now-playing .np-stop {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: var(--white);
+      border-radius: 999px;
+      width: 32px;
+      height: 32px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .now-playing .np-stop:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    /* When the bar is visible, add bottom padding so it doesn't cover content */
+    body.has-np main.wrap { padding-bottom: 140px; }
+
     /* Email gate modal */
     .email-overlay {
       position: fixed;
@@ -450,6 +570,30 @@
       max-width: 420px;
       width: 100%;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+    .email-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      background: transparent;
+      border: none;
+      color: var(--gray);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0 3px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .email-close:hover {
+      background: var(--off-white);
+      color: var(--black);
     }
     .email-modal h3 {
       font-size: 1.5rem;
@@ -540,7 +684,27 @@
 
     <div id="status" class="status"></div>
     <div id="events"></div>
+
+    <section class="email-signup" id="email-signup">
+      <p class="signup-eyebrow">The List</p>
+      <h3>Get a weekly <span class="accent">digest</span>.</h3>
+      <p class="signup-desc">London&rsquo;s most interesting nights, picked &amp; sent every Wednesday.</p>
+      <form class="email-form inline-form" id="inline-form">
+        <input type="email" required placeholder="you@somewhere.com" autocomplete="email" />
+        <button type="submit">Subscribe</button>
+      </form>
+      <p class="signup-success" id="signup-success" hidden>You&rsquo;re on the list. &#x2713;</p>
+    </section>
   </main>
+
+  <div class="now-playing" id="now-playing" role="status" aria-live="polite">
+    <span class="np-pulse" aria-hidden="true"></span>
+    <div class="np-text">
+      <span class="np-name">&mdash;</span>
+      <span class="np-source">SOUNDCLOUD</span>
+    </div>
+    <button class="np-stop" type="button" aria-label="Stop playback">&#9632;</button>
+  </div>
   <script>
     // Where the /api/* endpoints live. Set automatically based on host:
     //   localhost -> '' (same origin)
@@ -639,8 +803,9 @@
           var overlay = document.createElement('div');
           overlay.className = 'email-overlay';
           overlay.innerHTML =
-            '<div class="email-modal" role="dialog" aria-modal="true">' +
-              '<h3>One thing <span class="accent">first</span>.</h3>' +
+            '<div class="email-modal" role="dialog" aria-modal="true" aria-labelledby="email-modal-title">' +
+              '<button class="email-close" type="button" aria-label="Close">&times;</button>' +
+              '<h3 id="email-modal-title">One thing <span class="accent">first</span>.</h3>' +
               '<p>Drop your email to start the music. We&rsquo;ll send the occasional pick &mdash; nothing more.</p>' +
               '<form class="email-form">' +
                 '<input type="email" required placeholder="you@somewhere.com" autocomplete="email" />' +
@@ -651,9 +816,23 @@
           document.body.appendChild(overlay);
           var input = overlay.querySelector('input');
           var submit = overlay.querySelector('button[type="submit"]');
+          var closeBtn = overlay.querySelector('.email-close');
           var errEl = overlay.querySelector('.email-err');
           var form = overlay.querySelector('form');
           setTimeout(function () { input.focus(); }, 30);
+
+          function dismiss() {
+            overlay.remove();
+            document.removeEventListener('keydown', onEsc);
+            resolve(false);
+          }
+          function onEsc(e) { if (e.key === 'Escape') dismiss(); }
+          document.addEventListener('keydown', onEsc);
+          closeBtn.addEventListener('click', dismiss);
+          overlay.addEventListener('click', function (e) {
+            // click on the dimmed backdrop (not the modal itself) dismisses
+            if (e.target === overlay) dismiss();
+          });
 
           form.addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -674,10 +853,35 @@
               // Best-effort. Even on network failure, let them play.
             }
             try { localStorage.setItem('sc_email', email); } catch (_) {}
+            document.removeEventListener('keydown', onEsc);
             overlay.remove();
             resolve(true);
           });
         });
+      }
+
+      // ── Now-playing bar ──────────────────────────────────────────
+      var npEl = document.getElementById('now-playing');
+      var npName = npEl ? npEl.querySelector('.np-name') : null;
+      var npSource = npEl ? npEl.querySelector('.np-source') : null;
+      var npStop = npEl ? npEl.querySelector('.np-stop') : null;
+      if (npStop) npStop.addEventListener('click', function () { stopActive(); });
+
+      function showNowPlaying(btn) {
+        if (!npEl) return;
+        var li = btn.closest('li');
+        var artistLink = li ? li.querySelector('.artist') : null;
+        var name = artistLink ? artistLink.textContent : 'Now playing';
+        var source = btn.classList.contains('yt') ? 'YOUTUBE' : 'SOUNDCLOUD';
+        if (npName) npName.textContent = name;
+        if (npSource) npSource.textContent = source;
+        npEl.classList.add('show');
+        document.body.classList.add('has-np');
+      }
+      function hideNowPlaying() {
+        if (!npEl) return;
+        npEl.classList.remove('show');
+        document.body.classList.remove('has-np');
       }
 
       var active = null;
@@ -687,6 +891,7 @@
         setState(active.button, '▶');
         if (active.row && active.row.parentNode) active.row.remove();
         active = null;
+        hideNowPlaying();
       }
 
       function openPlayer(btn, iframe) {
@@ -697,6 +902,7 @@
         btn.classList.add('playing');
         setState(btn, '■');
         active = { button: btn, row: li };
+        showNowPlaying(btn);
       }
 
       function showInlineMessage(btn, text) {
@@ -930,6 +1136,39 @@
         } catch (err) {
           setStatus('Error: ' + escape(err.message || String(err)), true);
         }
+      }
+
+      // Inline email signup at the bottom of the page. If user already
+      // has an email saved (via the modal or a previous inline submit),
+      // show "you're on the list" instead of the form.
+      var signupForm = document.getElementById('inline-form');
+      var signupSuccess = document.getElementById('signup-success');
+      if (signupForm) {
+        if (hasEmail()) {
+          signupForm.hidden = true;
+          if (signupSuccess) signupSuccess.hidden = false;
+        }
+        signupForm.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          var input = signupForm.querySelector('input');
+          var btn = signupForm.querySelector('button');
+          var email = input.value.trim().toLowerCase();
+          if (!EMAIL_RE.test(email) || email.length > 254) {
+            input.focus();
+            return;
+          }
+          btn.disabled = true;
+          try {
+            await fetch(API_BASE + '/api/email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email })
+            });
+          } catch (_) {}
+          try { localStorage.setItem('sc_email', email); } catch (_) {}
+          signupForm.hidden = true;
+          if (signupSuccess) signupSuccess.hidden = false;
+        });
       }
 
       var initial = new URLSearchParams(location.search).get('date') || todayISO();
