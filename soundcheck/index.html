@@ -227,7 +227,15 @@
     .section-picks { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
     .section-top .section-eyebrow { margin-top: 8px; }
 
-    /* Horizontal carousel for South London Picks */
+    /* Horizontal carousel for Picks — breaks out of the 720px column to be
+       up to 1440px wide (2x default), centred on the viewport, with prev/next buttons. */
+    .picks-carousel-wrap {
+      position: relative;
+      width: 100vw;
+      max-width: 1440px;
+      margin-left: 50%;
+      transform: translateX(-50%);
+    }
     .picks-carousel {
       display: flex;
       gap: 14px;
@@ -235,9 +243,7 @@
       overflow-y: visible;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
-      /* Bleed to the .wrap horizontal padding so cards can scroll edge-to-edge */
-      margin: 0 -32px;
-      padding: 4px 32px 14px;
+      padding: 4px 56px 14px;   /* leave space for the nav buttons */
       scrollbar-width: thin;
       scrollbar-color: var(--border-strong) transparent;
     }
@@ -254,9 +260,37 @@
       scroll-snap-align: start;
       margin-bottom: 0;
     }
+    .carousel-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--black);
+      font-family: inherit;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0 3px;
+      transition: color 0.12s, border-color 0.12s, transform 0.08s;
+    }
+    .carousel-nav.prev { left: 8px; }
+    .carousel-nav.next { right: 8px; }
+    .carousel-nav:hover { color: var(--accent); border-color: var(--accent); }
+    .carousel-nav:active { transform: translateY(-50%) scale(0.94); }
     @media (max-width: 560px) {
-      .picks-carousel { margin: 0 -20px; padding: 4px 20px 14px; }
+      .picks-carousel-wrap { width: 100vw; }
+      .picks-carousel { padding: 4px 20px 14px; }
       .picks-carousel .event { flex-basis: 86vw; min-width: 86vw; max-width: 86vw; }
+      .carousel-nav { display: none; }
     }
 
     .lineup { list-style: none; padding: 14px 0 0 56px; margin: 0; }
@@ -586,6 +620,19 @@
         scope.querySelectorAll('.play.yt').forEach(function (btn) {
           btn.addEventListener('click', function () { handleYtClick(btn); });
         });
+        scope.querySelectorAll('.carousel-nav').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var wrap = btn.closest('.picks-carousel-wrap');
+            var carousel = wrap ? wrap.querySelector('.picks-carousel') : null;
+            if (!carousel) return;
+            var card = carousel.querySelector('.event');
+            var step = (card ? card.offsetWidth : 340) + 14;
+            carousel.scrollBy({
+              left: btn.classList.contains('prev') ? -step : step,
+              behavior: 'smooth'
+            });
+          });
+        });
         scope.querySelectorAll('.more-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var ul = btn.closest('ul.lineup');
@@ -664,9 +711,14 @@
         if (picks.length > 0) {
           html += '<section class="section-picks">' +
             '<h2 class="section-eyebrow">Picks</h2>' +
-            '<div class="picks-carousel">';
+            '<div class="picks-carousel-wrap">' +
+              '<button class="carousel-nav prev" type="button" aria-label="Scroll picks left">&lsaquo;</button>' +
+              '<div class="picks-carousel">';
           picks.forEach(function (ev) { html += renderEventCard(ev, null); });
-          html += '</div></section>';
+          html += '</div>' +
+              '<button class="carousel-nav next" type="button" aria-label="Scroll picks right">&rsaquo;</button>' +
+            '</div>' +
+          '</section>';
         }
 
         html += '<section class="section-top">';
