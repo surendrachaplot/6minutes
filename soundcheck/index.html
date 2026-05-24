@@ -188,7 +188,32 @@
       font-weight: 500;
       letter-spacing: 0.02em;
     }
+    .sub .venue {
+      color: var(--black);
+      font-weight: 700;
+    }
     .dot { padding: 0 6px; opacity: 0.5; }
+
+    .lineup-more {
+      list-style: none;
+      padding: 8px 0 4px;
+    }
+    .more-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0;
+    }
+    .more-btn:hover { text-decoration: underline; }
+    .lineup-hidden { display: none !important; }
+    .lineup.expanded .lineup-hidden { display: flex !important; }
+    .lineup.expanded .lineup-more { display: none; }
 
     .lineup { list-style: none; padding: 14px 0 0 56px; margin: 0; }
     .lineup li {
@@ -537,6 +562,12 @@
         scope.querySelectorAll('.play.yt').forEach(function (btn) {
           btn.addEventListener('click', function () { handleYtClick(btn); });
         });
+        scope.querySelectorAll('.more-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var ul = btn.closest('ul.lineup');
+            if (ul) ul.classList.add('expanded');
+          });
+        });
       }
 
       function renderEvents(data) {
@@ -553,8 +584,13 @@
           var timeStr = formatTime(ev.startTime);
           var startTime = timeStr ? '<span class="dot">·</span><span>' + timeStr + '</span>' : '';
 
+          var allArtists = ev.artists || [];
+          var INITIAL_COUNT = 10;
           var artistsHtml = '';
-          (ev.artists || []).forEach(function (a) {
+          allArtists.forEach(function (a, idx) {
+            if (idx === INITIAL_COUNT) {
+              artistsHtml += '<li class="lineup-more"><button class="more-btn" type="button">Show ' + (allArtists.length - INITIAL_COUNT) + ' more</button></li>';
+            }
             var raUrl = a.contentUrl ? 'https://ra.co' + a.contentUrl : '#';
             var slug = a.contentUrl ? a.contentUrl.split('/').filter(Boolean).pop() : '';
             var nameLink = '<a class="artist" href="' + escape(raUrl) + '" target="_blank" rel="noopener">' + escape(a.name) + '</a>';
@@ -565,7 +601,8 @@
             var ytBtn = slug
               ? '<button class="play yt" data-slug="' + escape(slug) + '" data-name="' + escape(a.name) + '" title="Play full DJ set on YouTube" aria-label="Play ' + escape(a.name) + ' DJ set on YouTube">' + YT_SVG + '<span class="state">&#9654;</span></button>'
               : '';
-            artistsHtml += '<li>' + scBtn + ytBtn + ' ' + nameLink + '</li>';
+            var liCls = idx >= INITIAL_COUNT ? ' class="lineup-hidden"' : '';
+            artistsHtml += '<li' + liCls + '>' + scBtn + ytBtn + ' ' + nameLink + '</li>';
           });
           if (!artistsHtml) artistsHtml = '<li><em>No lineup published</em></li>';
 
@@ -576,7 +613,7 @@
                 '<div class="event-meta">' +
                   '<h2><a href="' + escape(eventUrl) + '" target="_blank" rel="noopener">' + escape(ev.title) + '</a></h2>' +
                   '<div class="sub">' +
-                    '<span>' + venue + '</span>' +
+                    '<span class="venue">' + venue + '</span>' +
                     '<span class="dot">·</span>' +
                     '<span>' + interested + ' interested</span>' +
                     startTime +
