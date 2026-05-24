@@ -213,7 +213,19 @@
     .more-btn:hover { text-decoration: underline; }
     .lineup-hidden { display: none !important; }
     .lineup.expanded .lineup-hidden { display: flex !important; }
-    .lineup.expanded .lineup-more { display: none; }
+
+    /* Section eyebrow headings (South London Picks, Top 40 Tonight) */
+    .section-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 16px;
+    }
+    .section-eyebrow.muted { color: var(--gray); }
+    .section-picks { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+    .section-top .section-eyebrow { margin-top: 8px; }
 
     .lineup { list-style: none; padding: 14px 0 0 56px; margin: 0; }
     .lineup li {
@@ -427,6 +439,20 @@
           .replace(/'/g, '&#39;');
       }
 
+      // Curated venues that get pulled into the "South London Picks" section.
+      // Matched as case-insensitive word-boundary patterns against ev.venue.
+      var SOUTH_LONDON_PATTERNS = [
+        /\bm\.?\s?o\.?\s?t\b/i,   // M.O.T / MOT
+        /\bphonox\b/i,
+        /\bpalais\b/i,             // Peckham Palais
+        /\bormside\b/i,            // Ormside Projects
+        /\bvespers?\b/i            // Vespers / Vespers Club
+      ];
+      function isPickVenue(venue) {
+        if (!venue) return false;
+        return SOUTH_LONDON_PATTERNS.some(function (re) { return re.test(venue); });
+      }
+
       function formatTime(iso) {
         if (!iso) return '';
         // "2026-05-30T12:00:00.000" -> "12:00". Date context is implicit
@@ -565,9 +591,65 @@
         scope.querySelectorAll('.more-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var ul = btn.closest('ul.lineup');
-            if (ul) ul.classList.add('expanded');
+            if (!ul) return;
+            var expanded = ul.classList.toggle('expanded');
+            var extra = btn.dataset.extra || ul.querySelectorAll('.lineup-hidden').length;
+            btn.textContent = expanded ? 'Show less' : 'Show ' + extra + ' more';
+            // If we just collapsed and the currently-playing artist is now hidden,
+            // stop playback so audio doesn't keep going out of view.
+            if (!expanded && active && active.button.closest('.lineup-hidden')) {
+              stopActive();
+            }
           });
         });
+      }
+
+      var INITIAL_COUNT = 10;
+
+      function renderEventCard(ev, rank) {
+        var venue = ev.venue ? escape(ev.venue) : 'TBA';
+        var eventUrl = ev.contentUrl ? 'https://ra.co' + ev.contentUrl : '#';
+        var interested = (ev.attending || 0).toLocaleString();
+        var timeStr = formatTime(ev.startTime);
+        var startTime = timeStr ? '<span class="dot">·</span><span>' + timeStr + '</span>' : '';
+
+        var allArtists = ev.artists || [];
+        var artistsHtml = '';
+        allArtists.forEach(function (a, idx) {
+          if (idx === INITIAL_COUNT) {
+            artistsHtml += '<li class="lineup-more"><button class="more-btn" type="button" data-extra="' + (allArtists.length - INITIAL_COUNT) + '">Show ' + (allArtists.length - INITIAL_COUNT) + ' more</button></li>';
+          }
+          var raUrl = a.contentUrl ? 'https://ra.co' + a.contentUrl : '#';
+          var slug = a.contentUrl ? a.contentUrl.split('/').filter(Boolean).pop() : '';
+          var nameLink = '<a class="artist" href="' + escape(raUrl) + '" target="_blank" rel="noopener">' + escape(a.name) + '</a>';
+          var sc = normaliseSc(a.soundcloud);
+          var scBtn = sc
+            ? '<button class="play sc" data-sc="' + escape(sc) + '" title="Play top SoundCloud track" aria-label="Play ' + escape(a.name) + ' on SoundCloud">' + SC_SVG + '<span class="state">&#9654;</span></button>'
+            : '<span class="no-sc" title="No SoundCloud on RA profile">&mdash;</span>';
+          var ytBtn = slug
+            ? '<button class="play yt" data-slug="' + escape(slug) + '" data-name="' + escape(a.name) + '" title="Play full DJ set on YouTube" aria-label="Play ' + escape(a.name) + ' DJ set on YouTube">' + YT_SVG + '<span class="state">&#9654;</span></button>'
+            : '';
+          var liCls = idx >= INITIAL_COUNT ? ' class="lineup-hidden"' : '';
+          artistsHtml += '<li' + liCls + '>' + scBtn + ytBtn + ' ' + nameLink + '</li>';
+        });
+        if (!artistsHtml) artistsHtml = '<li><em>No lineup published</em></li>';
+
+        var rankHtml = rank != null ? '<div class="rank">#' + rank + '</div>' : '';
+        return '<section class="event">' +
+          '<header>' +
+            rankHtml +
+            '<div class="event-meta">' +
+              '<h2><a href="' + escape(eventUrl) + '" target="_blank" rel="noopener">' + escape(ev.title) + '</a></h2>' +
+              '<div class="sub">' +
+                '<span class="venue">' + venue + '</span>' +
+                '<span class="dot">·</span>' +
+                '<span>' + interested + ' interested</span>' +
+                startTime +
+              '</div>' +
+            '</div>' +
+          '</header>' +
+          '<ul class="lineup">' + artistsHtml + '</ul>' +
+        '</section>';
       }
 
       function renderEvents(data) {
@@ -576,53 +658,25 @@
           eventsEl.innerHTML = '<div class="status">No events found for ' + escape(data.date) + '.</div>';
           return;
         }
+
+        var picks = data.events.filter(function (ev) { return isPickVenue(ev.venue); });
+        var all = data.events;
+
         var html = '';
-        data.events.forEach(function (ev, i) {
-          var venue = ev.venue ? escape(ev.venue) : 'TBA';
-          var eventUrl = ev.contentUrl ? 'https://ra.co' + ev.contentUrl : '#';
-          var interested = (ev.attending || 0).toLocaleString();
-          var timeStr = formatTime(ev.startTime);
-          var startTime = timeStr ? '<span class="dot">·</span><span>' + timeStr + '</span>' : '';
+        if (picks.length > 0) {
+          html += '<section class="section-picks">' +
+            '<h2 class="section-eyebrow">South London Picks</h2>';
+          picks.forEach(function (ev) { html += renderEventCard(ev, null); });
+          html += '</section>';
+        }
 
-          var allArtists = ev.artists || [];
-          var INITIAL_COUNT = 10;
-          var artistsHtml = '';
-          allArtists.forEach(function (a, idx) {
-            if (idx === INITIAL_COUNT) {
-              artistsHtml += '<li class="lineup-more"><button class="more-btn" type="button">Show ' + (allArtists.length - INITIAL_COUNT) + ' more</button></li>';
-            }
-            var raUrl = a.contentUrl ? 'https://ra.co' + a.contentUrl : '#';
-            var slug = a.contentUrl ? a.contentUrl.split('/').filter(Boolean).pop() : '';
-            var nameLink = '<a class="artist" href="' + escape(raUrl) + '" target="_blank" rel="noopener">' + escape(a.name) + '</a>';
-            var sc = normaliseSc(a.soundcloud);
-            var scBtn = sc
-              ? '<button class="play sc" data-sc="' + escape(sc) + '" title="Play top SoundCloud track" aria-label="Play ' + escape(a.name) + ' on SoundCloud">' + SC_SVG + '<span class="state">&#9654;</span></button>'
-              : '<span class="no-sc" title="No SoundCloud on RA profile">&mdash;</span>';
-            var ytBtn = slug
-              ? '<button class="play yt" data-slug="' + escape(slug) + '" data-name="' + escape(a.name) + '" title="Play full DJ set on YouTube" aria-label="Play ' + escape(a.name) + ' DJ set on YouTube">' + YT_SVG + '<span class="state">&#9654;</span></button>'
-              : '';
-            var liCls = idx >= INITIAL_COUNT ? ' class="lineup-hidden"' : '';
-            artistsHtml += '<li' + liCls + '>' + scBtn + ytBtn + ' ' + nameLink + '</li>';
-          });
-          if (!artistsHtml) artistsHtml = '<li><em>No lineup published</em></li>';
+        html += '<section class="section-top">';
+        if (picks.length > 0) {
+          html += '<h2 class="section-eyebrow muted">Top 40 Tonight</h2>';
+        }
+        all.forEach(function (ev, i) { html += renderEventCard(ev, i + 1); });
+        html += '</section>';
 
-          html +=
-            '<section class="event">' +
-              '<header>' +
-                '<div class="rank">#' + (i + 1) + '</div>' +
-                '<div class="event-meta">' +
-                  '<h2><a href="' + escape(eventUrl) + '" target="_blank" rel="noopener">' + escape(ev.title) + '</a></h2>' +
-                  '<div class="sub">' +
-                    '<span class="venue">' + venue + '</span>' +
-                    '<span class="dot">·</span>' +
-                    '<span>' + interested + ' interested</span>' +
-                    startTime +
-                  '</div>' +
-                '</div>' +
-              '</header>' +
-              '<ul class="lineup">' + artistsHtml + '</ul>' +
-            '</section>';
-        });
         eventsEl.innerHTML = html;
         wirePlayButtons(eventsEl);
       }
