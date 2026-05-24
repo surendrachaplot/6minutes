@@ -292,10 +292,6 @@
 
     <div id="status" class="status"></div>
     <div id="events"></div>
-    <footer>
-      Event listings from <a href="https://ra.co/events/uk/london" target="_blank" rel="noopener" style="color:var(--muted)">Resident Advisor</a>.
-      Audio previews via SoundCloud and YouTube. Buy tickets on RA &mdash; this site is for previewing only.
-    </footer>
   </main>
   <script>
     // Where the /api/* endpoints live. Set automatically based on host:
@@ -305,7 +301,7 @@
     // with the real URL Render gave you (no trailing slash).
     var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? ''
-      : 'https://YOUR-RENDER-URL.onrender.com';
+      : 'https://soundcheck-api-15aq.onrender.com';
 
     // SHA-256 of the gate password. Computed by:
     //   printf 'yourpassword' | shasum -a 256 | cut -d' ' -f1
