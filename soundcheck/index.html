@@ -227,6 +227,38 @@
     .section-picks { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
     .section-top .section-eyebrow { margin-top: 8px; }
 
+    /* Horizontal carousel for South London Picks */
+    .picks-carousel {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      overflow-y: visible;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      /* Bleed to the .wrap horizontal padding so cards can scroll edge-to-edge */
+      margin: 0 -32px;
+      padding: 4px 32px 14px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+    .picks-carousel::-webkit-scrollbar { height: 6px; }
+    .picks-carousel::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 3px;
+    }
+    .picks-carousel::-webkit-scrollbar-track { background: transparent; }
+    .picks-carousel .event {
+      flex: 0 0 340px;
+      min-width: 340px;
+      max-width: 340px;
+      scroll-snap-align: start;
+      margin-bottom: 0;
+    }
+    @media (max-width: 560px) {
+      .picks-carousel { margin: 0 -20px; padding: 4px 20px 14px; }
+      .picks-carousel .event { flex-basis: 86vw; min-width: 86vw; max-width: 86vw; }
+    }
+
     .lineup { list-style: none; padding: 14px 0 0 56px; margin: 0; }
     .lineup li {
       padding: 5px 0;
@@ -381,42 +413,7 @@
       ? ''
       : 'https://soundcheck-api-15aq.onrender.com';
 
-    // SHA-256 of the gate password. Computed by:
-    //   printf 'yourpassword' | shasum -a 256 | cut -d' ' -f1
-    var GATE_HASH = '24e89c2dfb8268766b46a2a700715c6b64f7ddbe8c873fb556b9e080de41a823';
-
-    async function sha256(str) {
-      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-      return Array.from(new Uint8Array(buf))
-        .map(function (b) { return b.toString(16).padStart(2, '0'); })
-        .join('');
-    }
-
-    async function passGate() {
-      try {
-        if (localStorage.getItem('sc_gate') === GATE_HASH) return true;
-      } catch (_) {}
-      document.body.style.visibility = 'hidden';
-      for (var i = 0; i < 3; i++) {
-        var pw = window.prompt('Enter password to access soundcheck.');
-        if (pw == null) break;
-        var h = await sha256(pw);
-        if (h === GATE_HASH) {
-          try { localStorage.setItem('sc_gate', h); } catch (_) {}
-          document.body.style.visibility = 'visible';
-          return true;
-        }
-      }
-      document.body.innerHTML =
-        '<div style="padding:80px 20px;text-align:center;font-family:-apple-system,system-ui,sans-serif;color:#6b7280">' +
-        'Access denied.</div>';
-      document.body.style.visibility = 'visible';
-      return false;
-    }
-
     (async function () {
-      if (!(await passGate())) return;
-
       var dateInput = document.getElementById('date-input');
       var refreshBtn = document.getElementById('refresh-btn');
       var statusEl = document.getElementById('status');
@@ -665,9 +662,10 @@
         var html = '';
         if (picks.length > 0) {
           html += '<section class="section-picks">' +
-            '<h2 class="section-eyebrow">South London Picks</h2>';
+            '<h2 class="section-eyebrow">South London Picks</h2>' +
+            '<div class="picks-carousel">';
           picks.forEach(function (ev) { html += renderEventCard(ev, null); });
-          html += '</section>';
+          html += '</div></section>';
         }
 
         html += '<section class="section-top">';
