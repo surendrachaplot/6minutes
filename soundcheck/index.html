@@ -260,6 +260,30 @@
       scroll-snap-align: start;
       margin-bottom: 0;
     }
+    /* Picks-card lineup: 2-column grid, no left indent (smaller card width). */
+    .picks-carousel .event .lineup {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 12px;
+      row-gap: 2px;
+      padding: 14px 0 0;
+    }
+    .picks-carousel .event .lineup li {
+      min-width: 0;   /* let names truncate inside the grid cell */
+    }
+    .picks-carousel .event .lineup .artist {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    .picks-carousel .event .lineup .lineup-more,
+    .picks-carousel .event .lineup .player-row {
+      grid-column: 1 / -1;
+    }
+    .picks-carousel .event .lineup .player-row {
+      padding-left: 0 !important;
+    }
     .carousel-nav {
       position: absolute;
       top: 50%;
@@ -475,9 +499,7 @@
       var PICK_PATTERNS = [
         /\bm\.?\s?o\.?\s?t\b/i,   // M.O.T / MOT
         /\bphonox\b/i,
-        /\bpalais\b/i,             // Peckham Palais
         /\bormside\b/i,            // Ormside Projects
-        /\bvespers?\b/i,           // Vespers / Vespers Club
         /\bfold\b/i                // FOLD (Canning Town)
       ];
       function isPickVenue(venue) {
@@ -649,9 +671,10 @@
         });
       }
 
-      var INITIAL_COUNT = 10;
+      var DEFAULT_INITIAL_COUNT = 10;
 
-      function renderEventCard(ev, rank) {
+      function renderEventCard(ev, rank, initialCount) {
+        if (initialCount == null) initialCount = DEFAULT_INITIAL_COUNT;
         var venue = ev.venue ? escape(ev.venue) : 'TBA';
         var eventUrl = ev.contentUrl ? 'https://ra.co' + ev.contentUrl : '#';
         var interested = (ev.attending || 0).toLocaleString();
@@ -661,8 +684,8 @@
         var allArtists = ev.artists || [];
         var artistsHtml = '';
         allArtists.forEach(function (a, idx) {
-          if (idx === INITIAL_COUNT) {
-            artistsHtml += '<li class="lineup-more"><button class="more-btn" type="button" data-extra="' + (allArtists.length - INITIAL_COUNT) + '">Show ' + (allArtists.length - INITIAL_COUNT) + ' more</button></li>';
+          if (idx === initialCount) {
+            artistsHtml += '<li class="lineup-more"><button class="more-btn" type="button" data-extra="' + (allArtists.length - initialCount) + '">Show ' + (allArtists.length - initialCount) + ' more</button></li>';
           }
           var raUrl = a.contentUrl ? 'https://ra.co' + a.contentUrl : '#';
           var slug = a.contentUrl ? a.contentUrl.split('/').filter(Boolean).pop() : '';
@@ -674,7 +697,7 @@
           var ytBtn = slug
             ? '<button class="play yt" data-slug="' + escape(slug) + '" data-name="' + escape(a.name) + '" title="Play full DJ set on YouTube" aria-label="Play ' + escape(a.name) + ' DJ set on YouTube">' + YT_SVG + '<span class="state">&#9654;</span></button>'
             : '';
-          var liCls = idx >= INITIAL_COUNT ? ' class="lineup-hidden"' : '';
+          var liCls = idx >= initialCount ? ' class="lineup-hidden"' : '';
           artistsHtml += '<li' + liCls + '>' + scBtn + ytBtn + ' ' + nameLink + '</li>';
         });
         if (!artistsHtml) artistsHtml = '<li><em>No lineup published</em></li>';
@@ -714,7 +737,7 @@
             '<div class="picks-carousel-wrap">' +
               '<button class="carousel-nav prev" type="button" aria-label="Scroll picks left">&lsaquo;</button>' +
               '<div class="picks-carousel">';
-          picks.forEach(function (ev) { html += renderEventCard(ev, null); });
+          picks.forEach(function (ev) { html += renderEventCard(ev, null, 4); });
           html += '</div>' +
               '<button class="carousel-nav next" type="button" aria-label="Scroll picks right">&rsaquo;</button>' +
             '</div>' +
