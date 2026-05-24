@@ -428,6 +428,80 @@
       border-top: 1px solid var(--border);
     }
 
+    /* Email gate modal */
+    .email-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13, 13, 13, 0.55);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      animation: fade-in 0.18s ease;
+    }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .email-modal {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 32px 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+    .email-modal h3 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin: 0 0 6px;
+      line-height: 1.1;
+    }
+    .email-modal .accent { color: var(--accent); }
+    .email-modal p {
+      color: var(--gray);
+      font-size: 0.92rem;
+      margin: 0 0 18px;
+      line-height: 1.5;
+    }
+    .email-form { display: flex; gap: 8px; }
+    .email-form input {
+      flex: 1;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      min-width: 0;
+    }
+    .email-form input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+    .email-form button {
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 11px 18px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.12s;
+    }
+    .email-form button:hover { background: var(--accent); }
+    .email-form button[disabled] { opacity: 0.6; cursor: progress; }
+    .email-err {
+      color: var(--accent);
+      font-size: 0.82rem;
+      margin: 10px 0 0;
+      min-height: 1.2em;
+    }
+
     @media (max-width: 560px) {
       .wrap { padding: 0 20px; }
       main.wrap { padding-bottom: 64px; }
@@ -547,6 +621,65 @@
         if (s) s.textContent = ch;
       }
 
+      // ── Email gate ─────────────────────────────────────────────
+      // First ▶ click prompts for an email; remembered in localStorage so
+      // subsequent plays skip the modal. Submission is best-effort: even if
+      // the API call fails, playback proceeds (collection is not the point
+      // of the user's interaction).
+      var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      function hasEmail() {
+        try {
+          var v = localStorage.getItem('sc_email');
+          return !!v && EMAIL_RE.test(v);
+        } catch (_) { return false; }
+      }
+      function ensureEmailGate() {
+        if (hasEmail()) return Promise.resolve(true);
+        return new Promise(function (resolve) {
+          var overlay = document.createElement('div');
+          overlay.className = 'email-overlay';
+          overlay.innerHTML =
+            '<div class="email-modal" role="dialog" aria-modal="true">' +
+              '<h3>One thing <span class="accent">first</span>.</h3>' +
+              '<p>Drop your email to start the music. We&rsquo;ll send the occasional pick &mdash; nothing more.</p>' +
+              '<form class="email-form">' +
+                '<input type="email" required placeholder="you@somewhere.com" autocomplete="email" />' +
+                '<button type="submit">Play</button>' +
+              '</form>' +
+              '<p class="email-err" aria-live="polite"></p>' +
+            '</div>';
+          document.body.appendChild(overlay);
+          var input = overlay.querySelector('input');
+          var submit = overlay.querySelector('button[type="submit"]');
+          var errEl = overlay.querySelector('.email-err');
+          var form = overlay.querySelector('form');
+          setTimeout(function () { input.focus(); }, 30);
+
+          form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            errEl.textContent = '';
+            var email = input.value.trim().toLowerCase();
+            if (!EMAIL_RE.test(email) || email.length > 254) {
+              errEl.textContent = 'That doesn’t look like an email.';
+              return;
+            }
+            submit.disabled = true;
+            try {
+              await fetch(API_BASE + '/api/email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+              });
+            } catch (_) {
+              // Best-effort. Even on network failure, let them play.
+            }
+            try { localStorage.setItem('sc_email', email); } catch (_) {}
+            overlay.remove();
+            resolve(true);
+          });
+        });
+      }
+
       var active = null;
       function stopActive() {
         if (!active) return;
@@ -638,15 +771,22 @@
 
       function wirePlayButtons(scope) {
         scope.querySelectorAll('.play.sc').forEach(function (btn) {
-          btn.addEventListener('click', function () {
+          btn.addEventListener('click', async function () {
             var wasMe = active && active.button === btn;
+            // Stopping/closing the current player doesn't need a gate.
+            if (wasMe) { stopActive(); return; }
+            if (!(await ensureEmailGate())) return;
             stopActive();
-            if (wasMe) return;
             playSc(btn);
           });
         });
         scope.querySelectorAll('.play.yt').forEach(function (btn) {
-          btn.addEventListener('click', function () { handleYtClick(btn); });
+          btn.addEventListener('click', async function () {
+            var wasMe = active && active.button === btn;
+            if (wasMe) { stopActive(); return; }
+            if (!(await ensureEmailGate())) return;
+            handleYtClick(btn);
+          });
         });
         scope.querySelectorAll('.carousel-nav').forEach(function (btn) {
           btn.addEventListener('click', function () {
@@ -682,7 +822,9 @@
       function renderEventCard(ev, rank, initialCount) {
         if (initialCount == null) initialCount = DEFAULT_INITIAL_COUNT;
         var venue = ev.venue ? escape(ev.venue) : 'TBA';
-        var eventUrl = ev.contentUrl ? 'https://ra.co' + ev.contentUrl : '#';
+        // Don't link to ra.co — send curious users to a Google search instead.
+        var eventQuery = ev.title + (ev.venue ? ' ' + ev.venue : '') + ' london';
+        var eventUrl = 'https://www.google.com/search?q=' + encodeURIComponent(eventQuery);
         var interested = (ev.attending || 0).toLocaleString();
         var timeStr = formatTime(ev.startTime);
         var startTime = timeStr ? '<span class="dot">·</span><span>' + timeStr + '</span>' : '';
@@ -693,9 +835,14 @@
           if (idx === initialCount) {
             artistsHtml += '<li class="lineup-more"><button class="more-btn" type="button" data-extra="' + (allArtists.length - initialCount) + '">Show ' + (allArtists.length - initialCount) + ' more</button></li>';
           }
-          var raUrl = a.contentUrl ? 'https://ra.co' + a.contentUrl : '#';
           var slug = a.contentUrl ? a.contentUrl.split('/').filter(Boolean).pop() : '';
-          var nameLink = '<a class="artist" href="' + escape(raUrl) + '" target="_blank" rel="noopener">' + escape(a.name) + '</a>';
+          // Link artist name to their SoundCloud if known, else a Google search
+          // for them as a DJ. We never link out to ra.co for artist names.
+          var scForLink = normaliseSc(a.soundcloud);
+          var artistHref = scForLink
+            ? scForLink
+            : 'https://www.google.com/search?q=' + encodeURIComponent(a.name + ' dj');
+          var nameLink = '<a class="artist" href="' + escape(artistHref) + '" target="_blank" rel="noopener noreferrer">' + escape(a.name) + '</a>';
           var sc = normaliseSc(a.soundcloud);
           var scBtn = sc
             ? '<button class="play sc" data-sc="' + escape(sc) + '" title="Play top SoundCloud track" aria-label="Play ' + escape(a.name) + ' on SoundCloud">' + SC_SVG + '<span class="state">&#9654;</span></button>'
@@ -713,7 +860,7 @@
           '<header>' +
             rankHtml +
             '<div class="event-meta">' +
-              '<h2><a href="' + escape(eventUrl) + '" target="_blank" rel="noopener">' + escape(ev.title) + '</a></h2>' +
+              '<h2><a href="' + escape(eventUrl) + '" target="_blank" rel="noopener noreferrer">' + escape(ev.title) + '</a></h2>' +
               '<div class="sub">' +
                 '<span class="venue">' + venue + '</span>' +
                 '<span class="dot">·</span>' +
