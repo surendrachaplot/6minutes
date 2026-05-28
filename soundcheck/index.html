@@ -141,6 +141,14 @@
     .more-btn { background:transparent; border:none; color:var(--accent); font-family:inherit; font-size:0.62rem; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; padding:0; }
     .more-btn:hover { text-decoration:underline; }
 
+    /* South London community CTA (M.O.T / Phonox / The Carpet Shop) */
+    .solo-cta { display:block; margin-top:14px; padding:12px 13px; border:1px solid var(--border); border-radius:11px; background:rgba(255,122,107,0.08); text-decoration:none; transition:border-color .15s, background .15s; }
+    .solo-cta:hover { border-color:var(--accent); background:rgba(255,122,107,0.15); }
+    .solo-cta .solo-h { display:block; font-family:var(--head); font-weight:800; font-size:0.9rem; color:var(--fg); letter-spacing:-0.01em; }
+    .solo-cta .solo-t { display:block; font-size:0.78rem; color:var(--muted); margin-top:3px; line-height:1.45; }
+    .solo-cta .solo-btn { display:inline-block; margin-top:9px; font-size:0.72rem; font-weight:800; letter-spacing:0.05em; color:var(--accent); }
+    .sheet-body .solo-cta { margin-top:16px; }
+
     /* play pills */
     .play { width:48px; height:23px; padding:0; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:8px; border:1px solid; cursor:pointer; background:transparent; position:relative; flex-shrink:0; }
     .play .brand { width:13px; height:13px; display:block; }
@@ -361,8 +369,19 @@
     function formatTime(iso){ if(!iso) return ''; var m=/T(\d{2}:\d{2})/.exec(iso); return m?m[1]:''; }
     function normaliseSc(url){ if(!url) return null; var u=url.trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u; u=u.replace(/^https?:\/\/www\.soundcloud\.com/i,'https://soundcloud.com'); return u.replace(/\/+$/,''); }
 
-    var RE_FOLD=/\bfold\b/i, RE_MOT=/\bm\.?\s?o\.?\s?t\b/i, RE_PHONOX=/\bphonox\b/i, RE_ORMSIDE=/\bormside\b/i;
+    var RE_FOLD=/\bfold\b/i, RE_MOT=/\bm\.?\s?o\.?\s?t\b/i, RE_PHONOX=/\bphonox\b/i, RE_ORMSIDE=/\bormside\b/i, RE_CARPET=/\bcarpet\s?shop\b/i;
     function isPickVenue(v){ if(!v) return false; return RE_FOLD.test(v)||RE_MOT.test(v)||RE_PHONOX.test(v)||RE_ORMSIDE.test(v); }
+    // South London community CTA — shows on these venues' cards
+    var SOLO_WHATSAPP='https://chat.whatsapp.com/Ee2P0HuVne2GOgiK54ujqI?mode=gi_t';
+    function isSoloVenue(v){ if(!v) return false; return RE_MOT.test(v)||RE_PHONOX.test(v)||RE_CARPET.test(v); }
+    function soloCtaHTML(ev){
+      if(!isSoloVenue(ev.venue)) return '';
+      return '<a class="solo-cta" href="'+SOLO_WHATSAPP+'" target="_blank" rel="noopener">'+
+        '<span class="solo-h">Going solo?</span>'+
+        '<span class="solo-t">Join the South London community for ravers and find people to go with.</span>'+
+        '<span class="solo-btn">Join the WhatsApp &rarr;</span>'+
+      '</a>';
+    }
 
     // deterministic warm gradient for generated posters
     function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
@@ -651,6 +670,7 @@
         '<h3><button class="title-btn" type="button">'+esc(ev.title)+'</button></h3>'+
         '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
         '<ul class="line">'+lineupHTML(ev,5)+'</ul>'+
+        soloCtaHTML(ev)+
       '</div>';
     }
 
@@ -679,6 +699,7 @@
           '<h3>'+esc(ev.title)+'</h3>'+
           '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
           '<ul class="sheet-line">'+lineupHTML(ev)+'</ul>'+
+          soloCtaHTML(ev)+
         '</div>';
       wireCard(sheetContent);
       sheetOv.classList.add('show'); document.body.style.overflow='hidden';
