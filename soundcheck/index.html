@@ -44,27 +44,36 @@
     h1 .ac { color:var(--accent); }
     .lede { margin-top:16px; max-width:540px; color:var(--muted); font-size:0.96rem; font-weight:500; line-height:1.5; }
     .lede .lede-play { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:999px; border:1px solid var(--accent); color:var(--accent); font-size:8px; line-height:1; vertical-align:middle; position:relative; top:-1px; padding-left:1px; }
-    /* date bar: pinned "This weekend" tab + swipeable day strip + calendar fallback */
-    .datebar { display:flex; align-items:flex-start; gap:10px; margin:10px 0 2px; }
-    .weekend-btn { flex:0 0 auto; width:80px; height:52px; display:inline-flex; align-items:center; justify-content:center; text-align:center; border:1px solid var(--border); background:var(--surface); color:var(--fg); border-radius:13px; padding:4px 8px; font-family:inherit; font-size:0.66rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; line-height:1.25; cursor:pointer; transition:background 0.12s, color 0.12s, border-color 0.12s; }
-    .weekend-btn:hover { border-color:var(--accent); }
-    .weekend-btn.on { background:var(--accent); color:#1a0f0e; border-color:var(--accent); }
-    .strip-scroll { flex:1; min-width:0; position:relative; }
-    .strip-scroll::after { content:''; position:absolute; top:0; right:0; bottom:8px; width:34px; background:linear-gradient(to right, transparent, var(--bg)); pointer-events:none; }
-    .strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
-    .strip::-webkit-scrollbar { height:6px; }
-    .strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-    .day { flex:0 0 auto; min-width:56px; height:52px; border:1px solid var(--border); border-radius:13px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; background:var(--surface); color:var(--fg); transition:border-color 0.12s; }
-    .day:hover { border-color:var(--accent); }
-    .day .dow { font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
-    .day .dnum { font-family:var(--head); font-size:1.15rem; font-weight:800; margin-top:2px; }
-    .day.we .dow { color:var(--accent); }
-    .day.sel { background:var(--accent); border-color:var(--accent); color:#1a0f0e; }
-    .day.sel .dow { color:#1a0f0e; }
-    .cal-btn { flex:0 0 auto; width:46px; height:52px; border:1px solid var(--border); background:var(--surface); color:var(--fg); border-radius:13px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; position:relative; transition:border-color 0.12s, color 0.12s; }
-    .cal-btn:hover { border-color:var(--accent); color:var(--accent); }
-    .cal-btn svg { width:18px; height:18px; }
-    .cal-btn input[type=date] { position:absolute; left:0; bottom:0; width:1px; height:1px; opacity:0; border:0; padding:0; }
+    /* date bar: quick picks + on-brand calendar */
+    .datebar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:10px 0 2px; }
+    .qchip { border:1px solid var(--border); background:var(--surface); color:var(--fg); border-radius:999px; padding:10px 18px; font-family:inherit; font-size:0.85rem; font-weight:600; cursor:pointer; transition:background 0.12s, color 0.12s, border-color 0.12s; }
+    .qchip:hover { border-color:var(--accent); color:var(--accent); }
+    .qchip.on { background:var(--accent); color:#1a0f0e; border-color:var(--accent); }
+    .qchip.alt { display:inline-flex; align-items:center; gap:7px; }
+    .qchip.alt svg { width:15px; height:15px; }
+    @media (max-width:620px){ .qchip { padding:9px 14px; font-size:0.8rem; } }
+
+    /* on-brand calendar modal */
+    .cal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(3px); z-index:80; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+    .cal-overlay.show { opacity:1; pointer-events:auto; }
+    .cal { width:100%; max-width:340px; border:1px solid var(--border); border-radius:16px; padding:18px; background:var(--surface); transform:translateY(10px); transition:transform 0.2s; }
+    .cal-overlay.show .cal { transform:translateY(0); }
+    .cal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .cal-head .mon { font-family:var(--head); font-weight:800; font-size:1.15rem; letter-spacing:-0.01em; }
+    .cal-head .navs { display:flex; gap:6px; }
+    .cal-head button { width:30px; height:30px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--fg); cursor:pointer; font-size:13px; }
+    .cal-head button:hover { border-color:var(--accent); color:var(--accent); }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+    .cal-dow { text-align:center; font-size:0.58rem; font-weight:700; letter-spacing:0.06em; color:var(--muted); padding:4px 0 8px; }
+    .cal-cell { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:9px; font-size:0.85rem; font-weight:500; cursor:pointer; color:var(--fg); }
+    .cal-cell.pad { visibility:hidden; }
+    .cal-cell.past { color:#46464e; cursor:default; }
+    .cal-cell.we:not(.past):not(.sel) { color:var(--accent); }
+    .cal-cell.today { box-shadow:inset 0 0 0 1.5px var(--accent); }
+    .cal-cell.sel { background:var(--accent); color:#1a0f0e; font-weight:800; }
+    .cal-cell:not(.past):not(.sel):hover { background:rgba(255,122,107,0.16); }
+    .cal-foot { display:flex; justify-content:space-between; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+    .cal-foot button { background:none; border:none; color:var(--accent); font:inherit; font-weight:700; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; }
 
     /* marquee — very slow ambient ticker */
     .marquee { overflow:hidden; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-top:6px; }
@@ -250,13 +259,13 @@
     </div>
 
     <div class="datebar">
-      <button class="weekend-btn" id="weekend-btn" type="button">This weekend</button>
-      <div class="strip-scroll"><div class="strip" id="strip"></div></div>
-      <button class="cal-btn" id="cal-btn" type="button" aria-label="Pick another date">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
-        <input type="date" id="date-input" />
-      </button>
+      <button class="qchip" id="pick-tonight" type="button">Tonight</button>
+      <button class="qchip" id="pick-weekend" type="button">This weekend</button>
+      <button class="qchip" id="pick-next" type="button">Next weekend</button>
+      <button class="qchip alt" id="pick-date" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Pick a date</button>
     </div>
+
+    <div class="cal-overlay" id="cal-overlay"><div class="cal" id="cal" role="dialog" aria-modal="true" aria-label="Pick a date"></div></div>
 
     <div class="marquee" id="marquee"><div class="track" id="track"></div></div>
 
@@ -612,28 +621,16 @@
     function weekendDates(){ var sat=new Date(); sat.setDate(sat.getDate()+((6-sat.getDay()+7)%7)); var fri=new Date(sat); fri.setDate(sat.getDate()-1); return [isoOf(fri), isoOf(sat)]; }
     function fmtDateLabel(iso){ var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }
     function fmtRange(a,b){ var da=new Date(a+'T12:00:00'); return da.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'})+' – '+fmtDateLabel(b); }
-    var currentDate=null, mode='weekend';
-    var dateInput=document.getElementById('date-input');
-    var weekendBtn=document.getElementById('weekend-btn');
-    var stripEl=document.getElementById('strip'), calBtn=document.getElementById('cal-btn');
+    var currentDate=null, mode='weekend', activePick='weekend';
+    var tonightBtn=document.getElementById('pick-tonight'),
+        weekendBtn=document.getElementById('pick-weekend'),
+        nextBtn=document.getElementById('pick-next'),
+        pickDateBtn=document.getElementById('pick-date');
 
-    function buildStrip(){
-      stripEl.innerHTML='';
-      var base=new Date(); base.setHours(0,0,0,0);
-      for(var i=0;i<28;i++){
-        var d=new Date(base); d.setDate(base.getDate()+i);
-        var we=(d.getDay()===5||d.getDay()===6), di=isoOf(d);
-        var el=document.createElement('button'); el.type='button'; el.className='day'+(we?' we':''); el.dataset.iso=di;
-        el.innerHTML='<span class="dow">'+(i===0?'Today':d.toLocaleDateString('en-GB',{weekday:'short'}))+'</span><span class="dnum">'+d.getDate()+'</span>';
-        (function(x){ el.addEventListener('click',function(){ load(x); }); })(di);
-        stripEl.appendChild(el);
-      }
-    }
-    function syncDatebar(){
-      weekendBtn.classList.toggle('on', mode==='weekend');
-      var sel=null;
-      stripEl.querySelectorAll('.day').forEach(function(el){ var on=(mode==='day'&&el.dataset.iso===currentDate); el.classList.toggle('sel',on); if(on) sel=el; });
-      if(sel) sel.scrollIntoView({inline:'center',block:'nearest'});
+    function syncChips(){
+      tonightBtn.classList.toggle('on', activePick==='tonight');
+      weekendBtn.classList.toggle('on', activePick==='weekend');
+      nextBtn.classList.toggle('on', activePick==='next');
     }
 
     async function fetchDay(date){
@@ -645,7 +642,7 @@
 
     // single-day mode
     async function load(date){
-      mode='day'; currentDate=date; dateInput.value=date; syncDatebar();
+      mode='day'; currentDate=date; activePick=(date===todayISO()?'tonight':'date'); syncChips();
       document.title='soundcheck by 6 Minutes · '+date; history.replaceState(null,'','?date='+date);
       setStatus('<span class="spinner"></span> Loading '+esc(fmtDateLabel(date))+'…'); gridEl.innerHTML='';
       try{
@@ -655,25 +652,62 @@
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
-    // weekend mode: Friday + Saturday combined
-    async function loadWeekend(){
-      mode='weekend'; var wd=weekendDates(); currentDate=wd[1]; dateInput.value=wd[1]; syncDatebar();
-      document.title='soundcheck by 6 Minutes · this weekend'; history.replaceState(null,'','?weekend=1');
-      setStatus('<span class="spinner"></span> Loading this weekend…'); gridEl.innerHTML='';
+    // weekend mode: Friday + Saturday combined. offset 0 = this weekend, 1 = next.
+    function weekendDatesFor(offset){
+      var sat=new Date(); sat.setDate(sat.getDate()+((6-sat.getDay()+7)%7)+offset*7);
+      var fri=new Date(sat); fri.setDate(sat.getDate()-1);
+      return [isoOf(fri), isoOf(sat)];
+    }
+    async function loadWeekend(offset){
+      offset=offset||0; mode='weekend'; activePick=offset?'next':'weekend';
+      var wd=weekendDatesFor(offset); currentDate=wd[1]; syncChips();
+      document.title='soundcheck by 6 Minutes · '+(offset?'next weekend':'this weekend'); history.replaceState(null,'','?weekend='+(offset+1));
+      setStatus('<span class="spinner"></span> Loading '+(offset?'next':'this')+' weekend…'); gridEl.innerHTML='';
       try{
         var res=await Promise.all([fetchDay(wd[0]), fetchDay(wd[1])]);
         var fri=(res[0].events||[]).map(function(e){ e._day='Fri'; return e; });
         var sat=(res[1].events||[]).map(function(e){ e._day='Sat'; return e; });
         setStatus('');
-        renderEvents(fri.concat(sat), 'This weekend in London');
+        renderEvents(fri.concat(sat), (offset?'Next weekend':'This weekend')+' in London');
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
-    weekendBtn.addEventListener('click', loadWeekend);
-    calBtn.addEventListener('click',function(){ if(dateInput.showPicker){ try{dateInput.showPicker();}catch(_){dateInput.focus();} } else dateInput.focus(); });
-    dateInput.addEventListener('change',function(){ if(dateInput.value) load(dateInput.value); });
-    stripEl.addEventListener('wheel',function(e){ if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){ stripEl.scrollLeft+=e.deltaY; e.preventDefault(); } },{passive:false});
-    buildStrip();
+    tonightBtn.addEventListener('click',function(){ load(todayISO()); });
+    weekendBtn.addEventListener('click',function(){ loadWeekend(0); });
+    nextBtn.addEventListener('click',function(){ loadWeekend(1); });
+    pickDateBtn.addEventListener('click',openCal);
+
+    // ── on-brand calendar (Pick a date) ──
+    var calOverlay=document.getElementById('cal-overlay'), calEl=document.getElementById('cal'), calView=null;
+    function buildCal(){
+      var tdy=new Date(); tdy.setHours(0,0,0,0);
+      var y=calView.getFullYear(), m=calView.getMonth();
+      var startDow=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+      var dows=['S','M','T','W','T','F','S'], h='';
+      h+='<div class="cal-head"><span class="mon">'+calView.toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'</span><span class="navs"><button id="cal-prev" type="button">&lsaquo;</button><button id="cal-next" type="button">&rsaquo;</button></span></div><div class="cal-grid">';
+      dows.forEach(function(d){ h+='<div class="cal-dow">'+d+'</div>'; });
+      for(var p=0;p<startDow;p++) h+='<div class="cal-cell pad"></div>';
+      for(var day=1;day<=days;day++){
+        var d=new Date(y,m,day), di=isoOf(d), past=d<tdy, we=(d.getDay()===5||d.getDay()===6);
+        var cls='cal-cell'+(past?' past':'')+(we?' we':'')+(di===isoOf(tdy)?' today':'')+(mode==='day'&&di===currentDate?' sel':'');
+        h+='<div class="'+cls+'" data-iso="'+di+'">'+day+'</div>';
+      }
+      h+='</div><div class="cal-foot"><button id="cal-today" type="button">Today</button><button id="cal-close" type="button">Close</button></div>';
+      calEl.innerHTML=h;
+      document.getElementById('cal-prev').onclick=function(){ calView=new Date(y,m-1,1); buildCal(); };
+      document.getElementById('cal-next').onclick=function(){ calView=new Date(y,m+1,1); buildCal(); };
+      document.getElementById('cal-today').onclick=function(){ closeCal(); load(todayISO()); };
+      document.getElementById('cal-close').onclick=closeCal;
+      calEl.querySelectorAll('.cal-cell:not(.pad):not(.past)').forEach(function(c){ c.onclick=function(){ closeCal(); load(c.dataset.iso); }; });
+    }
+    function openCal(){
+      var b=(mode==='day'&&currentDate)?new Date(currentDate+'T12:00:00'):new Date();
+      calView=new Date(b.getFullYear(), b.getMonth(), 1);
+      buildCal(); calOverlay.classList.add('show');
+    }
+    function closeCal(){ calOverlay.classList.remove('show'); }
+    calOverlay.addEventListener('click',function(e){ if(e.target===calOverlay) closeCal(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&calOverlay.classList.contains('show')) closeCal(); });
 
     // ── inline signup ──
     var signupForm=document.getElementById('inline-form'), signupSuccess=document.getElementById('signup-success');
