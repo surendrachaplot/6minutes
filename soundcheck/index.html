@@ -79,9 +79,9 @@
     /* poster = a button that opens the event sheet */
     .card-poster { display:block; width:100%; padding:0; border:0; background:none; cursor:pointer; position:relative; margin-bottom:13px; border-radius:10px; }
     .card-poster .poster { margin-bottom:0; }
-    .card-poster .expand-badge { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:56px; height:56px; border-radius:999px; background:rgba(0,0,0,0.5); display:inline-flex; align-items:center; justify-content:center; color:#fff; opacity:0.72; transition:opacity 0.15s, transform 0.15s; pointer-events:none; }
-    .card-poster .expand-badge svg { width:25px; height:25px; }
-    .card-poster:hover .expand-badge { opacity:1; transform:translate(-50%,-50%) scale(1.08); }
+    .card-poster .expand-badge { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:8px; background:rgba(0,0,0,0.42); display:inline-flex; align-items:center; justify-content:center; color:#fff; opacity:0.82; transition:opacity 0.15s, transform 0.15s; pointer-events:none; }
+    .card-poster .expand-badge svg { width:15px; height:15px; }
+    .card-poster:hover .expand-badge { opacity:1; transform:scale(1.06); }
     .gcard h3 .title-btn { background:none; border:0; padding:0; margin:0; font:inherit; color:inherit; text-align:left; cursor:pointer; }
     .gcard h3 .title-btn:hover { color:var(--accent); }
 
@@ -169,11 +169,11 @@
     @keyframes pulse { 0%,100%{opacity:0.35;} 50%{opacity:1;} }
     .dock-info .nm { font-family:var(--head); font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; line-height:1.1; overflow:hidden; text-overflow:ellipsis; }
     .dock-info .src { color:var(--muted); font-size:0.8rem; font-weight:600; margin-top:5px; }
-    .dock-ctrls { display:flex; align-items:center; gap:8px; flex-shrink:0; align-self:flex-start; }
-    .dock-ctrls button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:36px; height:36px; cursor:pointer; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
-    .dock-ctrls button .ic { width:17px; height:17px; display:block; }
+    .dock-ctrls { display:flex; align-items:center; gap:10px; flex-shrink:0; align-self:center; }
+    .dock-ctrls button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:54px; height:54px; cursor:pointer; font-size:20px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+    .dock-ctrls button .ic { width:26px; height:26px; display:block; }
     .dock-ctrls button:hover { border-color:var(--accent); color:var(--accent); }
-    .dock-pp { background:var(--accent) !important; color:#1a0f0e !important; border-color:var(--accent) !important; font-size:12px !important; }
+    .dock-pp { background:var(--accent) !important; color:#1a0f0e !important; border-color:var(--accent) !important; font-size:18px !important; }
     .dock-pp, .dock-exp { display:none; }
     body.has-dock { padding-bottom:280px; }
 
