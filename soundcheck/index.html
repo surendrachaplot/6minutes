@@ -398,13 +398,21 @@
     }
     function playYt(btn,videoId){
       clearPlayers(); currentType='yt';
-      dockMedia.innerHTML='<div id="yt-player"></div>';
-      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE');
       var sz=ytSize();
+      // Build the iframe ourselves WITH allow="autoplay" so the browser lets
+      // it autoplay with sound off our tap; then bind the IFrame API to it
+      // (enablejsapi=1) so the dock play/pause still works.
+      var f=document.createElement('iframe');
+      f.id='yt-player'; f.className='yt';
+      f.allow='autoplay; encrypted-media; picture-in-picture';
+      f.allowFullscreen=true;
+      f.width=String(sz.w); f.height=String(sz.h);
+      f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(videoId)+
+            '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&origin='+encodeURIComponent(location.origin);
+      dockMedia.innerHTML=''; dockMedia.appendChild(f);
+      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE');
       function build(){
-        ytPlayer=new YT.Player('yt-player',{
-          width:String(sz.w), height:String(sz.h), videoId:videoId,
-          playerVars:{ autoplay:1, rel:0, playsinline:1 },
+        ytPlayer=new YT.Player(f,{
           events:{
             onReady:function(e){ try{ e.target.playVideo(); }catch(_){} updatePP(true); },
             onStateChange:function(e){
