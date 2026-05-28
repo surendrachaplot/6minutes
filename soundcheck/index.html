@@ -132,15 +132,18 @@
     .dock-pp, .dock-exp { display:none; }
     body.has-dock { padding-bottom:280px; }
 
-    /* minimized dock — keeps audio, hides video, shows play/pause */
-    .dock.min { padding:10px 18px; align-items:center; }
-    .dock.min .dock-media { height:0 !important; overflow:hidden; }
+    /* minimized dock — keeps audio, hides video, shows play/pause.
+       The media is pulled out of flow (absolute + transparent) so it keeps
+       playing but never affects the slim bar's layout. */
+    .dock.min { padding:10px 16px; align-items:center; flex-wrap:nowrap !important; }
+    .dock.min .dock-media { position:absolute; width:200px; height:113px; left:16px; bottom:6px; opacity:0; pointer-events:none; }
+    .dock.min .dock-info { flex:1; min-width:0; }
     .dock.min .dock-info .np-now, .dock.min .dock-info .src { display:none; }
-    .dock.min .dock-info .nm { font-size:1.02rem; }
-    .dock.min .dock-ctrls { align-self:center; }
+    .dock.min .dock-info .nm { font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dock.min .dock-ctrls { align-self:center; flex-shrink:0; }
     .dock.min .dock-min { display:none; }
     .dock.min .dock-pp, .dock.min .dock-exp { display:inline-flex; }
-    body.has-dock.dock-mini { padding-bottom:66px; }
+    body.has-dock.dock-mini { padding-bottom:64px; }
 
     /* first-visit coachmark */
     .coach { position:absolute; z-index:80; background:var(--accent); color:#1a0f0e; font-size:0.78rem; font-weight:700; padding:9px 13px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.35); cursor:pointer; white-space:nowrap; }
@@ -152,12 +155,14 @@
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
     @media (max-width:620px){
-      .dock { flex-wrap:wrap; gap:12px; padding:14px 18px; }
+      .dock { flex-wrap:wrap; gap:10px 12px; padding:14px 16px; align-items:center; }
+      .dock-media { flex-basis:100%; }
       .dock-media iframe.sc { width:100%; }
-      .dock-info .nm { font-size:1.25rem; }
-      body.has-dock { padding-bottom:280px; }
-      body.has-dock.dock-mini { padding-bottom:64px; }
-      .dock.min { flex-wrap:nowrap; }
+      .dock-info { flex:1; min-width:0; }
+      .dock-info .nm { font-size:1.2rem; }
+      .dock-ctrls { align-self:center; }
+      body.has-dock { padding-bottom:300px; }
+      body.has-dock.dock-mini { padding-bottom:62px; }
     }
 
     @media (max-width:920px)  { .grid { grid-template-columns:repeat(3,1fr); } .wrap{ padding:0 28px; } }
@@ -298,7 +303,7 @@
     function setState(btn,ch){ var s=btn.querySelector('.state'); if(s) s.textContent=ch; }
     function updatePP(playing){ dockPP.innerHTML = playing ? '&#9208;' : '&#9654;'; dockPP.setAttribute('aria-label', playing?'Pause':'Play'); }
     function clearPlayers(){ if(ytPlayer){ try{ ytPlayer.destroy(); }catch(_){} ytPlayer=null; } scWidget=null; currentType=null; pendingYt=null; }
-    function ytSize(){ var w = window.innerWidth<=620 ? 320 : 400; return { w:w, h:Math.round(w*9/16) }; }
+    function ytSize(){ var w = window.innerWidth<=620 ? Math.min(320, window.innerWidth-40) : 400; return { w:w, h:Math.round(w*9/16) }; }
 
     function openDockUI(btn,name,src){
       dockName.textContent=name; dockSrc.textContent=src;
