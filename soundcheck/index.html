@@ -72,6 +72,35 @@
     .poster .gen .gt { font-family:var(--head); font-weight:800; font-size:0.92rem; line-height:1.05; letter-spacing:-0.01em; color:#fff; text-shadow:0 1px 10px rgba(0,0,0,0.4); }
     .poster img.real { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:grayscale(0.3) contrast(1.02); }
     .poster .tint { position:absolute; inset:0; background:var(--accent); mix-blend-mode:screen; opacity:0.1; pointer-events:none; }
+    /* poster = a button that opens the event sheet */
+    .card-poster { display:block; width:100%; padding:0; border:0; background:none; cursor:pointer; position:relative; margin-bottom:13px; border-radius:10px; }
+    .card-poster .poster { margin-bottom:0; }
+    .card-poster .expand-badge { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:8px; background:rgba(0,0,0,0.42); display:inline-flex; align-items:center; justify-content:center; color:#fff; opacity:0.82; transition:opacity 0.15s, transform 0.15s; pointer-events:none; }
+    .card-poster .expand-badge svg { width:15px; height:15px; }
+    .card-poster:hover .expand-badge { opacity:1; transform:scale(1.06); }
+
+    /* event sheet (tap a poster) */
+    .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.62); backdrop-filter:blur(3px); z-index:70; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.22s; }
+    .sheet-overlay.show { opacity:1; pointer-events:auto; }
+    .sheet { background:var(--surface); width:100%; max-width:560px; max-height:90vh; overflow-y:auto; border-radius:18px 18px 0 0; transform:translateY(100%); transition:transform 0.3s cubic-bezier(.4,0,.2,1); position:relative; }
+    .sheet-overlay.show .sheet { transform:translateY(0); }
+    .sheet-close { position:absolute; top:12px; right:12px; width:36px; height:36px; border-radius:999px; background:rgba(0,0,0,0.5); border:none; color:#fff; font-size:17px; cursor:pointer; z-index:3; }
+    .sheet .poster { width:100%; height:min(46vh,360px); aspect-ratio:auto; border-radius:0; margin-bottom:0; }
+    .sheet-body { padding:22px 22px 32px; }
+    .sheet-body .pick { display:inline-block; font-size:0.56rem; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:2px 6px; margin-bottom:10px; }
+    .sheet-body h3 { font-family:var(--head); font-size:1.7rem; font-weight:800; letter-spacing:-0.02em; line-height:1.08; }
+    .sheet-meta { font-size:0.85rem; color:var(--muted); font-weight:600; margin-top:8px; }
+    .sheet-meta b { color:var(--fg); }
+    .sheet-line { list-style:none; margin:20px 0 0; display:flex; flex-direction:column; gap:12px; }
+    .sheet-line li { display:flex; align-items:center; gap:11px; font-size:0.98rem; font-weight:500; }
+    .sheet-line li .an { overflow:hidden; text-overflow:ellipsis; }
+    .sheet-line li.tba { color:var(--muted); font-style:italic; font-size:0.9rem; }
+    @media (min-width:760px){
+      .sheet-overlay { align-items:center; padding:24px; }
+      .sheet { border-radius:16px; max-height:88vh; transform:translateY(16px); }
+      .sheet-overlay.show .sheet { transform:translateY(0); }
+    }
+
     .gcard .pick { display:inline-block; font-size:0.54rem; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:2px 6px; margin-bottom:8px; align-self:flex-start; }
     .gcard h3 { font-family:var(--head); font-size:1.05rem; font-weight:700; letter-spacing:-0.015em; line-height:1.15; }
     .gcard .meta { font-size:0.72rem; color:var(--muted); font-weight:600; margin-top:4px; }
@@ -242,6 +271,13 @@
   </div>
   <div class="toast" id="toast"></div>
 
+  <div class="sheet-overlay" id="sheet-overlay">
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Event details">
+      <button class="sheet-close" id="sheet-close" aria-label="Close">&times;</button>
+      <div id="sheet-content"></div>
+    </div>
+  </div>
+
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="https://w.soundcloud.com/player/api.js"></script>
 
@@ -255,6 +291,7 @@
     var SC_SVG = '<svg class="brand" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ff7a6b" d="M23.999 14.165c-.052 1.796-1.612 3.169-3.4 3.169h-8.18a.68.68 0 0 1-.675-.683V7.862a.747.747 0 0 1 .452-.724s.75-.513 2.333-.513a5.364 5.364 0 0 1 2.763.755 5.433 5.433 0 0 1 2.57 3.54c.282-.08.574-.121.868-.12.884 0 1.73.358 2.347.992s.948 1.49.922 2.373ZM10.721 8.421c.247 2.98.427 5.697 0 8.672a.264.264 0 0 1-.53 0c-.395-2.946-.22-5.718 0-8.672a.264.264 0 0 1 .53 0ZM9.072 9.448c.285 2.659.37 4.986-.006 7.655a.277.277 0 0 1-.55 0c-.331-2.63-.256-5.02 0-7.655a.277.277 0 0 1 .556 0Zm-1.663-.257c.27 2.726.39 5.171 0 7.904a.266.266 0 0 1-.532 0c-.38-2.69-.257-5.21 0-7.904a.266.266 0 0 1 .532 0Zm-1.647.77a26.108 26.108 0 0 1-.008 7.147.272.272 0 0 1-.542 0 27.955 27.955 0 0 1 0-7.147.275.275 0 0 1 .55 0Zm-1.67 1.769c.421 1.865.228 3.5-.029 5.388a.257.257 0 0 1-.514 0c-.21-1.858-.398-3.549 0-5.389a.272.272 0 0 1 .543 0Zm-1.655-.273c.388 1.897.26 3.508-.01 5.412-.026.28-.514.283-.54 0-.244-1.878-.347-3.54-.01-5.412a.283.283 0 0 1 .56 0Zm-1.668.911c.4 1.268.257 2.292-.026 3.572a.257.257 0 0 1-.514 0c-.241-1.262-.354-2.312-.023-3.572a.283.283 0 0 1 .563 0Z"/></svg>';
     var YT_SVG = '<svg class="brand" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#ff0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/><polygon fill="#fff" points="9.545,15.568 9.545,8.432 15.818,12"/></svg>';
 
+    var EXPAND_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>';
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
     function formatTime(iso){ if(!iso) return ''; var m=/T(\d{2}:\d{2})/.exec(iso); return m?m[1]:''; }
     function normaliseSc(url){ if(!url) return null; var u=url.trim(); if(!/^https?:\/\//i.test(u)) u='https://'+u; u=u.replace(/^https?:\/\/www\.soundcloud\.com/i,'https://soundcloud.com'); return u.replace(/\/+$/,''); }
@@ -330,6 +367,7 @@
       btn.classList.add('playing'); setState(btn,'■');
       active={ button:btn };
       updatePP(true);
+      if(sheetOv && sheetOv.classList.contains('show')) closeSheet();
     }
     function stopActive(){
       if(!active) return;
@@ -464,7 +502,8 @@
     function cardHTML(ev){
       var time=formatTime(ev.startTime);
       var pick=isPickVenue(ev.venue)?'<span class="pick">Pick</span>':'';
-      return '<div class="gcard">'+posterHTML(ev)+
+      return '<div class="gcard">'+
+        '<button class="card-poster" type="button" aria-label="View '+esc(ev.title)+' lineup">'+posterHTML(ev)+'<span class="expand-badge">'+EXPAND_SVG+'</span></button>'+
         pick+
         '<h3>'+esc(ev.title)+'</h3>'+
         '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(time?' &middot; '+time:'')+'</div>'+
@@ -485,6 +524,27 @@
       return out;
     }
 
+    // ── event sheet (tap a poster) ──
+    var sheetOv=document.getElementById('sheet-overlay'), sheetContent=document.getElementById('sheet-content');
+    function openSheet(ev){
+      if(!ev) return;
+      var time=formatTime(ev.startTime);
+      sheetContent.innerHTML=
+        posterHTML(ev)+
+        '<div class="sheet-body">'+
+          (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
+          '<h3>'+esc(ev.title)+'</h3>'+
+          '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(time?' &middot; '+time:'')+'</div>'+
+          '<ul class="sheet-line">'+lineupHTML(ev)+'</ul>'+
+        '</div>';
+      wireCard(sheetContent);
+      sheetOv.classList.add('show'); document.body.style.overflow='hidden';
+    }
+    function closeSheet(){ sheetOv.classList.remove('show'); document.body.style.overflow=''; }
+    document.getElementById('sheet-close').addEventListener('click',closeSheet);
+    sheetOv.addEventListener('click',function(e){ if(e.target===sheetOv) closeSheet(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&sheetOv.classList.contains('show')) closeSheet(); });
+
     var gridEl=document.getElementById('grid'), trackEl=document.getElementById('track');
     function renderEvents(data){
       stopActive();
@@ -498,6 +558,9 @@
       trackEl.innerHTML=marq;
       gridEl.innerHTML=ordered.map(function(e){ return cardHTML(e); }).join('');
       wireCard(gridEl);
+      gridEl.querySelectorAll('.card-poster').forEach(function(btn,i){
+        btn.addEventListener('click',function(){ openSheet(ordered[i]); });
+      });
       maybeCoach();
     }
 
