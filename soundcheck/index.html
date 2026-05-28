@@ -25,8 +25,10 @@
     nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; border-bottom:1px solid var(--border); }
     .logo { font-family:var(--head); font-weight:800; font-size:0.82rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--fg); text-decoration:none; }
     .logo:hover { color:var(--accent); }
-    .by { font-size:0.62rem; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); text-decoration:none; transition:opacity 0.12s; }
-    .by:hover { opacity:0.7; }
+    .switch { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; }
+    .switch a { font-size:0.62rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; padding:6px 12px; border-radius:999px; text-decoration:none; color:var(--muted); }
+    .switch a.on { background:var(--accent); color:#1a0f0e; }
+    .switch a:not(.on):hover { color:var(--fg); }
 
     /* hero */
     .hero { padding:44px 0 28px; display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; }
@@ -175,7 +177,10 @@
   <main class="wrap">
     <nav>
       <a class="logo" href=".">SOUNDCHECK</a>
-      <a class="by" href="https://6minutes.club" target="_blank" rel="noopener">by 6 Minutes</a>
+      <div class="switch">
+        <a href="/">6 Minutes</a>
+        <a class="on" href=".">Soundcheck</a>
+      </div>
     </nav>
 
     <div class="hero">
