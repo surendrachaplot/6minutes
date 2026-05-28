@@ -73,18 +73,16 @@
     /* detail pane */
     .detail { position:sticky; top:0; align-self:start; padding:30px 40px; }
     .detail-empty { color:var(--muted); font-size:0.85rem; }
-    /* compact header: small poster thumbnail beside title, lineup gets the room below */
-    .dhead { display:flex; gap:16px; align-items:flex-start; margin-bottom:20px; }
-    .dhead .dinfo { flex:1; min-width:0; padding-top:2px; }
-    .poster { position:relative; width:118px; flex:0 0 118px; aspect-ratio:3/4; border-radius:10px; overflow:hidden; background:var(--surface); }
-    .poster .gen { position:absolute; inset:0; display:flex; align-items:flex-end; padding:10px; background:linear-gradient(var(--ang,150deg), var(--g1,#ff7a6b), var(--g2,#1b1b20)); }
-    .poster .gen .gt { font-family:var(--head); font-weight:800; font-size:0.74rem; line-height:1.05; letter-spacing:-0.01em; color:#fff; text-shadow:0 1px 10px rgba(0,0,0,0.4); }
-    .poster img.real { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:grayscale(0.7) contrast(1.04); }
-    .poster .tint { position:absolute; inset:0; background:var(--accent); mix-blend-mode:screen; opacity:0.22; pointer-events:none; }
-    .detail h3 { font-family:var(--head); font-size:1.4rem; font-weight:800; letter-spacing:-0.025em; line-height:1.08; }
+    .detail h3 { font-family:var(--head); font-size:1.5rem; font-weight:800; letter-spacing:-0.025em; line-height:1.08; }
     .dmeta { font-size:0.82rem; color:var(--muted); font-weight:600; margin-top:7px; }
     .dmeta b { color:var(--fg); }
-    .dline { list-style:none; margin:0; display:flex; flex-direction:column; gap:9px; }
+    .dline { list-style:none; margin:18px 0 0; display:flex; flex-direction:column; gap:9px; }
+    /* poster sits below the lineup so play buttons are reachable immediately */
+    .poster { position:relative; width:100%; height:190px; border-radius:10px; overflow:hidden; background:var(--surface); margin-top:20px; }
+    .poster .gen { position:absolute; inset:0; display:flex; align-items:flex-end; padding:14px; background:linear-gradient(var(--ang,150deg), var(--g1,#ff7a6b), var(--g2,#1b1b20)); }
+    .poster .gen .gt { font-family:var(--head); font-weight:800; font-size:1rem; line-height:1.05; letter-spacing:-0.01em; color:#fff; text-shadow:0 1px 10px rgba(0,0,0,0.4); }
+    .poster img.real { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:grayscale(0.7) contrast(1.04); }
+    .poster .tint { position:absolute; inset:0; background:var(--accent); mix-blend-mode:screen; opacity:0.22; pointer-events:none; }
     .dline li { display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:500; flex-wrap:wrap; }
     .player-slot:not(:empty) { margin-top:14px; }
     .player-slot iframe { width:100%; border:0; border-radius:8px; display:block; }
@@ -359,12 +357,13 @@
     }
     function detailHTML(ev){
       var time=formatTime(ev.startTime);
-      return '<div class="dhead">'+posterHTML(ev)+
-          '<div class="dinfo"><h3>'+esc(ev.title)+'</h3>'+
-          '<div class="dmeta"><b>'+esc(ev.venue||'TBA')+'</b>'+(time?' &middot; '+time:'')+'</div></div>'+
-        '</div>'+
+      // Order: title -> lineup (play buttons) -> player -> poster, so the
+      // play controls are reachable immediately and the poster is the footer.
+      return '<h3>'+esc(ev.title)+'</h3>'+
+        '<div class="dmeta"><b>'+esc(ev.venue||'TBA')+'</b>'+(time?' &middot; '+time:'')+'</div>'+
         '<ul class="dline">'+lineupHTML(ev)+'</ul>'+
-        '<div class="player-slot"></div>';
+        '<div class="player-slot"></div>'+
+        posterHTML(ev);
     }
 
     var EVENTS=[];
