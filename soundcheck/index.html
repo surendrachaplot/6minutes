@@ -44,6 +44,10 @@
     h1 .ac { color:var(--accent); }
     .lede { margin-top:16px; max-width:540px; color:var(--muted); font-size:0.96rem; font-weight:500; line-height:1.5; }
     .lede .lede-play { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:999px; border:1px solid var(--accent); color:var(--accent); font-size:7px; vertical-align:-3px; }
+    .date-controls { display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .weekend-btn { border:1px solid var(--border); background:transparent; color:var(--fg); border-radius:999px; padding:9px 16px; font-family:inherit; font-size:0.78rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background 0.12s, color 0.12s, border-color 0.12s; }
+    .weekend-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .weekend-btn.on { background:var(--accent); color:#1a0f0e; border-color:var(--accent); }
     .date-pill { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:999px; padding:6px; position:relative; }
     .date-pill .lbl { font-size:0.8rem; font-weight:600; padding:0 12px; cursor:pointer; white-space:nowrap; }
     .date-pill .lbl:hover { color:var(--accent); }
@@ -230,11 +234,14 @@
         <h1>London <span class="ac">Tonight</span>.</h1>
         <p class="lede">Hit <span class="lede-play">&#9654;</span> next to any DJ to preview them &mdash; a SoundCloud track or their full set on YouTube.</p>
       </div>
-      <div class="date-pill">
-        <button class="nav-btn" id="prev-day" aria-label="Previous day">&lsaquo;</button>
-        <span class="lbl" id="date-label">&mdash;</span>
-        <button class="nav-btn" id="next-day" aria-label="Next day">&rsaquo;</button>
-        <input type="date" id="date-input" />
+      <div class="date-controls">
+        <button class="weekend-btn" id="weekend-btn" type="button">This weekend</button>
+        <div class="date-pill">
+          <button class="nav-btn" id="prev-day" aria-label="Previous day">&lsaquo;</button>
+          <span class="lbl" id="date-label">&mdash;</span>
+          <button class="nav-btn" id="next-day" aria-label="Next day">&rsaquo;</button>
+          <input type="date" id="date-input" />
+        </div>
       </div>
     </div>
 
@@ -568,11 +575,16 @@
     var statusEl=document.getElementById('status');
     function setStatus(html,isErr){ statusEl.innerHTML=html||''; statusEl.className='status'+(isErr?' error':''); }
     function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function upcomingWeekendISO(){ var d=new Date(); d.setDate(d.getDate()+((6-d.getDay()+7)%7)); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
     function fmtDateLabel(iso){ var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }
     var currentDate=null;
     var dateLabel=document.getElementById('date-label'), dateInput=document.getElementById('date-input');
+    var weekendBtn=document.getElementById('weekend-btn');
+    weekendBtn.addEventListener('click',function(){ load(upcomingWeekendISO()); });
+
     async function load(date){
       currentDate=date; dateLabel.textContent=fmtDateLabel(date); dateInput.value=date;
+      weekendBtn.classList.toggle('on', date===upcomingWeekendISO());
       document.title='soundcheck by 6 Minutes · '+date; history.replaceState(null,'','?date='+date);
       setStatus('<span class="spinner"></span> Loading '+esc(fmtDateLabel(date))+'…'); gridEl.innerHTML='';
       try{
