@@ -407,8 +407,9 @@
       f.allow='autoplay; encrypted-media; picture-in-picture';
       f.allowFullscreen=true;
       f.width=String(sz.w); f.height=String(sz.h);
+      // Start at 6:00 — a wink to "6 Minutes" (our sets are all 20min+ so it's safe).
       f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(videoId)+
-            '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&origin='+encodeURIComponent(location.origin);
+            '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&start=360&origin='+encodeURIComponent(location.origin);
       dockMedia.innerHTML=''; dockMedia.appendChild(f);
       openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE');
       function build(){
