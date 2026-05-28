@@ -43,7 +43,7 @@
     h1 { font-family:var(--head); font-weight:800; font-size:clamp(2.8rem,7vw,5rem); line-height:0.94; letter-spacing:-0.04em; }
     h1 .ac { color:var(--accent); }
     .lede { margin-top:16px; max-width:540px; color:var(--muted); font-size:0.96rem; font-weight:500; line-height:1.5; }
-    .lede .lede-play { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:999px; border:1px solid var(--accent); color:var(--accent); font-size:7px; vertical-align:-3px; }
+    .lede .lede-play { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:999px; border:1px solid var(--accent); color:var(--accent); font-size:8px; line-height:1; vertical-align:middle; position:relative; top:-1px; padding-left:1px; }
     .date-controls { display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap; }
     .weekend-btn { border:1px solid var(--border); background:transparent; color:var(--fg); border-radius:999px; padding:9px 16px; font-family:inherit; font-size:0.78rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:background 0.12s, color 0.12s, border-color 0.12s; }
     .weekend-btn:hover { border-color:var(--accent); color:var(--accent); }
@@ -79,9 +79,11 @@
     /* poster = a button that opens the event sheet */
     .card-poster { display:block; width:100%; padding:0; border:0; background:none; cursor:pointer; position:relative; margin-bottom:13px; border-radius:10px; }
     .card-poster .poster { margin-bottom:0; }
-    .card-poster .expand-badge { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:8px; background:rgba(0,0,0,0.42); display:inline-flex; align-items:center; justify-content:center; color:#fff; opacity:0.82; transition:opacity 0.15s, transform 0.15s; pointer-events:none; }
-    .card-poster .expand-badge svg { width:15px; height:15px; }
-    .card-poster:hover .expand-badge { opacity:1; transform:scale(1.06); }
+    .card-poster .expand-badge { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:56px; height:56px; border-radius:999px; background:rgba(0,0,0,0.5); display:inline-flex; align-items:center; justify-content:center; color:#fff; opacity:0.72; transition:opacity 0.15s, transform 0.15s; pointer-events:none; }
+    .card-poster .expand-badge svg { width:25px; height:25px; }
+    .card-poster:hover .expand-badge { opacity:1; transform:translate(-50%,-50%) scale(1.08); }
+    .gcard h3 .title-btn { background:none; border:0; padding:0; margin:0; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+    .gcard h3 .title-btn:hover { color:var(--accent); }
 
     /* event sheet (tap a poster) */
     .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.62); backdrop-filter:blur(3px); z-index:70; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.22s; }
@@ -209,7 +211,7 @@
     }
 
     @media (max-width:920px)  { .grid { grid-template-columns:repeat(3,1fr); } .wrap{ padding:0 28px; } }
-    @media (max-width:620px)  { .grid { grid-template-columns:repeat(2,1fr); } .wrap{ padding:0 18px; } }
+    @media (max-width:620px)  { .grid { grid-template-columns:repeat(2,1fr); } .wrap{ padding:0 18px; } main.wrap{ display:flex; flex-direction:column; } .teaser{ order:99; border-bottom:none; border-top:1px solid var(--border); margin-top:6px; } }
     @media (max-width:380px)  { .grid { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -530,7 +532,7 @@
       return '<div class="gcard">'+
         '<button class="card-poster" type="button" aria-label="View '+esc(ev.title)+' lineup">'+posterHTML(ev)+'<span class="expand-badge">'+EXPAND_SVG+'</span></button>'+
         pick+
-        '<h3>'+esc(ev.title)+'</h3>'+
+        '<h3><button class="title-btn" type="button">'+esc(ev.title)+'</button></h3>'+
         '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
         '<ul class="line">'+lineupHTML(ev,5)+'</ul>'+
       '</div>';
@@ -583,8 +585,10 @@
       trackEl.innerHTML=marq;
       gridEl.innerHTML=ordered.map(function(e){ return cardHTML(e); }).join('');
       wireCard(gridEl);
-      gridEl.querySelectorAll('.card-poster').forEach(function(btn,i){
-        btn.addEventListener('click',function(){ openSheet(ordered[i]); });
+      gridEl.querySelectorAll('.gcard').forEach(function(card,i){
+        function open(){ openSheet(ordered[i]); }
+        var p=card.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
+        var t=card.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
       });
       maybeCoach();
     }
