@@ -122,7 +122,7 @@
     .more-btn:hover { text-decoration:underline; }
 
     /* play pills */
-    .play { height:23px; padding:0 8px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:8px; border:1px solid; cursor:pointer; background:transparent; position:relative; flex-shrink:0; }
+    .play { width:48px; height:23px; padding:0; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:8px; border:1px solid; cursor:pointer; background:transparent; position:relative; flex-shrink:0; }
     .play .brand { width:13px; height:13px; display:block; }
     .play .state { font-size:9px; line-height:1; }
     .play.sc { color:#ff7a6b; border-color:var(--accent); }
@@ -133,7 +133,7 @@
     .play[disabled] { opacity:0.55; cursor:progress; }
     .play.spinning .brand, .play.spinning .state { visibility:hidden; }
     .play.spinning::after { content:""; position:absolute; left:50%; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; }
-    .no-sc { width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; color:var(--border); flex-shrink:0; }
+    .no-sc { width:48px; height:23px; display:inline-flex; align-items:center; justify-content:center; color:var(--border); flex-shrink:0; }
 
     /* inline signup */
     .signup { margin:0 0 60px; padding:38px 28px; background:var(--surface); border:1px solid var(--border); border-radius:14px; text-align:center; }
