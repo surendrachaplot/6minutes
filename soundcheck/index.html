@@ -177,46 +177,55 @@
     .email-modal p { color:var(--muted); font-size:0.92rem; margin-bottom:18px; }
     .email-err { color:var(--accent); font-size:0.82rem; margin-top:10px; min-height:1.2em; }
 
-    /* player dock */
-    .dock { position:fixed; left:0; right:0; bottom:0; background:#15131a; border-top:2px solid var(--accent); padding:16px 24px; display:flex; align-items:center; gap:22px; z-index:60; transform:translateY(115%); transition:transform 0.32s cubic-bezier(.4,0,.2,1); box-shadow:0 -14px 44px rgba(0,0,0,0.5); }
+    /* player dock — media bar (video left when expanded, controls + scrubber centered) */
+    .dock { position:fixed; left:0; right:0; bottom:0; z-index:60; background:#15131a; border-top:2px solid var(--accent); transform:translateY(115%); transition:transform .32s cubic-bezier(.4,0,.2,1); box-shadow:0 -14px 44px rgba(0,0,0,0.5); }
     .dock.show { transform:translateY(0); }
-    .dock-media { flex-shrink:0; }
-    .dock-media iframe { border:0; border-radius:8px; display:block; background:#000; max-width:100%; }
-    .dock-media iframe.sc { width:460px; height:120px; }
-    .dock-info { flex:1; min-width:0; }
-    .dock-info .np-now { display:flex; align-items:center; gap:8px; font-size:0.6rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
-    .dock-info .pulse { width:8px; height:8px; border-radius:50%; background:var(--accent); animation:pulse 1.4s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:0.35;} 50%{opacity:1;} }
-    .dock-info .nm { font-family:var(--head); font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; line-height:1.1; overflow:hidden; text-overflow:ellipsis; }
-    .dock-info .src { color:var(--muted); font-size:0.8rem; font-weight:600; margin-top:5px; }
-    .dock-scrub { display:flex; align-items:center; gap:10px; margin-top:12px; }
-    .dock-scrub .t { font-variant-numeric:tabular-nums; color:var(--muted); font-size:0.74rem; white-space:nowrap; }
-    .dock-scrub .bar { flex:1; min-width:0; height:6px; border-radius:999px; background:rgba(255,255,255,0.14); position:relative; cursor:pointer; touch-action:none; }
-    .dock-scrub .bar-fill { position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent); border-radius:999px; }
-    .dock-scrub .bar-knob { position:absolute; top:50%; left:0%; width:13px; height:13px; border-radius:999px; background:var(--accent); transform:translate(-50%,-50%); box-shadow:0 1px 4px rgba(0,0,0,0.45); }
-    .dock-scrub .skip { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:5px 10px; font:inherit; font-size:0.68rem; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; }
-    .dock-scrub .skip:hover { border-color:var(--accent); color:var(--accent); }
-    .dock-ctrls { display:flex; align-items:center; gap:10px; flex-shrink:0; align-self:center; }
-    .dock-ctrls button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:54px; height:54px; cursor:pointer; font-size:20px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
-    .dock-ctrls button .ic { width:26px; height:26px; display:block; }
-    .dock-ctrls button:hover { border-color:var(--accent); color:var(--accent); }
-    .dock-pp { background:var(--accent) !important; color:#1a0f0e !important; border-color:var(--accent) !important; font-size:18px !important; }
-    .dock-pp, .dock-exp { display:none; }
-    body.has-dock { padding-bottom:310px; }
+    .panel { position:relative; padding:16px 22px; }
+    .corner { position:absolute; top:12px; right:14px; display:flex; gap:6px; z-index:3; }
 
-    /* minimized dock — keeps audio, hides video, shows play/pause.
-       The media is pulled out of flow (absolute + transparent) so it keeps
-       playing but never affects the slim bar's layout. */
-    .dock.min { padding:10px 16px; align-items:center; flex-wrap:nowrap !important; }
-    .dock.min .dock-media { position:absolute; width:200px; height:113px; left:16px; bottom:6px; opacity:0; pointer-events:none; }
-    .dock.min .dock-info { flex:1; min-width:0; }
-    .dock.min .dock-info .np-now, .dock.min .dock-info .src { display:none; }
-    .dock.min .dock-info .nm { font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .dock.min .dock-ctrls { align-self:center; flex-shrink:0; }
-    .dock.min .dock-min { display:none; }
-    .dock.min .dock-pp, .dock.min .dock-exp { display:inline-flex; }
-    .dock.min .dock-scrub { margin-top:7px; }
-    body.has-dock.dock-mini { padding-bottom:104px; }
+    .ic { width:20px; height:20px; display:block; }
+    .iconbtn { background:transparent; border:none; color:var(--fg); cursor:pointer; padding:7px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; }
+    .iconbtn:hover { color:var(--accent); }
+    .iconbtn:disabled { cursor:default; }
+    .play-main { width:46px; height:46px; border-radius:999px; background:var(--accent); color:var(--ink); border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .play-main .ic { width:22px; height:22px; }
+
+    .video-wrap { flex:0 0 auto; }
+    .video-wrap iframe { width:min(420px,42vw); aspect-ratio:16/9; height:auto; border:0; border-radius:10px; display:block; background:#000; max-width:100%; }
+    .video-wrap iframe.sc { width:min(420px,42vw); height:120px; aspect-ratio:auto; }
+
+    .thumb { width:46px; height:46px; border-radius:8px; object-fit:cover; flex-shrink:0; background:var(--surface); }
+    .info { min-width:0; }
+    .info .nm { font-family:var(--head); font-weight:700; font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .info .sub { color:var(--muted); font-size:0.76rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+    .info .sub b { color:var(--accent); }
+    .transport { display:flex; align-items:center; gap:14px; }
+    .scrub { display:flex; align-items:center; gap:10px; }
+    .scrub .t { font-variant-numeric:tabular-nums; color:var(--muted); font-size:0.74rem; white-space:nowrap; }
+    .scrub .skip { gap:2px; font:inherit; font-size:0.6rem; font-weight:800; white-space:nowrap; flex-shrink:0; }
+    .scrub .skip svg { width:20px; height:20px; }
+    .scrub .bar { flex:1; min-width:0; height:6px; border-radius:999px; background:rgba(255,255,255,0.14); position:relative; cursor:pointer; touch-action:none; }
+    .scrub .bar-fill { position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent); border-radius:999px; }
+    .scrub .bar-knob { position:absolute; top:50%; left:0%; width:13px; height:13px; border-radius:999px; background:var(--accent); transform:translate(-50%,-50%); box-shadow:0 1px 4px rgba(0,0,0,0.45); }
+
+    /* expanded: video left, name + transport + scrubber centered on the right */
+    .dock.expanded .panel { display:flex; gap:22px; align-items:center; }
+    .dock.expanded .thumb { display:none; }
+    .dock.expanded .main { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:14px; padding-right:80px; }
+    .dock.expanded .info { text-align:center; }
+    .dock.expanded .transport { justify-content:center; }
+    .dock.expanded .scrub { width:70%; }
+
+    /* collapsed: slim bar; video kept alive offscreen (audio only) */
+    .dock:not(.expanded) .panel { display:flex; align-items:center; gap:16px; padding:11px 22px; }
+    .dock:not(.expanded) .corner { top:50%; transform:translateY(-50%); }
+    .dock:not(.expanded) .video-wrap { position:absolute; width:200px; height:113px; left:0; bottom:0; opacity:0; pointer-events:none; z-index:-1; }
+    .dock:not(.expanded) .main { flex:1; min-width:0; display:flex; align-items:center; gap:18px; padding-right:84px; }
+    .dock:not(.expanded) .info { flex:0 0 auto; max-width:200px; }
+    .dock:not(.expanded) .scrub { flex:1; min-width:0; }
+
+    body.has-dock { padding-bottom:300px; }
+    body.has-dock.dock-collapsed { padding-bottom:96px; }
 
     /* first-visit coachmark */
     .coach { position:absolute; z-index:80; background:var(--accent); color:#1a0f0e; font-size:0.78rem; font-weight:700; padding:9px 13px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.35); cursor:pointer; white-space:nowrap; }
@@ -228,14 +237,14 @@
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
     @media (max-width:620px){
-      .dock { flex-wrap:wrap; gap:10px 12px; padding:14px 16px; align-items:center; }
-      .dock-media { flex-basis:100%; }
-      .dock-media iframe.sc { width:100%; }
-      .dock-info { flex:1; min-width:0; }
-      .dock-info .nm { font-size:1.2rem; }
-      .dock-ctrls { align-self:center; }
-      body.has-dock { padding-bottom:330px; }
-      body.has-dock.dock-mini { padding-bottom:104px; }
+      .dock.expanded .panel { flex-direction:column; align-items:stretch; gap:14px; }
+      .dock.expanded .video-wrap iframe { width:100%; }
+      .dock.expanded .main { padding-right:0; }
+      .dock.expanded .scrub { width:100%; }
+      .dock:not(.expanded) .info { max-width:110px; }
+      .corner { top:10px; right:10px; }
+      body.has-dock { padding-bottom:380px; }
+      body.has-dock.dock-collapsed { padding-bottom:96px; }
     }
 
     @media (max-width:920px)  { .grid { grid-template-columns:repeat(3,1fr); } .wrap{ padding:0 28px; } }
@@ -293,24 +302,28 @@
   </main>
 
   <div class="dock" id="dock" role="region" aria-label="Now playing">
-    <div class="dock-media" id="dock-media"></div>
-    <div class="dock-info">
-      <div class="np-now"><span class="pulse"></span> Now playing</div>
-      <div class="nm" id="dock-name">&mdash;</div>
-      <div class="src" id="dock-src">SoundCloud</div>
-      <div class="dock-scrub">
-        <button class="skip" id="skip-back" type="button" aria-label="Back 15 seconds">&#9194;&thinsp;15</button>
-        <span class="t" id="t-cur">0:00</span>
-        <div class="bar" id="bar"><div class="bar-fill" id="bar-fill"></div><div class="bar-knob" id="bar-knob"></div></div>
-        <span class="t" id="t-dur">0:00</span>
-        <button class="skip" id="skip-fwd" type="button" aria-label="Forward 15 seconds">15&thinsp;&#9193;</button>
+    <div class="panel">
+      <div class="corner">
+        <button class="iconbtn" id="dock-exp" type="button" aria-label="Collapse video"></button>
+        <button class="iconbtn" id="dock-close" type="button" aria-label="Stop and close"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
       </div>
-    </div>
-    <div class="dock-ctrls">
-      <button class="dock-pp" id="dock-pp" aria-label="Pause">&#9208;</button>
-      <button class="dock-exp" id="dock-exp" aria-label="Show video"><svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
-      <button class="dock-min" id="dock-min" aria-label="Minimise player"><svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-      <button class="dock-close" id="dock-close" aria-label="Stop and close">&times;</button>
+      <div class="video-wrap" id="dock-media"></div>
+      <img class="thumb" id="dock-thumb" alt="">
+      <div class="main">
+        <div class="info"><div class="nm" id="dock-name">&mdash;</div><div class="sub" id="dock-src">SoundCloud</div></div>
+        <div class="transport">
+          <button class="iconbtn" id="dock-prev" type="button" aria-label="Previous set"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg></button>
+          <button class="play-main" id="dock-pp" type="button" aria-label="Pause"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+          <button class="iconbtn" id="dock-next" type="button" aria-label="Next set"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg></button>
+        </div>
+        <div class="scrub">
+          <button class="iconbtn skip" id="skip-back" type="button" aria-label="Back 15 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span>15</span></button>
+          <span class="t" id="t-cur">0:00</span>
+          <div class="bar" id="bar"><div class="bar-fill" id="bar-fill"></div><div class="bar-knob" id="bar-knob"></div></div>
+          <span class="t" id="t-dur">0:00</span>
+          <button class="iconbtn skip" id="skip-fwd" type="button" aria-label="Forward 15 seconds"><span>15</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="toast" id="toast"></div>
@@ -398,7 +411,14 @@
     // ── player dock ──
     var dock=document.getElementById('dock'), dockMedia=document.getElementById('dock-media'),
         dockName=document.getElementById('dock-name'), dockSrc=document.getElementById('dock-src'),
+        dockThumb=document.getElementById('dock-thumb'), dockExp=document.getElementById('dock-exp'),
         dockPP=document.getElementById('dock-pp'), toastEl=document.getElementById('toast');
+    var CHEV_UP='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>';
+    var CHEV_DOWN='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+    var PP_PLAY='<svg class="ic" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+    var PP_PAUSE='<svg class="ic" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+    function setExpIcon(){ var on=dock.classList.contains('expanded'); dockExp.innerHTML=on?CHEV_DOWN:CHEV_UP; dockExp.setAttribute('aria-label', on?'Collapse video':'Expand video'); }
+    function setDockPad(){ document.body.classList.toggle('dock-collapsed', !dock.classList.contains('expanded')); }
 
     function showToast(text){ toastEl.textContent=text; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(function(){ toastEl.classList.remove('show'); },2800); }
 
@@ -408,7 +428,7 @@
 
     var active=null;
     function setState(btn,ch){ var s=btn.querySelector('.state'); if(s) s.textContent=ch; }
-    function updatePP(playing){ dockPP.innerHTML = playing ? '&#9208;' : '&#9654;'; dockPP.setAttribute('aria-label', playing?'Pause':'Play'); }
+    function updatePP(playing){ dockPP.innerHTML = playing ? PP_PAUSE : PP_PLAY; dockPP.setAttribute('aria-label', playing?'Pause':'Play'); }
     function clearPlayers(){ stopPoll(); if(ytPlayer){ try{ ytPlayer.destroy(); }catch(_){} ytPlayer=null; } scWidget=null; currentType=null; pendingYt=null; resetScrub(); }
     function ytSize(){ var w = window.innerWidth<=620 ? Math.min(320, window.innerWidth-40) : 400; return { w:w, h:Math.round(w*9/16) }; }
 
@@ -431,22 +451,27 @@
     document.getElementById('skip-back').addEventListener('click',function(){ if(active) seekTo(livePos()-15); });
     document.getElementById('skip-fwd').addEventListener('click',function(){ if(active) seekTo(livePos()+15); });
 
-    function openDockUI(btn,name,src){
+    function openDockUI(btn,name,src,expand){
       dockName.textContent=name; dockSrc.textContent=src;
-      dock.classList.remove('min'); document.body.classList.remove('dock-mini');
+      if(btn.dataset.poster){ dockThumb.src=API_BASE+'/api/img?u='+encodeURIComponent(btn.dataset.poster); dockThumb.style.display=''; }
+      else { dockThumb.removeAttribute('src'); dockThumb.style.display='none'; }
       dock.classList.add('show'); document.body.classList.add('has-dock');
+      if(expand) dock.classList.add('expanded'); else dock.classList.remove('expanded');
+      dockExp.style.display = expand ? '' : 'none';   // no video to expand for SoundCloud
+      setExpIcon(); setDockPad();
       btn.classList.add('playing'); setState(btn,'■');
       active={ button:btn };
       updatePP(true);
       bumpPlayCount();
       if(sheetOv && sheetOv.classList.contains('show')) closeSheet();
+      updateNavButtons();
     }
     function stopActive(){
       if(!active) return;
       active.button.classList.remove('playing'); setState(active.button,'▶');
       clearPlayers();
       dockMedia.innerHTML='';
-      dock.classList.remove('show','min'); document.body.classList.remove('has-dock','dock-mini');
+      dock.classList.remove('show','expanded'); document.body.classList.remove('has-dock','dock-collapsed');
       active=null;
     }
     function playSc(btn){
@@ -454,7 +479,7 @@
       var f=document.createElement('iframe'); f.allow='autoplay'; f.className='sc';
       f.src='https://w.soundcloud.com/player/?url='+encodeURIComponent(btn.dataset.sc)+'&color=%23ff7a6b&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false';
       dockMedia.innerHTML=''; dockMedia.appendChild(f);
-      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD');
+      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD', false);
       if(window.SC && SC.Widget){
         scWidget=SC.Widget(f);
         scWidget.bind(SC.Widget.Events.PLAY,function(){ updatePP(true); });
@@ -478,7 +503,7 @@
       f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(videoId)+
             '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&start=360&origin='+encodeURIComponent(location.origin);
       dockMedia.innerHTML=''; dockMedia.appendChild(f);
-      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE');
+      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE', true);
       function build(){
         ytPlayer=new YT.Player(f,{
           events:{
@@ -498,9 +523,29 @@
         if(ytPlayer.getPlayerState()===1) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
       } else if(currentType==='sc' && scWidget){ scWidget.toggle(); }
     });
-    document.getElementById('dock-min').addEventListener('click',function(){ dock.classList.add('min'); document.body.classList.add('dock-mini'); });
-    document.getElementById('dock-exp').addEventListener('click',function(){ dock.classList.remove('min'); document.body.classList.remove('dock-mini'); });
+    dockExp.addEventListener('click',function(){ dock.classList.toggle('expanded'); setExpIcon(); setDockPad(); });
     document.getElementById('dock-close').addEventListener('click',function(){ stopActive(); });
+
+    // prev / next — walk the visible grid lineup of the current source type
+    function currentQueue(){
+      if(!active||!currentType) return [];
+      return Array.prototype.slice.call(gridEl.querySelectorAll(currentType==='yt'?'.play.yt':'.play.sc'));
+    }
+    function queueKey(b){ return currentType==='yt' ? b.dataset.slug : b.dataset.sc; }
+    function playAt(delta){
+      var q=currentQueue(); if(!q.length) return;
+      var key=queueKey(active.button), i=-1;
+      for(var n=0;n<q.length;n++){ if(queueKey(q[n])===key){ i=n; break; } }
+      if(i<0) i = delta>0 ? -1 : 0;        // not in grid (e.g. played from sheet) → step from the edge
+      var j=(i+delta+q.length)%q.length;
+      if(q[j]) q[j].click();
+    }
+    function updateNavButtons(){
+      var dis=currentQueue().length<2, p=document.getElementById('dock-prev'), n=document.getElementById('dock-next');
+      [p,n].forEach(function(b){ if(b){ b.disabled=dis; b.style.opacity=dis?'0.35':''; } });
+    }
+    document.getElementById('dock-prev').addEventListener('click',function(){ playAt(-1); });
+    document.getElementById('dock-next').addEventListener('click',function(){ playAt(1); });
     async function handleYtClick(btn){
       var wasMe=active&&active.button===btn;
       if(wasMe){ stopActive(); return; }
@@ -576,8 +621,9 @@
         if(idx===c){ html+='<li class="more-li"><button class="more-btn" type="button" data-extra="'+(n-c)+'">+ '+(n-c)+' more</button></li>'; }
         var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
         var sc=normaliseSc(a.soundcloud);
-        var scBtn=sc?'<button class="play sc" data-sc="'+esc(sc)+'" data-name="'+esc(a.name)+'" title="Play top SoundCloud track">'+SC_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
-        var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'';
+        var pos=esc(ev.poster||'');
+        var scBtn=sc?'<button class="play sc" data-sc="'+esc(sc)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play top SoundCloud track">'+SC_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
+        var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'';
         html+='<li'+(idx>=c?' class="hid"':'')+'>'+scBtn+ytBtn+'<span class="an">'+esc(a.name)+'</span></li>';
       });
       return html;
