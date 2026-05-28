@@ -30,6 +30,13 @@
     .switch a.on { background:var(--accent); color:#1a0f0e; }
     .switch a:not(.on):hover { color:var(--fg); }
 
+    /* cross-site teaser banner (below nav) */
+    .teaser { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .teaser .tt { font-size:0.95rem; font-weight:500; color:var(--muted); }
+    .teaser .tt b { color:var(--fg); font-weight:700; }
+    .teaser a { font-family:var(--head); font-size:0.78rem; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); text-decoration:none; white-space:nowrap; }
+    .teaser a:hover { opacity:0.8; }
+
     /* hero */
     .hero { padding:44px 0 28px; display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; }
     .eyebrow { font-size:0.64rem; font-weight:700; letter-spacing:0.24em; text-transform:uppercase; color:var(--accent); margin-bottom:16px; }
@@ -182,6 +189,11 @@
         <a class="on" href=".">Soundcheck</a>
       </div>
     </nav>
+
+    <div class="teaser">
+      <span class="tt">Come help us build the first <b>community-owned club in London.</b></span>
+      <a href="/">6 Minutes &rarr;</a>
+    </div>
 
     <div class="hero">
       <div>
