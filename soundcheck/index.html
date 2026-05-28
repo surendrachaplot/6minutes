@@ -192,7 +192,8 @@
 
     .video-wrap { flex:0 0 auto; }
     .video-wrap iframe { width:min(420px,42vw); aspect-ratio:16/9; height:auto; border:0; border-radius:10px; display:block; background:#000; max-width:100%; }
-    .video-wrap iframe.sc { width:min(420px,42vw); height:120px; aspect-ratio:auto; }
+    .video-wrap iframe.sc { position:absolute; width:300px; height:120px; left:0; bottom:0; opacity:0; pointer-events:none; z-index:-1; } /* audio only — album art shows instead */
+    .stage-art { width:min(200px,40vw); aspect-ratio:1/1; margin-bottom:0; border-radius:12px; }
 
     .thumb { width:46px; height:46px; border-radius:8px; object-fit:cover; flex-shrink:0; background:var(--surface); }
     .info { min-width:0; }
@@ -223,6 +224,13 @@
     .dock:not(.expanded) .main { flex:1; min-width:0; display:flex; align-items:center; gap:18px; padding-right:84px; }
     .dock:not(.expanded) .info { flex:0 0 auto; max-width:200px; }
     .dock:not(.expanded) .scrub { flex:1; min-width:0; }
+    /* collapsed = minimal: only play/pause + close; tap the art to re-expand */
+    .dock:not(.expanded) #dock-prev,
+    .dock:not(.expanded) #dock-next,
+    .dock:not(.expanded) #skip-back,
+    .dock:not(.expanded) #skip-fwd,
+    .dock:not(.expanded) #dock-exp { display:none; }
+    .dock:not(.expanded) .thumb { cursor:pointer; }
 
     body.has-dock { padding-bottom:300px; }
     body.has-dock.dock-collapsed { padding-bottom:96px; }
@@ -457,7 +465,7 @@
       else { dockThumb.removeAttribute('src'); dockThumb.style.display='none'; }
       dock.classList.add('show'); document.body.classList.add('has-dock');
       if(expand) dock.classList.add('expanded'); else dock.classList.remove('expanded');
-      dockExp.style.display = expand ? '' : 'none';   // no video to expand for SoundCloud
+      dockExp.style.display='';   // CSS hides it while collapsed
       setExpIcon(); setDockPad();
       btn.classList.add('playing'); setState(btn,'■');
       active={ button:btn };
@@ -478,8 +486,13 @@
       clearPlayers(); currentType='sc';
       var f=document.createElement('iframe'); f.allow='autoplay'; f.className='sc';
       f.src='https://w.soundcloud.com/player/?url='+encodeURIComponent(btn.dataset.sc)+'&color=%23ff7a6b&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false';
-      dockMedia.innerHTML=''; dockMedia.appendChild(f);
-      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD', false);
+      dockMedia.innerHTML='';
+      // album art fills the stage (no video for SoundCloud); the iframe plays hidden
+      var art=document.createElement('div'); art.className='poster stage-art';
+      art.innerHTML=genPoster(btn.dataset.name||'Now playing')+(btn.dataset.poster?'<img class="real" src="'+API_BASE+'/api/img?u='+encodeURIComponent(btn.dataset.poster)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<span class="tint"></span>';
+      dockMedia.appendChild(art);
+      dockMedia.appendChild(f);
+      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD', true);
       if(window.SC && SC.Widget){
         scWidget=SC.Widget(f);
         scWidget.bind(SC.Widget.Events.PLAY,function(){ updatePP(true); });
@@ -524,6 +537,7 @@
       } else if(currentType==='sc' && scWidget){ scWidget.toggle(); }
     });
     dockExp.addEventListener('click',function(){ dock.classList.toggle('expanded'); setExpIcon(); setDockPad(); });
+    dockThumb.addEventListener('click',function(){ if(active && !dock.classList.contains('expanded')){ dock.classList.add('expanded'); setExpIcon(); setDockPad(); } });
     document.getElementById('dock-close').addEventListener('click',function(){ stopActive(); });
 
     // prev / next — walk the visible grid lineup of the current source type
