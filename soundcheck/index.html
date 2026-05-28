@@ -117,8 +117,7 @@
     .dock { position:fixed; left:0; right:0; bottom:0; background:#15131a; border-top:2px solid var(--accent); padding:16px 24px; display:flex; align-items:center; gap:22px; z-index:60; transform:translateY(115%); transition:transform 0.32s cubic-bezier(.4,0,.2,1); box-shadow:0 -14px 44px rgba(0,0,0,0.5); }
     .dock.show { transform:translateY(0); }
     .dock-media { flex-shrink:0; }
-    .dock-media iframe { border:0; border-radius:8px; display:block; background:#000; }
-    .dock-media iframe.yt { width:400px; height:225px; }
+    .dock-media iframe { border:0; border-radius:8px; display:block; background:#000; max-width:100%; }
     .dock-media iframe.sc { width:460px; height:120px; }
     .dock-info { flex:1; min-width:0; }
     .dock-info .np-now { display:flex; align-items:center; gap:8px; font-size:0.6rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
@@ -126,9 +125,22 @@
     @keyframes pulse { 0%,100%{opacity:0.35;} 50%{opacity:1;} }
     .dock-info .nm { font-family:var(--head); font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; line-height:1.1; overflow:hidden; text-overflow:ellipsis; }
     .dock-info .src { color:var(--muted); font-size:0.8rem; font-weight:600; margin-top:5px; }
-    .dock-close { align-self:flex-start; background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:34px; height:34px; cursor:pointer; font-size:14px; flex-shrink:0; }
-    .dock-close:hover { border-color:var(--accent); color:var(--accent); }
+    .dock-ctrls { display:flex; align-items:center; gap:8px; flex-shrink:0; align-self:flex-start; }
+    .dock-ctrls button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:36px; height:36px; cursor:pointer; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+    .dock-ctrls button:hover { border-color:var(--accent); color:var(--accent); }
+    .dock-pp { background:var(--accent) !important; color:#1a0f0e !important; border-color:var(--accent) !important; font-size:12px !important; }
+    .dock-pp, .dock-exp { display:none; }
     body.has-dock { padding-bottom:280px; }
+
+    /* minimized dock — keeps audio, hides video, shows play/pause */
+    .dock.min { padding:10px 18px; align-items:center; }
+    .dock.min .dock-media { height:0 !important; overflow:hidden; }
+    .dock.min .dock-info .np-now, .dock.min .dock-info .src { display:none; }
+    .dock.min .dock-info .nm { font-size:1.02rem; }
+    .dock.min .dock-ctrls { align-self:center; }
+    .dock.min .dock-min { display:none; }
+    .dock.min .dock-pp, .dock.min .dock-exp { display:inline-flex; }
+    body.has-dock.dock-mini { padding-bottom:66px; }
 
     /* first-visit coachmark */
     .coach { position:absolute; z-index:80; background:var(--accent); color:#1a0f0e; font-size:0.78rem; font-weight:700; padding:9px 13px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.35); cursor:pointer; white-space:nowrap; }
@@ -141,11 +153,11 @@
 
     @media (max-width:620px){
       .dock { flex-wrap:wrap; gap:12px; padding:14px 18px; }
-      .dock-media { width:100%; }
-      .dock-media iframe.yt { width:100%; height:auto; aspect-ratio:16/9; }
       .dock-media iframe.sc { width:100%; }
       .dock-info .nm { font-size:1.25rem; }
-      body.has-dock { padding-bottom:360px; }
+      body.has-dock { padding-bottom:280px; }
+      body.has-dock.dock-mini { padding-bottom:64px; }
+      .dock.min { flex-wrap:nowrap; }
     }
 
     @media (max-width:920px)  { .grid { grid-template-columns:repeat(3,1fr); } .wrap{ padding:0 28px; } }
@@ -198,9 +210,17 @@
       <div class="nm" id="dock-name">&mdash;</div>
       <div class="src" id="dock-src">SoundCloud</div>
     </div>
-    <button class="dock-close" id="dock-close" aria-label="Stop and close">&times;</button>
+    <div class="dock-ctrls">
+      <button class="dock-pp" id="dock-pp" aria-label="Pause">&#9208;</button>
+      <button class="dock-exp" id="dock-exp" aria-label="Show video">&#9650;</button>
+      <button class="dock-min" id="dock-min" aria-label="Minimise player">&#9660;</button>
+      <button class="dock-close" id="dock-close" aria-label="Stop and close">&times;</button>
+    </div>
   </div>
   <div class="toast" id="toast"></div>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="https://w.soundcloud.com/player/api.js"></script>
 
   <script>
     var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
@@ -266,36 +286,77 @@
     // ── player dock ──
     var dock=document.getElementById('dock'), dockMedia=document.getElementById('dock-media'),
         dockName=document.getElementById('dock-name'), dockSrc=document.getElementById('dock-src'),
-        toastEl=document.getElementById('toast');
-    document.getElementById('dock-close').addEventListener('click',function(){ stopActive(); });
+        dockPP=document.getElementById('dock-pp'), toastEl=document.getElementById('toast');
 
     function showToast(text){ toastEl.textContent=text; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(function(){ toastEl.classList.remove('show'); },2800); }
 
+    // YouTube IFrame API readiness
+    var ytReady=false, pendingYt=null, ytPlayer=null, scWidget=null, currentType=null;
+    window.onYouTubeIframeAPIReady=function(){ ytReady=true; if(pendingYt){ var f=pendingYt; pendingYt=null; f(); } };
+
     var active=null;
     function setState(btn,ch){ var s=btn.querySelector('.state'); if(s) s.textContent=ch; }
-    function stopActive(){
-      if(!active) return;
-      active.button.classList.remove('playing'); setState(active.button,'▶');
-      dockMedia.innerHTML=''; dock.classList.remove('show'); document.body.classList.remove('has-dock');
-      active=null;
-    }
-    function openPlayer(btn,iframe,name,src){
-      dockMedia.innerHTML=''; dockMedia.appendChild(iframe);
+    function updatePP(playing){ dockPP.innerHTML = playing ? '&#9208;' : '&#9654;'; dockPP.setAttribute('aria-label', playing?'Pause':'Play'); }
+    function clearPlayers(){ if(ytPlayer){ try{ ytPlayer.destroy(); }catch(_){} ytPlayer=null; } scWidget=null; currentType=null; pendingYt=null; }
+    function ytSize(){ var w = window.innerWidth<=620 ? 320 : 400; return { w:w, h:Math.round(w*9/16) }; }
+
+    function openDockUI(btn,name,src){
       dockName.textContent=name; dockSrc.textContent=src;
+      dock.classList.remove('min'); document.body.classList.remove('dock-mini');
       dock.classList.add('show'); document.body.classList.add('has-dock');
       btn.classList.add('playing'); setState(btn,'■');
       active={ button:btn };
+      updatePP(true);
+    }
+    function stopActive(){
+      if(!active) return;
+      active.button.classList.remove('playing'); setState(active.button,'▶');
+      clearPlayers();
+      dockMedia.innerHTML='';
+      dock.classList.remove('show','min'); document.body.classList.remove('has-dock','dock-mini');
+      active=null;
     }
     function playSc(btn){
+      clearPlayers(); currentType='sc';
       var f=document.createElement('iframe'); f.allow='autoplay'; f.className='sc';
       f.src='https://w.soundcloud.com/player/?url='+encodeURIComponent(btn.dataset.sc)+'&color=%23ff7a6b&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false';
-      openPlayer(btn,f,btn.dataset.name||'Now playing','SOUNDCLOUD');
+      dockMedia.innerHTML=''; dockMedia.appendChild(f);
+      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD');
+      if(window.SC && SC.Widget){
+        scWidget=SC.Widget(f);
+        scWidget.bind(SC.Widget.Events.PLAY,function(){ updatePP(true); });
+        scWidget.bind(SC.Widget.Events.PAUSE,function(){ updatePP(false); });
+      }
     }
     function playYt(btn,videoId){
-      var f=document.createElement('iframe'); f.allow='autoplay; encrypted-media; picture-in-picture'; f.allowFullscreen=true; f.className='yt';
-      f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(videoId)+'?autoplay=1&rel=0';
-      openPlayer(btn,f,btn.dataset.name||'Now playing','YOUTUBE');
+      clearPlayers(); currentType='yt';
+      dockMedia.innerHTML='<div id="yt-player"></div>';
+      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE');
+      var sz=ytSize();
+      function build(){
+        ytPlayer=new YT.Player('yt-player',{
+          width:String(sz.w), height:String(sz.h), videoId:videoId,
+          playerVars:{ autoplay:1, rel:0, playsinline:1 },
+          events:{
+            onReady:function(e){ try{ e.target.playVideo(); }catch(_){} updatePP(true); },
+            onStateChange:function(e){
+              if(e.data===YT.PlayerState.PLAYING) updatePP(true);
+              else if(e.data===YT.PlayerState.PAUSED||e.data===YT.PlayerState.ENDED) updatePP(false);
+            }
+          }
+        });
+      }
+      if(window.YT && YT.Player) build(); else pendingYt=build;
     }
+    // dock controls
+    dockPP.addEventListener('click',function(){
+      if(currentType==='yt' && ytPlayer && ytPlayer.getPlayerState){
+        if(ytPlayer.getPlayerState()===1) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+      } else if(currentType==='sc' && scWidget){ scWidget.toggle(); }
+    });
+    document.getElementById('dock-min').addEventListener('click',function(){ dock.classList.add('min'); document.body.classList.add('dock-mini'); });
+    document.getElementById('dock-exp').addEventListener('click',function(){ dock.classList.remove('min'); document.body.classList.remove('dock-mini'); });
+    document.getElementById('dock-close').addEventListener('click',function(){ stopActive(); });
     async function handleYtClick(btn){
       var wasMe=active&&active.button===btn;
       if(wasMe){ stopActive(); return; }
