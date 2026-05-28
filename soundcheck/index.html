@@ -127,6 +127,7 @@
     .dock-info .src { color:var(--muted); font-size:0.8rem; font-weight:600; margin-top:5px; }
     .dock-ctrls { display:flex; align-items:center; gap:8px; flex-shrink:0; align-self:flex-start; }
     .dock-ctrls button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:36px; height:36px; cursor:pointer; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+    .dock-ctrls button .ic { width:17px; height:17px; display:block; }
     .dock-ctrls button:hover { border-color:var(--accent); color:var(--accent); }
     .dock-pp { background:var(--accent) !important; color:#1a0f0e !important; border-color:var(--accent) !important; font-size:12px !important; }
     .dock-pp, .dock-exp { display:none; }
@@ -217,8 +218,8 @@
     </div>
     <div class="dock-ctrls">
       <button class="dock-pp" id="dock-pp" aria-label="Pause">&#9208;</button>
-      <button class="dock-exp" id="dock-exp" aria-label="Show video">&#9650;</button>
-      <button class="dock-min" id="dock-min" aria-label="Minimise player">&#9660;</button>
+      <button class="dock-exp" id="dock-exp" aria-label="Show video"><svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
+      <button class="dock-min" id="dock-min" aria-label="Minimise player"><svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
       <button class="dock-close" id="dock-close" aria-label="Stop and close">&times;</button>
     </div>
   </div>
