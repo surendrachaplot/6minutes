@@ -521,7 +521,7 @@
         '<button class="card-poster" type="button" aria-label="View '+esc(ev.title)+' lineup">'+posterHTML(ev)+'<span class="expand-badge">'+EXPAND_SVG+'</span></button>'+
         pick+
         '<h3>'+esc(ev.title)+'</h3>'+
-        '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(time?' &middot; '+time:'')+'</div>'+
+        '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
         '<ul class="line">'+lineupHTML(ev,5)+'</ul>'+
       '</div>';
     }
@@ -549,7 +549,7 @@
         '<div class="sheet-body">'+
           (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
           '<h3>'+esc(ev.title)+'</h3>'+
-          '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(time?' &middot; '+time:'')+'</div>'+
+          '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
           '<ul class="sheet-line">'+lineupHTML(ev)+'</ul>'+
         '</div>';
       wireCard(sheetContent);
@@ -561,13 +561,13 @@
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&sheetOv.classList.contains('show')) closeSheet(); });
 
     var gridEl=document.getElementById('grid'), trackEl=document.getElementById('track');
-    function renderEvents(data){
+    function renderEvents(events, eyebrowPrefix){
       stopActive();
-      var evs=data.events||[];
-      document.getElementById('eyebrow').textContent='Tonight in London — '+evs.length+' event'+(evs.length===1?'':'s');
-      if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found for this date.</div>'; trackEl.innerHTML=''; return; }
+      var evs=(events||[]).slice().sort(function(a,b){ return (b.attending||0)-(a.attending||0); });
+      document.getElementById('eyebrow').textContent=eyebrowPrefix+' — '+evs.length+' event'+(evs.length===1?'':'s');
+      if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; return; }
       var ordered=orderEvents(evs);
-      // ambient marquee of tonight's titles (duplicated for a seamless loop)
+      // ambient marquee of titles (duplicated for a seamless loop)
       var marq='';
       for(var k=0;k<2;k++){ ordered.forEach(function(e){ marq+='<span>'+esc(e.title)+'</span><span class="star">&#10039;</span>'; }); }
       trackEl.innerHTML=marq;
@@ -582,27 +582,53 @@
     // ── status / load ──
     var statusEl=document.getElementById('status');
     function setStatus(html,isErr){ statusEl.innerHTML=html||''; statusEl.className='status'+(isErr?' error':''); }
-    function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-    function upcomingWeekendISO(){ var d=new Date(); d.setDate(d.getDate()+((6-d.getDay()+7)%7)); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function todayISO(){ return isoOf(new Date()); }
+    function weekendDates(){ var sat=new Date(); sat.setDate(sat.getDate()+((6-sat.getDay()+7)%7)); var fri=new Date(sat); fri.setDate(sat.getDate()-1); return [isoOf(fri), isoOf(sat)]; }
     function fmtDateLabel(iso){ var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }
+    function fmtRange(a,b){ var da=new Date(a+'T12:00:00'); return da.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'})+' – '+fmtDateLabel(b); }
     var currentDate=null;
     var dateLabel=document.getElementById('date-label'), dateInput=document.getElementById('date-input');
     var weekendBtn=document.getElementById('weekend-btn');
-    weekendBtn.addEventListener('click',function(){ load(upcomingWeekendISO()); });
 
+    async function fetchDay(date){
+      var res=await fetch(API_BASE+'/api/day?date='+encodeURIComponent(date));
+      var json=await res.json();
+      if(!res.ok) throw new Error(json.error||('HTTP '+res.status));
+      return json;
+    }
+
+    // single-day mode
     async function load(date){
-      currentDate=date; dateLabel.textContent=fmtDateLabel(date); dateInput.value=date;
-      weekendBtn.classList.toggle('on', date===upcomingWeekendISO());
+      currentDate=date; weekendBtn.classList.remove('on');
+      dateLabel.textContent=fmtDateLabel(date); dateInput.value=date;
       document.title='soundcheck by 6 Minutes · '+date; history.replaceState(null,'','?date='+date);
       setStatus('<span class="spinner"></span> Loading '+esc(fmtDateLabel(date))+'…'); gridEl.innerHTML='';
       try{
-        var res=await fetch(API_BASE+'/api/day?date='+encodeURIComponent(date));
-        var json=await res.json();
-        if(!res.ok) throw new Error(json.error||('HTTP '+res.status));
-        setStatus(''); renderEvents(json);
+        var json=await fetchDay(date);
+        setStatus('');
+        renderEvents(json.events, date===todayISO()?'Tonight in London':(fmtDateLabel(date)+' in London'));
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
-    function shiftDate(days){ var d=new Date(currentDate+'T12:00:00'); d.setDate(d.getDate()+days); load(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')); }
+
+    // weekend mode: Friday + Saturday combined
+    async function loadWeekend(){
+      var wd=weekendDates(); currentDate=wd[1];
+      weekendBtn.classList.add('on');
+      dateLabel.textContent=fmtRange(wd[0],wd[1]); dateInput.value=wd[1];
+      document.title='soundcheck by 6 Minutes · this weekend'; history.replaceState(null,'','?weekend=1');
+      setStatus('<span class="spinner"></span> Loading this weekend…'); gridEl.innerHTML='';
+      try{
+        var res=await Promise.all([fetchDay(wd[0]), fetchDay(wd[1])]);
+        var fri=(res[0].events||[]).map(function(e){ e._day='Fri'; return e; });
+        var sat=(res[1].events||[]).map(function(e){ e._day='Sat'; return e; });
+        setStatus('');
+        renderEvents(fri.concat(sat), 'This weekend in London');
+      }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
+    }
+
+    weekendBtn.addEventListener('click', loadWeekend);
+    function shiftDate(days){ var d=new Date((currentDate||todayISO())+'T12:00:00'); d.setDate(d.getDate()+days); load(isoOf(d)); }
     document.getElementById('prev-day').addEventListener('click',function(){ shiftDate(-1); });
     document.getElementById('next-day').addEventListener('click',function(){ shiftDate(1); });
     dateLabel.addEventListener('click',function(){ if(dateInput.showPicker){ try{dateInput.showPicker();}catch(_){dateInput.focus();} } else dateInput.focus(); });
@@ -622,8 +648,9 @@
       signupForm.hidden=true; signupSuccess.hidden=false;
     });
 
-    var initial=new URLSearchParams(location.search).get('date')||todayISO();
-    load(initial);
+    // Default to this weekend (Fri + Sat combined); ?date= overrides to a single day.
+    var _qd=new URLSearchParams(location.search).get('date');
+    if(_qd) load(_qd); else loadWeekend();
   </script>
 </body>
 </html>
