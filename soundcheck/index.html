@@ -189,13 +189,20 @@
     @keyframes pulse { 0%,100%{opacity:0.35;} 50%{opacity:1;} }
     .dock-info .nm { font-family:var(--head); font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; line-height:1.1; overflow:hidden; text-overflow:ellipsis; }
     .dock-info .src { color:var(--muted); font-size:0.8rem; font-weight:600; margin-top:5px; }
+    .dock-scrub { display:flex; align-items:center; gap:10px; margin-top:12px; }
+    .dock-scrub .t { font-variant-numeric:tabular-nums; color:var(--muted); font-size:0.74rem; white-space:nowrap; }
+    .dock-scrub .bar { flex:1; min-width:0; height:6px; border-radius:999px; background:rgba(255,255,255,0.14); position:relative; cursor:pointer; touch-action:none; }
+    .dock-scrub .bar-fill { position:absolute; left:0; top:0; bottom:0; width:0%; background:var(--accent); border-radius:999px; }
+    .dock-scrub .bar-knob { position:absolute; top:50%; left:0%; width:13px; height:13px; border-radius:999px; background:var(--accent); transform:translate(-50%,-50%); box-shadow:0 1px 4px rgba(0,0,0,0.45); }
+    .dock-scrub .skip { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:5px 10px; font:inherit; font-size:0.68rem; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    .dock-scrub .skip:hover { border-color:var(--accent); color:var(--accent); }
     .dock-ctrls { display:flex; align-items:center; gap:10px; flex-shrink:0; align-self:center; }
     .dock-ctrls button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:54px; height:54px; cursor:pointer; font-size:20px; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
     .dock-ctrls button .ic { width:26px; height:26px; display:block; }
     .dock-ctrls button:hover { border-color:var(--accent); color:var(--accent); }
     .dock-pp { background:var(--accent) !important; color:#1a0f0e !important; border-color:var(--accent) !important; font-size:18px !important; }
     .dock-pp, .dock-exp { display:none; }
-    body.has-dock { padding-bottom:280px; }
+    body.has-dock { padding-bottom:310px; }
 
     /* minimized dock — keeps audio, hides video, shows play/pause.
        The media is pulled out of flow (absolute + transparent) so it keeps
@@ -208,7 +215,8 @@
     .dock.min .dock-ctrls { align-self:center; flex-shrink:0; }
     .dock.min .dock-min { display:none; }
     .dock.min .dock-pp, .dock.min .dock-exp { display:inline-flex; }
-    body.has-dock.dock-mini { padding-bottom:64px; }
+    .dock.min .dock-scrub { margin-top:7px; }
+    body.has-dock.dock-mini { padding-bottom:104px; }
 
     /* first-visit coachmark */
     .coach { position:absolute; z-index:80; background:var(--accent); color:#1a0f0e; font-size:0.78rem; font-weight:700; padding:9px 13px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.35); cursor:pointer; white-space:nowrap; }
@@ -226,8 +234,8 @@
       .dock-info { flex:1; min-width:0; }
       .dock-info .nm { font-size:1.2rem; }
       .dock-ctrls { align-self:center; }
-      body.has-dock { padding-bottom:300px; }
-      body.has-dock.dock-mini { padding-bottom:62px; }
+      body.has-dock { padding-bottom:330px; }
+      body.has-dock.dock-mini { padding-bottom:104px; }
     }
 
     @media (max-width:920px)  { .grid { grid-template-columns:repeat(3,1fr); } .wrap{ padding:0 28px; } }
@@ -290,6 +298,13 @@
       <div class="np-now"><span class="pulse"></span> Now playing</div>
       <div class="nm" id="dock-name">&mdash;</div>
       <div class="src" id="dock-src">SoundCloud</div>
+      <div class="dock-scrub">
+        <button class="skip" id="skip-back" type="button" aria-label="Back 15 seconds">&#9194;&thinsp;15</button>
+        <span class="t" id="t-cur">0:00</span>
+        <div class="bar" id="bar"><div class="bar-fill" id="bar-fill"></div><div class="bar-knob" id="bar-knob"></div></div>
+        <span class="t" id="t-dur">0:00</span>
+        <button class="skip" id="skip-fwd" type="button" aria-label="Forward 15 seconds">15&thinsp;&#9193;</button>
+      </div>
     </div>
     <div class="dock-ctrls">
       <button class="dock-pp" id="dock-pp" aria-label="Pause">&#9208;</button>
@@ -394,8 +409,27 @@
     var active=null;
     function setState(btn,ch){ var s=btn.querySelector('.state'); if(s) s.textContent=ch; }
     function updatePP(playing){ dockPP.innerHTML = playing ? '&#9208;' : '&#9654;'; dockPP.setAttribute('aria-label', playing?'Pause':'Play'); }
-    function clearPlayers(){ if(ytPlayer){ try{ ytPlayer.destroy(); }catch(_){} ytPlayer=null; } scWidget=null; currentType=null; pendingYt=null; }
+    function clearPlayers(){ stopPoll(); if(ytPlayer){ try{ ytPlayer.destroy(); }catch(_){} ytPlayer=null; } scWidget=null; currentType=null; pendingYt=null; resetScrub(); }
     function ytSize(){ var w = window.innerWidth<=620 ? Math.min(320, window.innerWidth-40) : 400; return { w:w, h:Math.round(w*9/16) }; }
+
+    // ── scrubber (works for both YT IFrame API and SC Widget API) ──
+    var barEl=document.getElementById('bar'), barFill=document.getElementById('bar-fill'), barKnob=document.getElementById('bar-knob'),
+        tCur=document.getElementById('t-cur'), tDur=document.getElementById('t-dur');
+    var scrubbing=false, dur=0, pos=0, pollTimer=null;
+    function fmtT(s){ s=Math.max(0,Math.floor(s||0)); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0'); }
+    function paintScrub(){ var f=dur>0?Math.min(1,pos/dur):0; barFill.style.width=(f*100)+'%'; barKnob.style.left=(f*100)+'%'; tCur.textContent=fmtT(pos); tDur.textContent=fmtT(dur); }
+    function resetScrub(){ dur=0; pos=0; scrubbing=false; paintScrub(); }
+    function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+    function startPoll(){ stopPoll(); pollTimer=setInterval(function(){ if(scrubbing) return; if(currentType==='yt'&&ytPlayer&&ytPlayer.getCurrentTime){ pos=ytPlayer.getCurrentTime()||0; var d=ytPlayer.getDuration&&ytPlayer.getDuration(); if(d) dur=d; paintScrub(); } },500); }
+    function livePos(){ if(currentType==='yt'&&ytPlayer&&ytPlayer.getCurrentTime) return ytPlayer.getCurrentTime()||0; return pos; }
+    function seekTo(sec){ sec=Math.max(0,dur?Math.min(dur,sec):sec); if(currentType==='yt'&&ytPlayer&&ytPlayer.seekTo){ ytPlayer.seekTo(sec,true); } else if(currentType==='sc'&&scWidget){ scWidget.seekTo(sec*1000); } pos=sec; paintScrub(); }
+    function barFrac(e){ var r=barEl.getBoundingClientRect(); var cx=(e.clientX!=null?e.clientX:(e.touches&&e.touches[0]?e.touches[0].clientX:0)); return Math.min(1,Math.max(0,(cx-r.left)/r.width)); }
+    barEl.addEventListener('pointerdown',function(e){ if(!active||!dur) return; scrubbing=true; try{ barEl.setPointerCapture(e.pointerId); }catch(_){} pos=barFrac(e)*dur; paintScrub(); });
+    barEl.addEventListener('pointermove',function(e){ if(!scrubbing) return; pos=barFrac(e)*dur; paintScrub(); });
+    barEl.addEventListener('pointerup',function(e){ if(!scrubbing) return; scrubbing=false; seekTo(barFrac(e)*dur); });
+    barEl.addEventListener('pointercancel',function(){ scrubbing=false; });
+    document.getElementById('skip-back').addEventListener('click',function(){ if(active) seekTo(livePos()-15); });
+    document.getElementById('skip-fwd').addEventListener('click',function(){ if(active) seekTo(livePos()+15); });
 
     function openDockUI(btn,name,src){
       dockName.textContent=name; dockSrc.textContent=src;
@@ -425,6 +459,8 @@
         scWidget=SC.Widget(f);
         scWidget.bind(SC.Widget.Events.PLAY,function(){ updatePP(true); });
         scWidget.bind(SC.Widget.Events.PAUSE,function(){ updatePP(false); });
+        scWidget.bind(SC.Widget.Events.READY,function(){ scWidget.getDuration(function(ms){ dur=(ms||0)/1000; paintScrub(); }); });
+        scWidget.bind(SC.Widget.Events.PLAY_PROGRESS,function(e){ if(scrubbing) return; pos=(e.currentPosition||0)/1000; paintScrub(); });
       }
     }
     function playYt(btn,videoId){
@@ -446,7 +482,7 @@
       function build(){
         ytPlayer=new YT.Player(f,{
           events:{
-            onReady:function(e){ try{ e.target.playVideo(); }catch(_){} updatePP(true); },
+            onReady:function(e){ try{ e.target.playVideo(); }catch(_){} updatePP(true); try{ dur=e.target.getDuration()||0; }catch(_){} pos=0; paintScrub(); startPoll(); },
             onStateChange:function(e){
               if(e.data===YT.PlayerState.PLAYING) updatePP(true);
               else if(e.data===YT.PlayerState.PAUSED||e.data===YT.PlayerState.ENDED) updatePP(false);
