@@ -319,6 +319,14 @@
 
     // ── email gate ──
     function hasEmail(){ try{ var v=localStorage.getItem('sc_email'); return !!v && EMAIL_RE.test(v);}catch(_){return false;} }
+    // The first successful play is free; from the second, ask for an email.
+    function playCount(){ try{ return parseInt(localStorage.getItem('sc_plays')||'0',10)||0; }catch(_){ return 0; } }
+    function bumpPlayCount(){ try{ localStorage.setItem('sc_plays', String(playCount()+1)); }catch(_){} }
+    function gateForPlay(){
+      if(hasEmail()) return Promise.resolve(true);
+      if(playCount() < 1) return Promise.resolve(true);   // first one is free
+      return ensureEmailGate();
+    }
     function ensureEmailGate(){
       if(hasEmail()) return Promise.resolve(true);
       return new Promise(function(resolve){
@@ -374,6 +382,7 @@
       btn.classList.add('playing'); setState(btn,'■');
       active={ button:btn };
       updatePP(true);
+      bumpPlayCount();
       if(sheetOv && sheetOv.classList.contains('show')) closeSheet();
     }
     function stopActive(){
@@ -437,7 +446,7 @@
     async function handleYtClick(btn){
       var wasMe=active&&active.button===btn;
       if(wasMe){ stopActive(); return; }
-      if(!(await ensureEmailGate())) return;
+      if(!(await gateForPlay())) return;
       stopActive();
       if(btn.dataset.yt){ playYt(btn,btn.dataset.yt); return; }
       btn.disabled=true; btn.classList.add('spinning');
@@ -455,7 +464,7 @@
         btn.addEventListener('click',async function(){
           var wasMe=active&&active.button===btn;
           if(wasMe){ stopActive(); return; }
-          if(!(await ensureEmailGate())) return;
+          if(!(await gateForPlay())) return;
           stopActive(); playSc(btn); dismissCoach();
         });
       });
