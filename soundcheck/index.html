@@ -1030,7 +1030,6 @@
         // Don't link to ra.co — send curious users to a Google search instead.
         var eventQuery = ev.title + (ev.venue ? ' ' + ev.venue : '') + ' london';
         var eventUrl = 'https://www.google.com/search?q=' + encodeURIComponent(eventQuery);
-        var interested = (ev.attending || 0).toLocaleString();
         var timeStr = formatTime(ev.startTime);
         var startTime = timeStr ? '<span class="dot">·</span><span>' + timeStr + '</span>' : '';
 
@@ -1068,8 +1067,6 @@
               '<h2><a href="' + escape(eventUrl) + '" target="_blank" rel="noopener noreferrer">' + escape(ev.title) + '</a></h2>' +
               '<div class="sub">' +
                 '<span class="venue">' + venue + '</span>' +
-                '<span class="dot">·</span>' +
-                '<span>' + interested + ' interested</span>' +
                 startTime +
               '</div>' +
             '</div>' +
