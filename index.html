@@ -77,7 +77,7 @@
     .form-note { font-size:0.72rem; color:#a8a298; text-align:center; margin-top:14px; }
 
     /* teaser to soundcheck */
-    .teaser { border-top:1px solid var(--border); background:var(--surface); }
+    .teaser { border-bottom:1px solid var(--border); background:var(--surface); }
     .teaser-inner { max-width:860px; margin:0 auto; padding:22px 32px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
     .teaser-inner .tt { font-size:0.95rem; font-weight:500; color:var(--muted); }
     .teaser-inner .tt b { color:var(--fg); font-weight:700; }
@@ -119,6 +119,14 @@
   </nav>
 
   <div id="page">
+    <!-- TEASER TO SOUNDCHECK (top) -->
+    <div class="teaser">
+      <div class="teaser-inner">
+        <span class="tt">Curious what&rsquo;s on? <b>See who&rsquo;s playing in London tonight.</b></span>
+        <a href="/soundcheck/">Soundcheck &rarr;</a>
+      </div>
+    </div>
+
     <!-- HERO -->
     <section class="hero">
       <div class="inner">
@@ -249,14 +257,6 @@
         </div>
       </div>
     </section>
-
-    <!-- TEASER TO SOUNDCHECK -->
-    <div class="teaser">
-      <div class="teaser-inner">
-        <span class="tt">Curious what&rsquo;s on? <b>See who&rsquo;s playing in London tonight.</b></span>
-        <a href="/soundcheck/">Soundcheck &rarr;</a>
-      </div>
-    </div>
 
     <footer>
       <div class="footer-inner">Made with love &middot; 2026 &middot; London &middot; Community-owned from day one</div>
