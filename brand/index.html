@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>6 Minutes · profile picture studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{ margin:0; padding:0; box-sizing:border-box; }
+    :root{
+      --bg:#f7f6f4; --surface:#ffffff; --fg:#0d0d0d; --muted:#6f6b62;
+      --accent:#ff7a6b; --accent-ink:#1a0f0e; --border:#e6e2da;
+      --head:"Bricolage Grotesque",sans-serif; --body:"Inter",sans-serif;
+    }
+    body{ background:var(--bg); color:var(--fg); font-family:var(--body); font-size:16px; line-height:1.6; }
+    .inner{ max-width:1180px; margin:0 auto; padding:0 40px; }
+    header{ border-bottom:1px solid var(--border); padding:24px 0; }
+    .logo{ font-family:var(--head); font-weight:800; font-size:0.8rem; letter-spacing:0.26em; text-transform:uppercase; }
+    h1{ font-family:var(--head); font-weight:800; font-size:clamp(1.8rem,4vw,2.6rem); letter-spacing:-0.03em; line-height:1; margin:22px 0 8px; }
+    .lead{ color:var(--muted); max-width:620px; font-size:1rem; }
+    .lead b{ color:var(--fg); font-weight:600; }
+
+    .layout{ display:grid; grid-template-columns:280px 1fr; gap:40px; padding:34px 0 16px; align-items:start; }
+    .controls{ position:sticky; top:20px; }
+    .grp{ margin-bottom:22px; }
+    .grp > .lbl{ font-size:0.6rem; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; display:block; }
+    .opt{ display:flex; flex-wrap:wrap; gap:7px; }
+    .opt button{ border:1px solid var(--border); background:#fff; border-radius:9px; padding:8px 12px; font:600 0.8rem var(--body); color:var(--fg); cursor:pointer; }
+    .opt button.on{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+    .opt button:hover:not(.on){ border-color:var(--accent); }
+    .opt.sw{ gap:9px; }
+    .sw button{ width:36px; height:36px; padding:0; border-radius:10px; border:1px solid rgba(0,0,0,0.16); }
+    .sw button.on{ box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent); }
+    .dl{ width:100%; background:var(--accent); color:var(--accent-ink); border:none; border-radius:10px; padding:14px; font:700 0.74rem var(--body); letter-spacing:0.16em; text-transform:uppercase; cursor:pointer; }
+    .dl:hover{ opacity:0.92; }
+
+    .stage{ background:#eceae3; border:1px solid var(--border); border-radius:22px; padding:40px; }
+    .top{ display:flex; gap:40px; align-items:center; flex-wrap:wrap; }
+    .av{ width:300px; height:300px; border-radius:50%; box-shadow:0 18px 40px rgba(0,0,0,0.18); display:block; }
+    .meta .sq{ width:170px; height:170px; border-radius:16px; box-shadow:0 10px 26px rgba(0,0,0,0.14); display:block; }
+    .meta .cap{ font-size:0.62rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); margin-top:10px; max-width:200px; }
+    .sizes{ display:flex; align-items:flex-end; gap:26px; margin-top:30px; padding-top:26px; border-top:1px solid #ddd8cf; }
+    .sizes figure{ text-align:center; }
+    .sizes img{ border-radius:50%; display:block; }
+    .sizes figcaption{ font-size:0.58rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-top:9px; }
+    .summary{ margin-top:18px; font-size:0.92rem; color:var(--muted); }
+    .summary b{ color:var(--fg); font-weight:600; }
+
+    @media (max-width:860px){ .layout{ grid-template-columns:1fr; } .controls{ position:static; } }
+    @media (max-width:720px){ .inner{ padding:0 22px; } .stage{ padding:24px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="inner">
+      <span class="logo">6 Minutes</span>
+      <h1>Profile picture</h1>
+      <p class="lead">An Instagram avatar built from the brand: Bricolage&nbsp;Grotesque 800, salmon&nbsp;<b>#ff7a6b</b>, and the signature full-stop. Instagram crops to a circle — preview at real sizes, then <b>download a 1080×1080 PNG</b>.</p>
+    </div>
+  </header>
+
+  <div class="layout inner">
+    <aside class="controls">
+      <div class="grp"><span class="lbl">Mark</span><div class="opt" id="g-mark"></div></div>
+      <div class="grp"><span class="lbl">Colourway</span><div class="opt sw" id="g-color"></div></div>
+      <button class="dl" id="dl">Download PNG · 1080</button>
+    </aside>
+
+    <section class="preview">
+      <div class="stage">
+        <div class="top">
+          <img class="av" id="av" alt="profile preview">
+          <div class="meta">
+            <img class="sq" id="sq" alt="full frame">
+            <div class="cap">The exported file (square). Instagram crops it to the circle.</div>
+          </div>
+        </div>
+        <div class="sizes">
+          <figure><img id="s1" width="104" height="104" alt=""><figcaption>Profile 104</figcaption></figure>
+          <figure><img id="s2" width="56" height="56" alt=""><figcaption>Feed 56</figcaption></figure>
+          <figure><img id="s3" width="32" height="32" alt=""><figcaption>Comment 32</figcaption></figure>
+        </div>
+      </div>
+      <div class="summary" id="summary"></div>
+    </section>
+  </div>
+
+  <canvas id="master" width="1080" height="1080" style="display:none"></canvas>
+
+  <script>
+    var MARKS=[['dot','6.'],['plain','6'],['stack','6 / MIN'],['badge','Badge']];
+    var COLORS=[
+      { id:'salmon',   name:'Salmon',   bg:'#ff7a6b', fg:'#1a0f0e', accent:'#fff7f2' },
+      { id:'ink',      name:'Ink',      bg:'#0f0f12', fg:'#ff7a6b', accent:'#f3ece6' },
+      { id:'charcoal', name:'Charcoal', bg:'#2b2b31', fg:'#ff7a6b', accent:'#f3ece6' },
+      { id:'bone',     name:'Bone',     bg:'#f7f6f4', fg:'#0d0d0d', accent:'#ff7a6b' }
+    ];
+    var state={ mark:'dot', color:0 };
+
+    var master=document.getElementById('master'), M=1080, mctx=master.getContext('2d');
+    function setFont(w,px){ mctx.font=w+' '+px+'px "Bricolage Grotesque", sans-serif'; }
+
+    function arc(ctx,str,cx,cy,r,spread,bottom){
+      var n=str.length; if(!n) return;
+      var per=spread/n;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      for(var i=0;i<n;i++){
+        var a = bottom ? (Math.PI/2 + spread/2 - per/2 - i*per)
+                       : (-Math.PI/2 - spread/2 + per/2 + i*per);
+        ctx.save();
+        ctx.translate(cx + r*Math.cos(a), cy + r*Math.sin(a));
+        ctx.rotate(bottom ? a - Math.PI/2 : a + Math.PI/2);
+        ctx.fillText(str[i],0,0);
+        ctx.restore();
+      }
+    }
+
+    function drawProfile(ctx, S, mark, cw){
+      ctx.clearRect(0,0,S,S);
+      ctx.fillStyle=cw.bg; ctx.fillRect(0,0,S,S);
+      var cx=S/2, cy=S/2;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+
+      if(mark==='plain'){
+        setFont(800, S*0.68); ctx.fillStyle=cw.fg; ctx.fillText('6', cx, cy + S*0.03);
+      }
+      else if(mark==='dot'){
+        var f=S*0.62; setFont(800,f);
+        ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+        var w6=ctx.measureText('6').width, wd=ctx.measureText('.').width, total=w6+wd;
+        var sx=cx-total/2, by=cy + f*0.345;
+        ctx.fillStyle=cw.fg; ctx.fillText('6', sx, by);
+        ctx.fillStyle=cw.accent; ctx.fillText('.', sx+w6, by);
+      }
+      else if(mark==='stack'){
+        setFont(800, S*0.47); ctx.fillStyle=cw.fg; ctx.fillText('6', cx, cy - S*0.075);
+        setFont(800, S*0.1); ctx.fillStyle=cw.accent;
+        try{ ctx.letterSpacing='0.22em'; }catch(_){}
+        ctx.fillText('MINUTES', cx + S*0.011, cy + S*0.235);
+        try{ ctx.letterSpacing='0px'; }catch(_){}
+      }
+      else if(mark==='badge'){
+        ctx.lineWidth=S*0.015; ctx.strokeStyle=cw.accent;
+        ctx.beginPath(); ctx.arc(cx,cy,S*0.43,0,Math.PI*2); ctx.stroke();
+        setFont(800, S*0.4); ctx.fillStyle=cw.fg; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('6', cx, cy - S*0.01);
+        setFont(800, S*0.072); ctx.fillStyle=cw.fg;
+        try{ ctx.letterSpacing='0.14em'; }catch(_){}
+        arc(ctx,'MINUTES',cx,cy,S*0.345,Math.PI*0.62,false);
+        arc(ctx,'LONDON',cx,cy,S*0.345,Math.PI*0.46,true);
+        try{ ctx.letterSpacing='0px'; }catch(_){}
+        // accent dots flanking the bottom word
+        ctx.fillStyle=cw.accent;
+        [[-1],[1]].forEach(function(s){ ctx.beginPath(); ctx.arc(cx + s[0]*S*0.205, cy + S*0.275, S*0.012, 0, Math.PI*2); ctx.fill(); });
+      }
+    }
+
+    function renderControls(){
+      document.getElementById('g-mark').innerHTML=MARKS.map(function(m){ return '<button data-mark="'+m[0]+'" class="'+(state.mark===m[0]?'on':'')+'">'+m[1]+'</button>'; }).join('');
+      document.getElementById('g-color').innerHTML=COLORS.map(function(c,i){ return '<button data-color="'+i+'" title="'+c.name+'" class="'+(state.color===i?'on':'')+'" style="background:'+c.bg+'"></button>'; }).join('');
+    }
+    function render(){
+      drawProfile(mctx, M, state.mark, COLORS[state.color]);
+      var url=master.toDataURL('image/png');
+      ['av','sq','s1','s2','s3'].forEach(function(id){ document.getElementById(id).src=url; });
+      renderControls();
+      var ml={dot:'6. (with full-stop)',plain:'6',stack:'6 over MINUTES',badge:'Circular badge'};
+      document.getElementById('summary').innerHTML='Mark: <b>'+ml[state.mark]+'</b> &middot; Colourway: <b>'+COLORS[state.color].name+'</b> &middot; export 1080&times;1080 PNG.';
+    }
+
+    document.body.addEventListener('click',function(e){
+      var m=e.target.closest('[data-mark]'); if(m){ state.mark=m.dataset.mark; render(); return; }
+      var c=e.target.closest('[data-color]'); if(c){ state.color=+c.dataset.color; render(); return; }
+    });
+    document.getElementById('dl').addEventListener('click',function(){
+      var c=document.createElement('canvas'); c.width=c.height=1080;
+      drawProfile(c.getContext('2d'),1080,state.mark,COLORS[state.color]);
+      c.toBlob(function(b){ var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='6minutes-ig-'+state.mark+'-'+COLORS[state.color].id+'.png'; a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); },1500); });
+    });
+
+    if(document.fonts && document.fonts.load){
+      document.fonts.load('800 200px "Bricolage Grotesque"').then(render).catch(render);
+      document.fonts.ready.then(render);
+    }
+    render();
+  </script>
+</body>
+</html>
