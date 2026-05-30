@@ -25,10 +25,19 @@
     nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; border-bottom:1px solid var(--border); }
     .logo { font-family:var(--head); font-weight:800; font-size:0.82rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--fg); text-decoration:none; }
     .logo:hover { color:var(--accent); }
-    .switch { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; }
-    .switch a { font-size:0.62rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; padding:6px 12px; border-radius:999px; text-decoration:none; color:var(--muted); }
+    .switch { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; flex-shrink:0; }
+    .switch a { font-size:0.62rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; padding:6px 12px; border-radius:999px; text-decoration:none; color:var(--muted); white-space:nowrap; }
     .switch a.on { background:var(--accent); color:#1a0f0e; }
     .switch a:not(.on):hover { color:var(--fg); }
+    @media (max-width:480px){
+      nav { gap:10px; }
+      .logo { font-size:0.74rem; letter-spacing:0.18em; }
+      .switch a { padding:6px 9px; font-size:0.55rem; letter-spacing:0.08em; }
+    }
+    @media (max-width:340px){
+      .logo { font-size:0.68rem; letter-spacing:0.14em; }
+      .switch a { padding:5px 7px; font-size:0.52rem; letter-spacing:0.05em; }
+    }
 
     /* cross-site teaser banner (below nav) */
     .teaser { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
@@ -108,7 +117,8 @@
     /* event sheet (tap a poster) */
     .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.62); backdrop-filter:blur(3px); z-index:70; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.22s; }
     .sheet-overlay.show { opacity:1; pointer-events:auto; }
-    .sheet { background:var(--surface); width:100%; max-width:560px; max-height:90vh; overflow-y:auto; border-radius:18px 18px 0 0; transform:translateY(100%); transition:transform 0.3s cubic-bezier(.4,0,.2,1); position:relative; }
+    .sheet { background:var(--surface); width:100%; max-width:560px; max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; border-radius:18px 18px 0 0; transform:translateY(100%); transition:transform 0.3s cubic-bezier(.4,0,.2,1); position:relative; }
+    .sheet-overlay { overscroll-behavior:contain; }
     .sheet-overlay.show .sheet { transform:translateY(0); }
     .sheet-close { position:absolute; top:12px; right:12px; width:36px; height:36px; border-radius:999px; background:rgba(0,0,0,0.5); border:none; color:#fff; font-size:17px; cursor:pointer; z-index:3; }
     .sheet .poster { width:100%; height:min(46vh,360px); aspect-ratio:auto; border-radius:0; margin-bottom:0; }
@@ -150,7 +160,7 @@
     .sheet-body .solo-cta { margin-top:16px; }
 
     /* play pills */
-    .play { width:48px; height:23px; padding:0; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:8px; border:1px solid; cursor:pointer; background:transparent; position:relative; flex-shrink:0; }
+    .play { width:48px; height:23px; padding:0; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:8px; border:1px solid; cursor:pointer; background:transparent; position:relative; flex-shrink:0; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
     .play .brand { width:13px; height:13px; display:block; }
     .play .state { font-size:9px; line-height:1; }
     .play.sc { color:#ff7a6b; border-color:var(--muted); }
@@ -192,10 +202,10 @@
     .corner { position:absolute; top:12px; right:14px; display:flex; gap:6px; z-index:3; }
 
     .ic { width:20px; height:20px; display:block; }
-    .iconbtn { background:transparent; border:none; color:var(--fg); cursor:pointer; padding:7px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; }
+    .iconbtn { background:transparent; border:none; color:var(--fg); cursor:pointer; padding:7px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none; }
     .iconbtn:hover { color:var(--accent); }
     .iconbtn:disabled { cursor:default; }
-    .play-main { width:46px; height:46px; border-radius:999px; background:var(--accent); color:var(--ink); border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .play-main { width:46px; height:46px; border-radius:999px; background:var(--accent); color:var(--ink); border:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
     .play-main .ic { width:22px; height:22px; }
 
     .video-wrap { flex:0 0 auto; }
@@ -689,6 +699,18 @@
 
     // ── event sheet (tap a poster) ──
     var sheetOv=document.getElementById('sheet-overlay'), sheetContent=document.getElementById('sheet-content');
+    // iOS-safe body scroll lock: position:fixed + saved scrollY, restored on close
+    var savedScrollY=0;
+    function lockBody(){
+      savedScrollY=window.scrollY||window.pageYOffset||0;
+      var s=document.body.style;
+      s.position='fixed'; s.top=(-savedScrollY)+'px'; s.left='0'; s.right='0'; s.width='100%';
+    }
+    function unlockBody(){
+      var s=document.body.style;
+      s.position=''; s.top=''; s.left=''; s.right=''; s.width='';
+      window.scrollTo(0, savedScrollY);
+    }
     function openSheet(ev){
       if(!ev) return;
       var time=formatTime(ev.startTime);
@@ -702,9 +724,9 @@
           soloCtaHTML(ev)+
         '</div>';
       wireCard(sheetContent);
-      sheetOv.classList.add('show'); document.body.style.overflow='hidden';
+      sheetOv.classList.add('show'); lockBody();
     }
-    function closeSheet(){ sheetOv.classList.remove('show'); document.body.style.overflow=''; }
+    function closeSheet(){ if(!sheetOv.classList.contains('show')) return; sheetOv.classList.remove('show'); unlockBody(); }
     document.getElementById('sheet-close').addEventListener('click',closeSheet);
     sheetOv.addEventListener('click',function(e){ if(e.target===sheetOv) closeSheet(); });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&sheetOv.classList.contains('show')) closeSheet(); });
