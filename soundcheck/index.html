@@ -312,18 +312,11 @@
     .sheet-line li .share-btn { width:30px; height:30px; margin-left:6px; }
     .sheet-line li .share-btn svg { width:14px; height:14px; }
 
-    /* event RSVP + share in the sheet header */
+    /* event save + share in the sheet header */
     .sheet-actions { display:flex; gap:9px; align-items:center; margin:14px 0 4px; }
-    .sheet-actions .share-btn { width:38px; height:38px; }
-    .sheet-actions .share-btn svg { width:16px; height:16px; }
-    .rsvp { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; }
-    .rsvp button { background:transparent; border:none; color:var(--fg); font:700 0.68rem var(--body); letter-spacing:0.04em; padding:8px 15px; border-radius:999px; cursor:pointer; white-space:nowrap; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
-    .rsvp button[data-go="going"].on { background:var(--accent); color:var(--ink); }
-    .rsvp button[data-go="not_going"].on { background:var(--muted); color:var(--bg); }
-    .rsvp button:not(.on):hover { color:var(--accent); }
-    /* not-going dims the grid card */
-    .gcard.dimmed { opacity:0.42; filter:saturate(0.6); }
-    .gcard.dimmed:hover { opacity:0.7; }
+    .sheet-actions .heart, .sheet-actions .share-btn { width:38px; height:38px; }
+    .sheet-actions .heart svg, .sheet-actions .share-btn svg { width:16px; height:16px; }
+    .sheet-actions .lbl { font-size:0.7rem; font-weight:600; color:var(--muted); }
 
     /* floating "N picks · Share" chip */
     .picks-chip { position:fixed; right:16px; bottom:24px; z-index:55; background:var(--accent); color:var(--accent-ink); border:none; border-radius:999px; padding:11px 16px; font:700 0.74rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:none; align-items:center; gap:8px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
@@ -832,13 +825,6 @@
           toggleSeen(sn.dataset.seenArt, {name:sn.dataset.name});
           return;
         }
-        var rb=e.target.closest('.rsvp [data-go]'); if(rb){
-          e.preventDefault(); e.stopPropagation();
-          var g=rb.closest('.rsvp'), id=g.dataset.rsvpEvt, meta={title:g.dataset.title, venue:g.dataset.venue, day:g.dataset.day};
-          if(rb.dataset.go==='going') toggleEvent(id, meta);
-          else toggleNotGoing(id, meta);
-          return;
-        }
         var s=e.target.closest('.share-btn'); if(s){
           e.preventDefault(); e.stopPropagation();
           if(s.dataset.shareArt) shareArtist(s.dataset.shareArt, s.dataset.name);
@@ -917,19 +903,14 @@
     function toggleEvent(id, meta){ if(id) setEvent(id, evtStatus(id)==='going' ? null : 'going', meta); }
     // Seen / Not-going are account features → nudge sign-in when logged out
     function toggleSeen(slug, meta){ if(!slug) return; if(!currentUser){ openAuth(); return; } setArtist(slug, artStatus(slug)==='seen' ? null : 'seen', meta&&meta.name); }
-    function toggleNotGoing(id, meta){ if(!id) return; if(!currentUser){ openAuth(); return; } setEvent(id, evtStatus(id)==='not_going' ? null : 'not_going', meta); }
     function refreshArtistButtons(slug){
       var k=CSS.escape(slug), st=artStatus(slug);
       document.querySelectorAll('.heart[data-pick-art="'+k+'"]').forEach(function(b){ var on=st==='wanna_see'; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on?'true':'false'); });
       document.querySelectorAll('.seen-btn[data-seen-art="'+k+'"]').forEach(function(b){ b.classList.toggle('on', st==='seen'); });
     }
     function refreshEventButtons(id){
-      var k=CSS.escape(id), st=evtStatus(id);
-      document.querySelectorAll('.heart[data-pick-evt="'+k+'"]').forEach(function(b){ var on=st==='going'; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on?'true':'false'); });
-      document.querySelectorAll('.rsvp[data-rsvp-evt="'+k+'"]').forEach(function(g){
-        g.querySelectorAll('[data-go]').forEach(function(b){ b.classList.toggle('on', b.dataset.go===st); });
-      });
-      var card=gridEl&&gridEl.querySelector('.gcard[data-evt="'+k+'"]'); if(card) card.classList.toggle('dimmed', st==='not_going');
+      var k=CSS.escape(id), on=isEventPicked(id);
+      document.querySelectorAll('.heart[data-pick-evt="'+k+'"]').forEach(function(b){ b.classList.toggle('on', on); b.setAttribute('aria-pressed', on?'true':'false'); });
     }
     // back-compat shim for any remaining callers
     function refreshHeartsFor(kind, key){ if(kind==='art') refreshArtistButtons(key); else refreshEventButtons(key); }
@@ -1131,7 +1112,7 @@
       var ar=Object.keys(picks.artists).filter(function(s){ return artStatus(s)==='wanna_see'; });
       if(!ev.length && !ar.length){ trayBody.innerHTML='<div class="empty">No picks yet. Tap the heart on any artist or event to add.</div>'; return; }
       var h='';
-      if(ev.length){ h+='<h4>Going ('+ev.length+')</h4><ul class="tray-line">'+ev.map(function(id){ return trayLineEvent(id, picks.events[id]); }).join('')+'</ul>'; }
+      if(ev.length){ h+='<h4>Events ('+ev.length+')</h4><ul class="tray-line">'+ev.map(function(id){ return trayLineEvent(id, picks.events[id]); }).join('')+'</ul>'; }
       if(ar.length){ h+='<h4>Wanna see ('+ar.length+')</h4><ul class="tray-line">'+ar.map(function(s){ return trayLineArtist(s, picks.artists[s]); }).join('')+'</ul>'; }
       trayBody.innerHTML=h;
     }
@@ -1171,7 +1152,7 @@
       });
       Object.keys(picks.events).forEach(function(i){ if(evtStatus(i)==='going') going.push({i:i, e:picks.events[i]}); });
       var h='';
-      if(going.length){ h+='<h4>Going ('+going.length+')</h4><ul class="tray-line">'+going.map(function(g){ return meRow(g.e.title||'Event', (g.e.venue||'')+(g.e.day?(' · '+g.e.day):''), 'data-rm-evt="'+esc(g.i)+'"'); }).join('')+'</ul>'; }
+      if(going.length){ h+='<h4>Saved events ('+going.length+')</h4><ul class="tray-line">'+going.map(function(g){ return meRow(g.e.title||'Event', (g.e.venue||'')+(g.e.day?(' · '+g.e.day):''), 'data-rm-evt="'+esc(g.i)+'"'); }).join('')+'</ul>'; }
       if(wannaComing.length){ h+='<h4>Wanna see · coming up ('+wannaComing.length+')</h4><ul class="tray-line">'+wannaComing.map(function(w){ return meRow(w.nm, (w.ev.venue||'')+(w.ev._day?(' · '+w.ev._day):''), 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
       if(wannaList.length){ h+='<h4>Wanna see · on your list ('+wannaList.length+')</h4><ul class="tray-line">'+wannaList.map(function(w){ return meRow(w.nm, 'no upcoming London date yet', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
       if(seen.length){ h+='<h4>Seen live ('+seen.length+')</h4><ul class="tray-line">'+seen.map(function(w){ return meRow(w.nm, '', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
@@ -1312,13 +1293,8 @@
     function openSheet(ev){
       if(!ev) return;
       var time=formatTime(ev.startTime), eid=ev.id!=null?String(ev.id):'';
-      var st = eid ? evtStatus(eid) : null;
-      var dataAttrs = 'data-rsvp-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" data-day="'+esc(ev._day||'')+'"';
-      // Going / Not-going RSVP control (Going = your "picks"; Not-going is an account feature)
-      var rsvp = eid ? '<div class="rsvp" '+dataAttrs+'>'+
-          '<button type="button" data-go="going" class="'+(st==='going'?'on':'')+'">Going</button>'+
-          '<button type="button" data-go="not_going" class="'+(st==='not_going'?'on':'')+'">Not going</button>'+
-        '</div>' : '';
+      var evPicked = eid && isEventPicked(eid) ? ' on' : '';
+      var evHeart = eid ? '<button class="heart'+evPicked+'" type="button" data-pick-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" data-day="'+esc(ev._day||'')+'" aria-pressed="'+(evPicked?'true':'false')+'" aria-label="Save this event">'+HEART_SVG+'</button>' : '';
       var evShare = eid ? '<button class="share-btn" type="button" data-share-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" aria-label="Share this event">'+SHARE_SVG+'</button>' : '';
       sheetContent.innerHTML=
         posterHTML(ev)+
@@ -1326,7 +1302,7 @@
           (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
           '<h3>'+esc(ev.title)+'</h3>'+
           '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
-          (eid ? '<div class="sheet-actions">'+rsvp+evShare+'</div>' : '')+
+          (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Save or share this event</span></div>' : '')+
           '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
           soloCtaHTML(ev)+
         '</div>';
