@@ -22,7 +22,8 @@
     .wrap { max-width:1180px; margin:0 auto; padding:0 40px; }
 
     /* nav */
-    nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; border-bottom:1px solid var(--border); }
+    nav { display:flex; align-items:center; gap:14px; padding:22px 0; border-bottom:1px solid var(--border); }
+    nav .logo { margin-right:auto; }
     .logo { font-family:var(--head); font-weight:800; font-size:0.82rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--fg); text-decoration:none; }
     .logo:hover { color:var(--accent); }
     .switch { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; flex-shrink:0; }
@@ -363,6 +364,39 @@
     .sheet-line li.picked, .line li.picked { background:rgba(255,122,107,0.07); border-radius:6px; padding:4px 6px; margin:-4px -6px; }
     .shared-banner .b-list b { color:var(--accent); font-weight:700; }
     .shared-banner .b-list { color:var(--fg); line-height:1.5; }
+
+    /* ── account (Phase 2 sign-in) ── */
+    .account { display:inline-flex; align-items:center; gap:8px; }
+    .account .signin-btn { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:7px 14px; font:700 0.62rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
+    .account .signin-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .account .who { display:inline-flex; align-items:center; gap:7px; background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:5px 6px 5px 12px; font:600 0.72rem var(--body); cursor:pointer; }
+    .account .who:hover { border-color:var(--accent); }
+    .account .who .av { width:22px; height:22px; border-radius:999px; background:var(--accent); color:var(--ink); display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:0.7rem; text-transform:uppercase; }
+    .account .who .hn { max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .menu { position:absolute; right:0; top:calc(100% + 8px); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:6px; min-width:170px; box-shadow:0 14px 36px rgba(0,0,0,0.5); z-index:90; display:none; }
+    .menu.show { display:block; }
+    .menu button, .menu a { display:block; width:100%; text-align:left; background:transparent; border:none; color:var(--fg); font:600 0.82rem var(--body); padding:9px 11px; border-radius:8px; cursor:pointer; text-decoration:none; }
+    .menu button:hover, .menu a:hover { background:rgba(255,255,255,0.05); color:var(--accent); }
+    .menu .div { height:1px; background:var(--border); margin:5px 0; }
+    .account-wrap { position:relative; }
+
+    /* sign-in modal */
+    .auth-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.66); backdrop-filter:blur(4px); z-index:95; display:flex; align-items:center; justify-content:center; padding:22px; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .auth-overlay.show { opacity:1; pointer-events:auto; }
+    .auth-box { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px 26px 24px; width:100%; max-width:380px; position:relative; transform:translateY(10px); transition:transform .2s; }
+    .auth-overlay.show .auth-box { transform:translateY(0); }
+    .auth-box .eyebrow { font-size:0.6rem; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); }
+    .auth-box h3 { font-family:var(--head); font-size:1.55rem; font-weight:800; letter-spacing:-0.02em; line-height:1.1; margin:10px 0 8px; }
+    .auth-box p { color:var(--muted); font-size:0.9rem; line-height:1.5; margin-bottom:16px; }
+    .auth-box input { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--fg); border-radius:10px; padding:13px 14px; font:500 0.95rem var(--body); outline:none; }
+    .auth-box input:focus { border-color:var(--accent); }
+    .auth-box .go { width:100%; margin-top:10px; background:var(--accent); color:var(--ink); border:none; border-radius:10px; padding:13px; font:700 0.72rem var(--body); letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; }
+    .auth-box .go:disabled { opacity:0.6; cursor:default; }
+    .auth-box .err { color:var(--accent); font-size:0.82rem; min-height:1.1em; margin-top:8px; }
+    .auth-box .sent { text-align:center; }
+    .auth-box .sent .big { font-size:2.4rem; }
+    .auth-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:16px; cursor:pointer; }
+    @media (max-width:480px){ .account .who .hn { max-width:80px; } }
   </style>
 </head>
 <body>
@@ -373,6 +407,7 @@
         <a href="/">6 Minutes</a>
         <a class="on" href=".">Soundcheck</a>
       </div>
+      <div class="account account-wrap" id="account"></div>
     </nav>
 
     <div class="teaser">
@@ -448,6 +483,28 @@
   </div>
   <div class="toast" id="toast"></div>
 
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-box" id="auth-box">
+      <button class="auth-close" id="auth-close" type="button" aria-label="Close">&times;</button>
+      <div id="auth-form-state">
+        <div class="eyebrow">Save your picks</div>
+        <h3>Sign in to <span style="color:var(--accent)">soundcheck</span>.</h3>
+        <p>No password. We&rsquo;ll email you a one-tap sign-in link, so your picks follow you across devices.</p>
+        <form id="auth-form">
+          <input type="email" id="auth-email" placeholder="you@email.com" autocomplete="email" inputmode="email" required>
+          <button class="go" type="submit" id="auth-go">Email me a link</button>
+          <div class="err" id="auth-err"></div>
+        </form>
+      </div>
+      <div id="auth-sent-state" class="sent" hidden>
+        <div class="big">&#9993;&#65039;</div>
+        <h3>Check your inbox.</h3>
+        <p>We sent a sign-in link to <b id="auth-sent-to"></b>. Tap it on this device and you&rsquo;re in.</p>
+        <button class="go" type="button" id="auth-sent-done">Done</button>
+      </div>
+    </div>
+  </div>
+
   <button class="picks-chip" id="picks-chip" type="button" aria-label="Open my picks">
     <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z"/></svg>
     <span><span class="count" id="picks-count">0</span> picks &middot; Share</span>
@@ -478,9 +535,11 @@
   <script src="https://w.soundcloud.com/player/api.js"></script>
 
   <script>
+    // First-party API subdomain → HttpOnly Domain=.6minutes.club cookies work
+    // (same-site as the frontend). Falls back to the onrender host if needed.
     var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? ''
-      : 'https://soundcheck-api-15aq.onrender.com';
+      : 'https://api.6minutes.club';
 
     var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -794,15 +853,19 @@
     function isEventPicked(id){ return !!picks.events[id]; }
     function toggleArtist(slug, meta){
       if(!slug) return;
-      if(picks.artists[slug]) delete picks.artists[slug];
-      else picks.artists[slug] = { name:(meta&&meta.name)||slug, t:Date.now() };
+      var on;
+      if(picks.artists[slug]){ delete picks.artists[slug]; on=false; }
+      else { picks.artists[slug] = { name:(meta&&meta.name)||slug, t:Date.now() }; on=true; }
       savePicks(); afterPicksChanged(); refreshHeartsFor('art', slug);
+      if(currentUser) syncArtist(slug, on ? 'wanna_see' : null, meta&&meta.name);
     }
     function toggleEvent(id, meta){
       if(!id) return;
-      if(picks.events[id]) delete picks.events[id];
-      else picks.events[id] = { title:(meta&&meta.title)||'', venue:(meta&&meta.venue)||'', day:(meta&&meta.day)||'', t:Date.now() };
+      var on;
+      if(picks.events[id]){ delete picks.events[id]; on=false; }
+      else { picks.events[id] = { title:(meta&&meta.title)||'', venue:(meta&&meta.venue)||'', day:(meta&&meta.day)||'', t:Date.now() }; on=true; }
       savePicks(); afterPicksChanged(); refreshHeartsFor('evt', id);
+      if(currentUser) syncEvent(id, on ? 'going' : null, meta);
     }
     function refreshHeartsFor(kind, key){
       var sel = kind==='art' ? '.heart[data-pick-art="'+CSS.escape(key)+'"]' : '.heart[data-pick-evt="'+CSS.escape(key)+'"]';
@@ -817,6 +880,117 @@
       document.getElementById('picks-count').textContent=String(n);
       chip.classList.toggle('show', n>0);
     }
+
+    // ── account / sign-in (Phase 2; optional + additive) ──
+    var currentUser=null;
+    var SESSION_KEY='sc_session';
+    function sessionToken(){ try{ return localStorage.getItem(SESSION_KEY)||''; }catch(_){ return ''; } }
+    // Cookie auth works first-party (api.6minutes.club ↔ 6minutes.club); the
+    // bearer token is a belt-and-braces fallback for any context where the
+    // cookie can't ride along.
+    function authedFetch(path, opts){
+      opts=opts||{}; opts.credentials='include';
+      var t=sessionToken(); if(t){ opts.headers=Object.assign({}, opts.headers, { Authorization:'Bearer '+t }); }
+      return fetch(API_BASE+path, opts);
+    }
+    function syncArtist(slug, status, name){
+      authedFetch('/api/shelf/artist',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ slug:slug, status:status, name:name||null }) }).catch(function(){});
+    }
+    function syncEvent(id, status, meta){
+      authedFetch('/api/rsvp/event',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ eventId:id, status:status, title:meta&&meta.title, venue:meta&&meta.venue, date:meta&&meta.day }) }).catch(function(){});
+    }
+    function renderAccount(){
+      var el=document.getElementById('account');
+      if(currentUser){
+        var initial=(currentUser.handle||'?').charAt(0);
+        el.innerHTML='<button class="who" id="who-btn" aria-haspopup="true"><span class="av">'+esc(initial)+'</span><span class="hn">@'+esc(currentUser.handle)+'</span></button>'+
+          '<div class="menu" id="acct-menu"><button id="menu-me" type="button">My picks</button><div class="div"></div><button id="menu-signout" type="button">Sign out</button></div>';
+        document.getElementById('who-btn').addEventListener('click',function(e){ e.stopPropagation(); document.getElementById('acct-menu').classList.toggle('show'); });
+        document.getElementById('menu-me').addEventListener('click',function(){ document.getElementById('acct-menu').classList.remove('show'); openTray(); });
+        document.getElementById('menu-signout').addEventListener('click',signOut);
+      } else {
+        el.innerHTML='<button class="signin-btn" id="signin-btn" type="button">Sign in</button>';
+        document.getElementById('signin-btn').addEventListener('click',openAuth);
+      }
+    }
+    document.addEventListener('click',function(){ var m=document.getElementById('acct-menu'); if(m) m.classList.remove('show'); });
+
+    async function loadMe(){
+      // Always ask: the session may be an HttpOnly cookie (unreadable by JS)
+      // rather than a bearer token. /api/auth/me is cheap and returns null if
+      // there's no session.
+      try{
+        var r=await authedFetch('/api/auth/me');
+        var j=await r.json().catch(function(){return {};});
+        currentUser=j.user||null;
+      }catch(_){ currentUser=null; }
+      renderAccount();
+      if(currentUser) await hydrateShelf();
+    }
+    // Pull server shelves into the local `picks` model so the UI (hearts,
+    // chip, tray) reflects the account everywhere, on every device.
+    async function hydrateShelf(){
+      try{
+        var r=await authedFetch('/api/shelf'); var j=await r.json();
+        (j.artists||[]).forEach(function(a){ if(!picks.artists[a.artist_slug]) picks.artists[a.artist_slug]={ name:a.artist_name||a.artist_slug, t:Date.now(), status:a.status }; else picks.artists[a.artist_slug].status=a.status; });
+        (j.events||[]).forEach(function(e){ if(e.status==='going' && !picks.events[e.event_id]) picks.events[e.event_id]={ title:e.event_title||'', venue:e.venue||'', day:e.event_date||'', t:Date.now() }; });
+        savePicks(); afterPicksChanged();
+        document.querySelectorAll('.heart[data-pick-art]').forEach(function(b){ b.classList.toggle('on', isArtistPicked(b.dataset.pickArt)); });
+        document.querySelectorAll('.heart[data-pick-evt]').forEach(function(b){ b.classList.toggle('on', isEventPicked(b.dataset.pickEvt)); });
+      }catch(_){}
+    }
+    async function signOut(){
+      try{ await authedFetch('/api/auth/logout',{ method:'POST' }); }catch(_){}
+      try{ localStorage.removeItem(SESSION_KEY); }catch(_){}
+      currentUser=null; renderAccount(); showToast('Signed out');
+    }
+
+    // sign-in modal
+    var authOv=document.getElementById('auth-overlay');
+    function openAuth(){ document.getElementById('auth-form-state').hidden=false; document.getElementById('auth-sent-state').hidden=true; document.getElementById('auth-err').textContent=''; authOv.classList.add('show'); setTimeout(function(){ var i=document.getElementById('auth-email'); if(i) i.focus(); },60); }
+    function closeAuth(){ authOv.classList.remove('show'); }
+    document.getElementById('auth-close').addEventListener('click',closeAuth);
+    document.getElementById('auth-sent-done').addEventListener('click',closeAuth);
+    authOv.addEventListener('click',function(e){ if(e.target===authOv) closeAuth(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&authOv.classList.contains('show')) closeAuth(); });
+    document.getElementById('auth-form').addEventListener('submit',async function(e){
+      e.preventDefault();
+      var input=document.getElementById('auth-email'), go=document.getElementById('auth-go'), err=document.getElementById('auth-err');
+      var email=input.value.trim().toLowerCase();
+      if(!EMAIL_RE.test(email)||email.length>254){ err.textContent='Enter a valid email.'; input.focus(); return; }
+      go.disabled=true; err.textContent='';
+      try{
+        var r=await fetch(API_BASE+'/api/auth/start',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email:email }) });
+        if(!r.ok){ var j=await r.json().catch(function(){return {};}); err.textContent=(j.error||'Something went wrong')+'.'; go.disabled=false; return; }
+        document.getElementById('auth-sent-to').textContent=email;
+        document.getElementById('auth-form-state').hidden=true;
+        document.getElementById('auth-sent-state').hidden=false;
+      }catch(_){ err.textContent='Network error — try again.'; }
+      finally{ go.disabled=false; }
+    });
+
+    // On boot: consume #session=… handed back by the magic-link callback
+    // (cookie is primary; this is the bearer fallback), then load the account.
+    (function consumeSessionHash(){
+      var m=(location.hash||'').match(/session=([a-f0-9]+)/i);
+      if(m){
+        try{ localStorage.setItem(SESSION_KEY, m[1]); }catch(_){}
+        history.replaceState(null,'',location.pathname+location.search);
+        // First sign-in: migrate any anonymous localStorage picks into the account.
+        var hadLocal=pickCount()>0;
+        loadMe().then(function(){
+          if(currentUser && hadLocal){
+            authedFetch('/api/picks/migrate',{ method:'POST', headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({ artists:Object.keys(picks.artists).map(function(s){return {slug:s,name:picks.artists[s].name};}),
+                                    events:Object.keys(picks.events).map(function(i){return {id:i,title:picks.events[i].title,venue:picks.events[i].venue,day:picks.events[i].day};}) })
+            }).then(function(){ showToast('Signed in — your picks are saved'); }).catch(function(){});
+          } else if(currentUser){ showToast('Signed in'); }
+        });
+        return true;
+      }
+      loadMe();
+      return false;
+    })();
 
     // URL encoding: base64url(JSON {a:[slugs], e:[ids], d:date})
     function b64url(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
