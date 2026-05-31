@@ -353,9 +353,16 @@
     .shared-banner .b-actions button.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
     .shared-banner .b-actions button:hover:not(.primary) { border-color:var(--accent); color:var(--accent); }
 
+    /* heart + share row on each grid card */
+    .card-actions { display:flex; gap:7px; justify-content:flex-end; align-items:center; margin-top:8px; }
+    .gcard .card-actions .heart, .gcard .card-actions .share-btn { width:28px; height:28px; }
+    .gcard .card-actions .heart svg, .gcard .card-actions .share-btn svg { width:13px; height:13px; }
+
     /* highlight shared items */
-    .gcard.picked { box-shadow:0 0 0 2px var(--accent); border-radius:12px; padding:8px; margin:-8px; }
+    .gcard.picked { box-shadow:0 0 0 2px var(--accent); border-radius:12px; padding:8px; margin:-8px; scroll-margin-top:90px; }
     .sheet-line li.picked, .line li.picked { background:rgba(255,122,107,0.07); border-radius:6px; padding:4px 6px; margin:-4px -6px; }
+    .shared-banner .b-list b { color:var(--accent); font-weight:700; }
+    .shared-banner .b-list { color:var(--fg); line-height:1.5; }
   </style>
 </head>
 <body>
@@ -394,9 +401,9 @@
 
     <div class="status" id="status"></div>
     <div class="shared-banner" id="shared-banner">
-      <div><div class="b-h" id="shared-h">Shared with you</div><div class="b-t" id="shared-t"></div></div>
+      <div><div class="b-h" id="shared-h">Shared with you</div><div class="b-t b-list" id="shared-t"></div></div>
       <div class="b-actions">
-        <button class="primary" id="shared-add" type="button">Add to my picks</button>
+        <button class="primary" id="shared-see-more" type="button">See more</button>
         <button id="shared-dismiss" type="button">Dismiss</button>
       </div>
     </div>
@@ -937,32 +944,29 @@
       slugs.forEach(function(slug){
         gridEl.querySelectorAll('.line li[data-slug="'+CSS.escape(slug)+'"]').forEach(function(li){ li.classList.add('picked'); });
       });
-      // Banner
-      var bits=[]; if(ids.length) bits.push(ids.length+' event'+(ids.length===1?'':'s')); if(slugs.length) bits.push(slugs.length+' artist'+(slugs.length===1?'':'s'));
-      document.getElementById('shared-t').textContent='A friend sent you their picks — '+bits.join(' + ')+', highlighted at the top.';
+      // Banner copy — list real names of the shared events + artists
+      var evNames = ids.map(function(id){ var ev=lookup.byEvent[id]; return ev ? ev.title : null; }).filter(Boolean);
+      var arNames = slugs.map(function(s){ var hit=lookup.byArtist[s]; return hit ? hit.artist.name : null; }).filter(Boolean);
+      function namesList(names, capN){
+        var shown = names.slice(0, capN);
+        var rest = names.length - shown.length;
+        return shown.map(function(n){ return '<b>'+esc(n)+'</b>'; }).join(', ') + (rest>0 ? ' <span style="color:var(--muted)">+'+rest+' more</span>' : '');
+      }
+      var parts=[];
+      if(evNames.length) parts.push('Events: '+namesList(evNames, 4));
+      if(arNames.length) parts.push('Artists: '+namesList(arNames, 6));
+      document.getElementById('shared-t').innerHTML = parts.join('<br>') || 'A friend sent you some picks.';
       document.getElementById('shared-banner').classList.add('show');
     }
     document.getElementById('shared-dismiss').addEventListener('click',function(){
       document.getElementById('shared-banner').classList.remove('show');
     });
-    document.getElementById('shared-add').addEventListener('click',function(){
-      if(!sharedPicks) return;
-      (sharedPicks.events||[]).forEach(function(id){
-        var ev=lookup.byEvent[id]; if(!ev) return;
-        if(!picks.events[id]) picks.events[id]={ title:ev.title, venue:ev.venue||'', day:ev._day||'', t:Date.now() };
-      });
-      (sharedPicks.artists||[]).forEach(function(slug){
-        var hit=lookup.byArtist[slug]; if(!hit) return;
-        if(!picks.artists[slug]) picks.artists[slug]={ name:hit.artist.name, t:Date.now() };
-      });
-      savePicks(); afterPicksChanged();
-      // refresh visible hearts
-      document.querySelectorAll('.heart[data-pick-art],.heart[data-pick-evt]').forEach(function(b){
-        var s=b.dataset.pickArt, i=b.dataset.pickEvt;
-        var on = s ? isArtistPicked(s) : (i ? isEventPicked(i) : false);
-        b.classList.toggle('on', on);
-      });
-      showToast('Added to your picks');
+    document.getElementById('shared-see-more').addEventListener('click',function(){
+      // Scroll to the first picked card; fall back to first card with a picked artist row; fall back to first card.
+      var first = gridEl.querySelector('.gcard.picked');
+      if(!first){ var li=gridEl.querySelector('.line li.picked'); if(li) first=li.closest('.gcard'); }
+      if(!first) first = gridEl.querySelector('.gcard');
+      if(first) first.scrollIntoView({behavior:'smooth', block:'start'});
     });
 
     afterPicksChanged();
@@ -990,11 +994,17 @@
       var time=formatTime(ev.startTime);
       var pick=isPickVenue(ev.venue)?'<span class="pick">Pick</span>':'';
       var eid=ev.id!=null?String(ev.id):'';
+      var evPicked = eid && isEventPicked(eid) ? ' on' : '';
+      var actions = eid ? '<div class="card-actions">'+
+        '<button class="heart'+evPicked+'" type="button" data-pick-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" data-day="'+esc(ev._day||'')+'" aria-pressed="'+(evPicked?'true':'false')+'" aria-label="Pick this event">'+HEART_SVG+'</button>'+
+        '<button class="share-btn" type="button" data-share-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" aria-label="Share this event">'+SHARE_SVG+'</button>'+
+      '</div>' : '';
       return '<div class="gcard"'+(eid?' data-evt="'+esc(eid)+'"':'')+'>'+
         '<button class="card-poster" type="button" aria-label="View '+esc(ev.title)+' lineup">'+posterHTML(ev)+'<span class="expand-badge">'+EXPAND_SVG+'</span></button>'+
         pick+
         '<h3><button class="title-btn" type="button">'+esc(ev.title)+'</button></h3>'+
         '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
+        actions+
         '<ul class="line">'+lineupHTML(ev,5,false)+'</ul>'+
         soloCtaHTML(ev)+
       '</div>';
