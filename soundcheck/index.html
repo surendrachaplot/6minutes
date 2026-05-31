@@ -300,17 +300,30 @@
     .share-btn { width:26px; height:26px; }
     .share-btn svg { width:13px; height:13px; }
     .share-btn:hover { color:var(--accent); border-color:var(--accent); }
-    .line li .heart, .sheet-line li .heart, .line li .share-btn, .sheet-line li .share-btn { margin-left:auto; }
+    .line li .heart, .line li .share-btn { margin-left:auto; }
+    .sheet-line li .heart { margin-left:auto; }
+    /* seen toggle (sheet rows) — a check that fills salmon when "seen live" */
+    .seen-btn { background:transparent; border:1px solid var(--border); color:var(--muted); cursor:pointer; padding:0; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:30px; height:30px; margin-left:6px; transition:color .12s, border-color .12s, background .12s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .seen-btn svg { width:15px; height:15px; display:block; }
+    .seen-btn:hover { color:var(--accent); border-color:var(--accent); }
+    .seen-btn.on { color:var(--accent); border-color:var(--accent); background:rgba(255,122,107,0.16); }
     .sheet-line li .heart { width:30px; height:30px; }
     .sheet-line li .heart svg { width:15px; height:15px; }
     .sheet-line li .share-btn { width:30px; height:30px; margin-left:6px; }
     .sheet-line li .share-btn svg { width:14px; height:14px; }
 
-    /* event-level pick + share buttons in the sheet header */
+    /* event RSVP + share in the sheet header */
     .sheet-actions { display:flex; gap:9px; align-items:center; margin:14px 0 4px; }
-    .sheet-actions .heart, .sheet-actions .share-btn { width:36px; height:36px; }
-    .sheet-actions .heart svg, .sheet-actions .share-btn svg { width:16px; height:16px; }
-    .sheet-actions .lbl { font-size:0.7rem; font-weight:600; color:var(--muted); }
+    .sheet-actions .share-btn { width:38px; height:38px; }
+    .sheet-actions .share-btn svg { width:16px; height:16px; }
+    .rsvp { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; }
+    .rsvp button { background:transparent; border:none; color:var(--fg); font:700 0.68rem var(--body); letter-spacing:0.04em; padding:8px 15px; border-radius:999px; cursor:pointer; white-space:nowrap; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .rsvp button[data-go="going"].on { background:var(--accent); color:var(--ink); }
+    .rsvp button[data-go="not_going"].on { background:var(--muted); color:var(--bg); }
+    .rsvp button:not(.on):hover { color:var(--accent); }
+    /* not-going dims the grid card */
+    .gcard.dimmed { opacity:0.42; filter:saturate(0.6); }
+    .gcard.dimmed:hover { opacity:0.7; }
 
     /* floating "N picks · Share" chip */
     .picks-chip { position:fixed; right:16px; bottom:24px; z-index:55; background:var(--accent); color:var(--accent-ink); border:none; border-radius:999px; padding:11px 16px; font:700 0.74rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:none; align-items:center; gap:8px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
@@ -522,6 +535,15 @@
       </div>
       <div id="tray-body"></div>
       <button class="clear-all" id="clear-picks" type="button">Clear all picks</button>
+    </div>
+  </div>
+
+  <div class="picks-tray-overlay" id="me-overlay">
+    <div class="picks-tray" id="me-sheet">
+      <button class="tray-close" id="me-close" type="button" aria-label="Close">&times;</button>
+      <h3 id="me-title">My picks</h3>
+      <div class="sub" id="me-sub"></div>
+      <div id="me-body"></div>
     </div>
   </div>
 
@@ -797,12 +819,24 @@
           btn.textContent = exp ? 'Show less' : '+ '+btn.dataset.extra+' more';
         });
       });
-      // Heart toggles + per-item share (delegated)
+      // Heart / Seen / RSVP toggles + per-item share (delegated)
       scope.addEventListener('click',function(e){
         var h=e.target.closest('.heart'); if(h){
           e.preventDefault(); e.stopPropagation();
           if(h.dataset.pickArt) toggleArtist(h.dataset.pickArt, {name:h.dataset.name});
           else if(h.dataset.pickEvt) toggleEvent(h.dataset.pickEvt, {title:h.dataset.title, venue:h.dataset.venue, day:h.dataset.day});
+          return;
+        }
+        var sn=e.target.closest('.seen-btn'); if(sn){
+          e.preventDefault(); e.stopPropagation();
+          toggleSeen(sn.dataset.seenArt, {name:sn.dataset.name});
+          return;
+        }
+        var rb=e.target.closest('.rsvp [data-go]'); if(rb){
+          e.preventDefault(); e.stopPropagation();
+          var g=rb.closest('.rsvp'), id=g.dataset.rsvpEvt, meta={title:g.dataset.title, venue:g.dataset.venue, day:g.dataset.day};
+          if(rb.dataset.go==='going') toggleEvent(id, meta);
+          else toggleNotGoing(id, meta);
           return;
         }
         var s=e.target.closest('.share-btn'); if(s){
@@ -845,37 +879,60 @@
     // ── Picks: heart + shortlist + share (Phase 1, localStorage only) ──
     var HEART_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>';
     var SHARE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+    var CHECK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
     var PICKS_KEY='sc_picks_v1';
     var picks={ artists:{}, events:{} };
     try{ var raw=localStorage.getItem(PICKS_KEY); if(raw) picks=JSON.parse(raw); if(!picks.artists) picks.artists={}; if(!picks.events) picks.events={}; }catch(_){}
     function savePicks(){ try{ localStorage.setItem(PICKS_KEY, JSON.stringify(picks)); }catch(_){} }
-    function pickCount(){ return Object.keys(picks.artists).length + Object.keys(picks.events).length; }
-    function isArtistPicked(slug){ return !!picks.artists[slug]; }
-    function isEventPicked(id){ return !!picks.events[id]; }
-    function toggleArtist(slug, meta){
+    // Status-aware: artists carry wanna_see|seen, events carry going|not_going.
+    // Rows from before this change (no .status) default to wanna_see / going.
+    function artStatus(slug){ var a=picks.artists[slug]; return a ? (a.status||'wanna_see') : null; }
+    function evtStatus(id){ var e=picks.events[id]; return e ? (e.status||'going') : null; }
+    // "picked" = the want-to-go states that feed the chip/share/tray
+    function isArtistPicked(slug){ return artStatus(slug)==='wanna_see'; }
+    function isEventPicked(id){ return evtStatus(id)==='going'; }
+    function pickCount(){
+      var a=Object.keys(picks.artists).filter(function(s){ return artStatus(s)==='wanna_see'; }).length;
+      var e=Object.keys(picks.events).filter(function(i){ return evtStatus(i)==='going'; }).length;
+      return a+e;
+    }
+    // setters (status null = remove). Mirror to server when signed in.
+    function setArtist(slug, status, name){
       if(!slug) return;
-      var on;
-      if(picks.artists[slug]){ delete picks.artists[slug]; on=false; }
-      else { picks.artists[slug] = { name:(meta&&meta.name)||slug, t:Date.now() }; on=true; }
-      savePicks(); afterPicksChanged(); refreshHeartsFor('art', slug);
-      if(currentUser) syncArtist(slug, on ? 'wanna_see' : null, meta&&meta.name);
+      if(status===null) delete picks.artists[slug];
+      else picks.artists[slug] = { name:(name||(picks.artists[slug]&&picks.artists[slug].name)||slug), status:status, t:Date.now() };
+      savePicks(); afterPicksChanged(); refreshArtistButtons(slug);
+      if(currentUser) syncArtist(slug, status, name);
     }
-    function toggleEvent(id, meta){
+    function setEvent(id, status, meta){
       if(!id) return;
-      var on;
-      if(picks.events[id]){ delete picks.events[id]; on=false; }
-      else { picks.events[id] = { title:(meta&&meta.title)||'', venue:(meta&&meta.venue)||'', day:(meta&&meta.day)||'', t:Date.now() }; on=true; }
-      savePicks(); afterPicksChanged(); refreshHeartsFor('evt', id);
-      if(currentUser) syncEvent(id, on ? 'going' : null, meta);
+      var cur=picks.events[id]||{};
+      if(status===null) delete picks.events[id];
+      else picks.events[id] = { title:(meta&&meta.title)||cur.title||'', venue:(meta&&meta.venue)||cur.venue||'', day:(meta&&meta.day)||cur.day||'', status:status, t:Date.now() };
+      savePicks(); afterPicksChanged(); refreshEventButtons(id);
+      if(currentUser) syncEvent(id, status, meta);
     }
-    function refreshHeartsFor(kind, key){
-      var sel = kind==='art' ? '.heart[data-pick-art="'+CSS.escape(key)+'"]' : '.heart[data-pick-evt="'+CSS.escape(key)+'"]';
-      document.querySelectorAll(sel).forEach(function(b){
-        var on = kind==='art' ? isArtistPicked(key) : isEventPicked(key);
-        b.classList.toggle('on', on);
-        b.setAttribute('aria-pressed', on?'true':'false');
+    // heart taps = toggle the want-to-go state
+    function toggleArtist(slug, meta){ if(slug) setArtist(slug, artStatus(slug)==='wanna_see' ? null : 'wanna_see', meta&&meta.name); }
+    function toggleEvent(id, meta){ if(id) setEvent(id, evtStatus(id)==='going' ? null : 'going', meta); }
+    // Seen / Not-going are account features → nudge sign-in when logged out
+    function toggleSeen(slug, meta){ if(!slug) return; if(!currentUser){ openAuth(); return; } setArtist(slug, artStatus(slug)==='seen' ? null : 'seen', meta&&meta.name); }
+    function toggleNotGoing(id, meta){ if(!id) return; if(!currentUser){ openAuth(); return; } setEvent(id, evtStatus(id)==='not_going' ? null : 'not_going', meta); }
+    function refreshArtistButtons(slug){
+      var k=CSS.escape(slug), st=artStatus(slug);
+      document.querySelectorAll('.heart[data-pick-art="'+k+'"]').forEach(function(b){ var on=st==='wanna_see'; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on?'true':'false'); });
+      document.querySelectorAll('.seen-btn[data-seen-art="'+k+'"]').forEach(function(b){ b.classList.toggle('on', st==='seen'); });
+    }
+    function refreshEventButtons(id){
+      var k=CSS.escape(id), st=evtStatus(id);
+      document.querySelectorAll('.heart[data-pick-evt="'+k+'"]').forEach(function(b){ var on=st==='going'; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on?'true':'false'); });
+      document.querySelectorAll('.rsvp[data-rsvp-evt="'+k+'"]').forEach(function(g){
+        g.querySelectorAll('[data-go]').forEach(function(b){ b.classList.toggle('on', b.dataset.go===st); });
       });
+      var card=gridEl&&gridEl.querySelector('.gcard[data-evt="'+k+'"]'); if(card) card.classList.toggle('dimmed', st==='not_going');
     }
+    // back-compat shim for any remaining callers
+    function refreshHeartsFor(kind, key){ if(kind==='art') refreshArtistButtons(key); else refreshEventButtons(key); }
     function afterPicksChanged(){
       var n=pickCount(), chip=document.getElementById('picks-chip');
       document.getElementById('picks-count').textContent=String(n);
@@ -907,7 +964,7 @@
         el.innerHTML='<button class="who" id="who-btn" aria-haspopup="true"><span class="av">'+esc(initial)+'</span><span class="hn">@'+esc(currentUser.handle)+'</span></button>'+
           '<div class="menu" id="acct-menu"><button id="menu-me" type="button">My picks</button><div class="div"></div><button id="menu-signout" type="button">Sign out</button></div>';
         document.getElementById('who-btn').addEventListener('click',function(e){ e.stopPropagation(); document.getElementById('acct-menu').classList.toggle('show'); });
-        document.getElementById('menu-me').addEventListener('click',function(){ document.getElementById('acct-menu').classList.remove('show'); openTray(); });
+        document.getElementById('menu-me').addEventListener('click',function(){ document.getElementById('acct-menu').classList.remove('show'); openMe(); });
         document.getElementById('menu-signout').addEventListener('click',signOut);
       } else {
         el.innerHTML='<button class="signin-btn" id="signin-btn" type="button">Sign in</button>';
@@ -933,11 +990,12 @@
     async function hydrateShelf(){
       try{
         var r=await authedFetch('/api/shelf'); var j=await r.json();
-        (j.artists||[]).forEach(function(a){ if(!picks.artists[a.artist_slug]) picks.artists[a.artist_slug]={ name:a.artist_name||a.artist_slug, t:Date.now(), status:a.status }; else picks.artists[a.artist_slug].status=a.status; });
-        (j.events||[]).forEach(function(e){ if(e.status==='going' && !picks.events[e.event_id]) picks.events[e.event_id]={ title:e.event_title||'', venue:e.venue||'', day:e.event_date||'', t:Date.now() }; });
+        (j.artists||[]).forEach(function(a){ picks.artists[a.artist_slug]={ name:a.artist_name||(picks.artists[a.artist_slug]&&picks.artists[a.artist_slug].name)||a.artist_slug, status:a.status, t:Date.now() }; });
+        (j.events||[]).forEach(function(e){ picks.events[e.event_id]={ title:e.event_title||'', venue:e.venue||'', day:e.event_date||'', status:e.status, t:Date.now() }; });
         savePicks(); afterPicksChanged();
-        document.querySelectorAll('.heart[data-pick-art]').forEach(function(b){ b.classList.toggle('on', isArtistPicked(b.dataset.pickArt)); });
-        document.querySelectorAll('.heart[data-pick-evt]').forEach(function(b){ b.classList.toggle('on', isEventPicked(b.dataset.pickEvt)); });
+        // reflect every state on whatever is currently rendered
+        Object.keys(picks.artists).forEach(refreshArtistButtons);
+        Object.keys(picks.events).forEach(refreshEventButtons);
       }catch(_){}
     }
     async function signOut(){
@@ -998,8 +1056,9 @@
     function unb64url(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); var pad=s.length%4; if(pad) s+=new Array(5-pad).join('='); try{ return decodeURIComponent(escape(atob(s))); }catch(_){ return ''; } }
     function encodePicks(p){
       var compact={};
-      var a=Object.keys(p.artists||{}); if(a.length) compact.a=a;
-      var e=Object.keys(p.events||{}); if(e.length) compact.e=e;
+      // only the want-to-go states are shareable picks
+      var a=Object.keys(p.artists||{}).filter(function(s){ return artStatus(s)==='wanna_see'; }); if(a.length) compact.a=a;
+      var e=Object.keys(p.events||{}).filter(function(i){ return evtStatus(i)==='going'; }); if(e.length) compact.e=e;
       if(currentDate) compact.d=currentDate;
       return 'v1.'+b64url(JSON.stringify(compact));
     }
@@ -1030,7 +1089,8 @@
     function sharePicks(){
       if(!pickCount()) return;
       var url=shareUrl({picks:encodePicks(picks)});
-      var a=Object.keys(picks.artists).length, e=Object.keys(picks.events).length;
+      var a=Object.keys(picks.artists).filter(function(s){return artStatus(s)==='wanna_see';}).length;
+      var e=Object.keys(picks.events).filter(function(i){return evtStatus(i)==='going';}).length;
       var bits=[]; if(e) bits.push(e+' event'+(e===1?'':'s')); if(a) bits.push(a+' artist'+(a===1?'':'s'));
       var text='My picks for tonight on soundcheck — '+bits.join(' + ');
       doShare({ title:'My picks on soundcheck', text:text, url:url });
@@ -1066,11 +1126,13 @@
       return '<li><button class="open-ev" data-open-evt="'+esc(id)+'">'+esc(title)+' <small>'+esc(venue||'')+(day?(' &middot; '+esc(day)):'')+'</small></button><button class="rm" data-rm-evt="'+esc(id)+'" title="Remove">&times;</button></li>';
     }
     function renderTray(){
-      var ev=Object.keys(picks.events), ar=Object.keys(picks.artists);
+      // the tray = your shareable picks (wanna-see artists + going events)
+      var ev=Object.keys(picks.events).filter(function(i){ return evtStatus(i)==='going'; });
+      var ar=Object.keys(picks.artists).filter(function(s){ return artStatus(s)==='wanna_see'; });
       if(!ev.length && !ar.length){ trayBody.innerHTML='<div class="empty">No picks yet. Tap the heart on any artist or event to add.</div>'; return; }
       var h='';
-      if(ev.length){ h+='<h4>Events ('+ev.length+')</h4><ul class="tray-line">'+ev.map(function(id){ return trayLineEvent(id, picks.events[id]); }).join('')+'</ul>'; }
-      if(ar.length){ h+='<h4>Artists ('+ar.length+')</h4><ul class="tray-line">'+ar.map(function(s){ return trayLineArtist(s, picks.artists[s]); }).join('')+'</ul>'; }
+      if(ev.length){ h+='<h4>Going ('+ev.length+')</h4><ul class="tray-line">'+ev.map(function(id){ return trayLineEvent(id, picks.events[id]); }).join('')+'</ul>'; }
+      if(ar.length){ h+='<h4>Wanna see ('+ar.length+')</h4><ul class="tray-line">'+ar.map(function(s){ return trayLineArtist(s, picks.artists[s]); }).join('')+'</ul>'; }
       trayBody.innerHTML=h;
     }
     function openTray(){ renderTray(); trayOv.classList.add('show'); lockBody(); }
@@ -1092,6 +1154,38 @@
       var a=e.target.closest('[data-rm-art]'); if(a){ toggleArtist(a.dataset.rmArt); renderTray(); return; }
       var v=e.target.closest('[data-rm-evt]'); if(v){ toggleEvent(v.dataset.rmEvt); renderTray(); return; }
       var o=e.target.closest('[data-open-evt]'); if(o){ var ev=lookup.byEvent[o.dataset.openEvt]; if(ev){ closeTray(); openSheet(ev); } return; }
+    });
+
+    // ── /me — personal shelves (account view) ──
+    var meOv=document.getElementById('me-overlay'), meBody=document.getElementById('me-body');
+    function meRow(label, sub, removeAttr){
+      return '<li><span class="open-ev">'+esc(label)+(sub?' <small>'+esc(sub)+'</small>':'')+'</span><button class="rm" '+removeAttr+' title="Remove">&times;</button></li>';
+    }
+    function renderMe(){
+      document.getElementById('me-sub').textContent = currentUser ? ('Signed in as @'+currentUser.handle+' · synced across your devices.') : 'Your saved picks on this device.';
+      var wannaComing=[], wannaList=[], seen=[], going=[];
+      Object.keys(picks.artists).forEach(function(s){
+        var st=artStatus(s), nm=(picks.artists[s].name)||s, hit=lookup.byArtist[s];
+        if(st==='seen') seen.push({s:s, nm:nm});
+        else if(st==='wanna_see'){ if(hit){ wannaComing.push({s:s, nm:nm, ev:hit.ev}); } else { wannaList.push({s:s, nm:nm}); } }
+      });
+      Object.keys(picks.events).forEach(function(i){ if(evtStatus(i)==='going') going.push({i:i, e:picks.events[i]}); });
+      var h='';
+      if(going.length){ h+='<h4>Going ('+going.length+')</h4><ul class="tray-line">'+going.map(function(g){ return meRow(g.e.title||'Event', (g.e.venue||'')+(g.e.day?(' · '+g.e.day):''), 'data-rm-evt="'+esc(g.i)+'"'); }).join('')+'</ul>'; }
+      if(wannaComing.length){ h+='<h4>Wanna see · coming up ('+wannaComing.length+')</h4><ul class="tray-line">'+wannaComing.map(function(w){ return meRow(w.nm, (w.ev.venue||'')+(w.ev._day?(' · '+w.ev._day):''), 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
+      if(wannaList.length){ h+='<h4>Wanna see · on your list ('+wannaList.length+')</h4><ul class="tray-line">'+wannaList.map(function(w){ return meRow(w.nm, 'no upcoming London date yet', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
+      if(seen.length){ h+='<h4>Seen live ('+seen.length+')</h4><ul class="tray-line">'+seen.map(function(w){ return meRow(w.nm, '', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
+      if(!h) h='<div class="empty">Nothing here yet. Heart artists you wanna see, mark gigs you&rsquo;re going to, and tick DJs you&rsquo;ve seen live.</div>';
+      meBody.innerHTML=h;
+    }
+    function openMe(){ renderMe(); meOv.classList.add('show'); lockBody(); }
+    function closeMe(){ if(!meOv.classList.contains('show')) return; meOv.classList.remove('show'); unlockBody(); }
+    document.getElementById('me-close').addEventListener('click',closeMe);
+    meOv.addEventListener('click',function(e){ if(e.target===meOv) closeMe(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&meOv.classList.contains('show')) closeMe(); });
+    meBody.addEventListener('click',function(e){
+      var a=e.target.closest('[data-rm-art]'); if(a){ setArtist(a.dataset.rmArt, null); renderMe(); return; }
+      var v=e.target.closest('[data-rm-evt]'); if(v){ setEvent(v.dataset.rmEvt, null); renderMe(); return; }
     });
 
     // ── incoming-share state (set on boot from URL params) ──
@@ -1158,10 +1252,13 @@
         var pos=esc(ev.poster||'');
         var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
         var picked=slug&&isArtistPicked(slug)?' on':'';
-        var heart=slug?'<button class="heart'+picked+'" type="button" data-pick-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-pressed="'+(picked?'true':'false')+'" aria-label="Pick '+esc(a.name)+'">'+HEART_SVG+'</button>':'';
+        var heart=slug?'<button class="heart'+picked+'" type="button" data-pick-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-pressed="'+(picked?'true':'false')+'" aria-label="Wanna see '+esc(a.name)+'">'+HEART_SVG+'</button>':'';
+        // Seen toggle — only in the roomy event sheet. Account feature.
+        var seenOn = slug && artStatus(slug)==='seen' ? ' on' : '';
+        var seenBtn = (inSheet && slug) ? '<button class="seen-btn'+seenOn+'" type="button" data-seen-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-label="Seen '+esc(a.name)+' live" title="Seen live">'+CHECK_SVG+'</button>' : '';
         var shareA = (inSheet && slug) ? '<button class="share-btn" type="button" data-share-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-label="Share '+esc(a.name)+'">'+SHARE_SVG+'</button>' : '';
         var pickedRow = slug && sharedPicks && (sharedPicks.artists||[]).indexOf(slug)>=0 ? ' picked' : '';
-        html+='<li'+(idx>=c?' class="hid'+pickedRow+'"':(pickedRow?' class="'+pickedRow.trim()+'"':''))+(slug?' data-slug="'+esc(slug)+'"':'')+'>'+ytBtn+'<span class="an">'+esc(a.name)+'</span>'+heart+shareA+'</li>';
+        html+='<li'+(idx>=c?' class="hid'+pickedRow+'"':(pickedRow?' class="'+pickedRow.trim()+'"':''))+(slug?' data-slug="'+esc(slug)+'"':'')+'>'+ytBtn+'<span class="an">'+esc(a.name)+'</span>'+heart+seenBtn+shareA+'</li>';
       });
       return html;
     }
@@ -1215,8 +1312,13 @@
     function openSheet(ev){
       if(!ev) return;
       var time=formatTime(ev.startTime), eid=ev.id!=null?String(ev.id):'';
-      var evPicked = eid && isEventPicked(eid) ? ' on' : '';
-      var evHeart = eid ? '<button class="heart'+evPicked+'" type="button" data-pick-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" data-day="'+esc(ev._day||'')+'" aria-pressed="'+(evPicked?'true':'false')+'" aria-label="Pick this event">'+HEART_SVG+'</button>' : '';
+      var st = eid ? evtStatus(eid) : null;
+      var dataAttrs = 'data-rsvp-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" data-day="'+esc(ev._day||'')+'"';
+      // Going / Not-going RSVP control (Going = your "picks"; Not-going is an account feature)
+      var rsvp = eid ? '<div class="rsvp" '+dataAttrs+'>'+
+          '<button type="button" data-go="going" class="'+(st==='going'?'on':'')+'">Going</button>'+
+          '<button type="button" data-go="not_going" class="'+(st==='not_going'?'on':'')+'">Not going</button>'+
+        '</div>' : '';
       var evShare = eid ? '<button class="share-btn" type="button" data-share-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" aria-label="Share this event">'+SHARE_SVG+'</button>' : '';
       sheetContent.innerHTML=
         posterHTML(ev)+
@@ -1224,7 +1326,7 @@
           (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
           '<h3>'+esc(ev.title)+'</h3>'+
           '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
-          (evHeart||evShare ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Pick or share this event</span></div>' : '')+
+          (eid ? '<div class="sheet-actions">'+rsvp+evShare+'</div>' : '')+
           '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
           soloCtaHTML(ev)+
         '</div>';
