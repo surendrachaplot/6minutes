@@ -375,7 +375,7 @@
       <button class="qchip" id="pick-tonight" type="button">Tonight</button>
       <button class="qchip" id="pick-weekend" type="button">This weekend</button>
       <button class="qchip" id="pick-next" type="button">Next weekend</button>
-      <button class="qchip alt" id="pick-date" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Pick a date</button>
+      <button class="qchip alt" id="pick-date" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg><span id="pick-date-label">Pick a date</span></button>
     </div>
 
     <div class="cal-overlay" id="cal-overlay"><div class="cal" id="cal" role="dialog" aria-modal="true" aria-label="Pick a date"></div></div>
@@ -1082,6 +1082,11 @@
       tonightBtn.classList.toggle('on', activePick==='tonight');
       weekendBtn.classList.toggle('on', activePick==='weekend');
       nextBtn.classList.toggle('on', activePick==='next');
+      var onDate = activePick==='date';
+      pickDateBtn.classList.toggle('on', onDate);
+      pickDateBtn.classList.toggle('alt', !onDate);
+      document.getElementById('pick-date-label').textContent =
+        onDate && currentDate ? fmtDateLabel(currentDate) : 'Pick a date';
     }
 
     async function fetchDay(date){
