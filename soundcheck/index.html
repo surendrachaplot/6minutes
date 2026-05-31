@@ -400,7 +400,7 @@
       return '<div class="gen" style="--ang:'+ang+'deg;--g1:hsl('+hue+' 68% 54%);--g2:hsl('+((hue+18)%360)+' 45% 11%)"><span class="gt">'+esc(title)+'</span></div>';
     }
     function posterHTML(ev){
-      var img=ev.poster?'<img class="real" src="'+API_BASE+'/api/img?u='+encodeURIComponent(ev.poster)+'" alt="" onerror="this.style.display=\'none\'">':'';
+      var img=ev.poster?'<img class="real" loading="lazy" decoding="async" src="'+API_BASE+'/api/img?u='+encodeURIComponent(ev.poster)+'" alt="" onerror="this.style.display=\'none\'">':'';
       return '<div class="poster">'+genPoster(ev.title||'Event')+img+'<span class="tint"></span></div>';
     }
 
