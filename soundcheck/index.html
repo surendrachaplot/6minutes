@@ -367,7 +367,7 @@
       <div>
         <p class="eyebrow" id="eyebrow">Tonight in London</p>
         <h1>London <span class="ac">Tonight</span>.</h1>
-        <p class="lede">Hit <span class="lede-play">&#9654;</span> next to any DJ to preview them &mdash; a SoundCloud track or their full set on YouTube.</p>
+        <p class="lede">Hit <span class="lede-play">&#9654;</span> next to any DJ to preview their full set on YouTube &mdash; or heart any artist or event to add to your picks.</p>
       </div>
     </div>
 
@@ -967,13 +967,12 @@
         var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
         var sc=normaliseSc(a.soundcloud);
         var pos=esc(ev.poster||'');
-        var scBtn=sc?'<button class="play sc" data-sc="'+esc(sc)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play top SoundCloud track">'+SC_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
-        var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'';
+        var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
         var picked=slug&&isArtistPicked(slug)?' on':'';
         var heart=slug?'<button class="heart'+picked+'" type="button" data-pick-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-pressed="'+(picked?'true':'false')+'" aria-label="Pick '+esc(a.name)+'">'+HEART_SVG+'</button>':'';
         var shareA = (inSheet && slug) ? '<button class="share-btn" type="button" data-share-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-label="Share '+esc(a.name)+'">'+SHARE_SVG+'</button>' : '';
         var pickedRow = slug && sharedPicks && (sharedPicks.artists||[]).indexOf(slug)>=0 ? ' picked' : '';
-        html+='<li'+(idx>=c?' class="hid'+pickedRow+'"':(pickedRow?' class="'+pickedRow.trim()+'"':''))+(slug?' data-slug="'+esc(slug)+'"':'')+'>'+scBtn+ytBtn+'<span class="an">'+esc(a.name)+'</span>'+heart+shareA+'</li>';
+        html+='<li'+(idx>=c?' class="hid'+pickedRow+'"':(pickedRow?' class="'+pickedRow.trim()+'"':''))+(slug?' data-slug="'+esc(slug)+'"':'')+'>'+ytBtn+'<span class="an">'+esc(a.name)+'</span>'+heart+shareA+'</li>';
       });
       return html;
     }
