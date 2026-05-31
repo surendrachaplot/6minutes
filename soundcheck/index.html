@@ -1084,7 +1084,6 @@
       nextBtn.classList.toggle('on', activePick==='next');
       var onDate = activePick==='date';
       pickDateBtn.classList.toggle('on', onDate);
-      pickDateBtn.classList.toggle('alt', !onDate);
       document.getElementById('pick-date-label').textContent =
         onDate && currentDate ? fmtDateLabel(currentDate) : 'Pick a date';
     }
