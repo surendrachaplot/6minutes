@@ -80,9 +80,19 @@
     .cal-cell.we:not(.past):not(.sel) { color:var(--accent); }
     .cal-cell.today { box-shadow:inset 0 0 0 1.5px var(--accent); }
     .cal-cell.sel { background:var(--accent); color:#1a0f0e; font-weight:800; }
-    .cal-cell:not(.past):not(.sel):hover { background:rgba(255,122,107,0.16); }
-    .cal-foot { display:flex; justify-content:space-between; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
-    .cal-foot button { background:none; border:none; color:var(--accent); font:inherit; font-weight:700; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; }
+    .cal-cell:not(.past):not(.sel):not(.range-mid):hover { background:rgba(255,122,107,0.16); }
+    .cal-modes { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; margin:0 0 12px; }
+    .cal-modes button { background:transparent; border:none; color:var(--muted); font:600 0.66rem var(--body); letter-spacing:0.1em; text-transform:uppercase; padding:6px 12px; border-radius:999px; cursor:pointer; }
+    .cal-modes button.on { background:var(--accent); color:#1a0f0e; }
+    .cal-hint { color:var(--muted); font-size:0.74rem; margin:0 0 10px; }
+    .cal-cell.range-mid { background:rgba(255,122,107,0.18); border-radius:0; color:var(--fg); font-weight:600; }
+    .cal-cell.range-start { background:var(--accent); color:#1a0f0e; font-weight:800; border-radius:9px 0 0 9px; }
+    .cal-cell.range-end   { background:var(--accent); color:#1a0f0e; font-weight:800; border-radius:0 9px 9px 0; }
+    .cal-cell.range-start.range-end { border-radius:9px; }
+    .cal-foot { display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); gap:8px; }
+    .cal-foot button { background:none; border:none; color:var(--accent); font:inherit; font-weight:700; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; padding:6px 8px; }
+    .cal-foot button.primary { background:var(--accent); color:#1a0f0e; border-radius:8px; padding:8px 14px; }
+    .cal-foot button:disabled { opacity:0.45; cursor:default; }
 
     /* marquee — very slow ambient ticker */
     .marquee { overflow:hidden; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-top:6px; }
@@ -1072,7 +1082,7 @@
     function weekendDates(){ var sat=new Date(); sat.setDate(sat.getDate()+((6-sat.getDay()+7)%7)); var fri=new Date(sat); fri.setDate(sat.getDate()-1); return [isoOf(fri), isoOf(sat)]; }
     function fmtDateLabel(iso){ var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }
     function fmtRange(a,b){ var da=new Date(a+'T12:00:00'); return da.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'})+' – '+fmtDateLabel(b); }
-    var currentDate=null, mode='weekend', activePick='weekend';
+    var currentDate=null, currentRange=null, mode='weekend', activePick='weekend';
     var tonightBtn=document.getElementById('pick-tonight'),
         weekendBtn=document.getElementById('pick-weekend'),
         nextBtn=document.getElementById('pick-next'),
@@ -1084,8 +1094,12 @@
       nextBtn.classList.toggle('on', activePick==='next');
       var onDate = activePick==='date';
       pickDateBtn.classList.toggle('on', onDate);
-      document.getElementById('pick-date-label').textContent =
-        onDate && currentDate ? fmtDateLabel(currentDate) : 'Pick a date';
+      var lbl='Pick a date';
+      if(onDate){
+        if(mode==='range' && currentRange) lbl=fmtRange(currentRange[0], currentRange[1]);
+        else if(currentDate) lbl=fmtDateLabel(currentDate);
+      }
+      document.getElementById('pick-date-label').textContent=lbl;
     }
 
     async function fetchDay(date){
@@ -1127,37 +1141,116 @@
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
+    // multi-day mode: arbitrary range from the calendar (or ?from=&to=)
+    async function loadRange(startISO, endISO){
+      if(!startISO||!endISO) return;
+      if(endISO<startISO){ var t=startISO; startISO=endISO; endISO=t; }
+      var span=Math.round((new Date(endISO+'T12:00:00')-new Date(startISO+'T12:00:00'))/86400000)+1;
+      if(span<=1) return load(startISO);
+      mode='range'; activePick='date'; currentDate=startISO; currentRange=[startISO,endISO]; syncChips();
+      document.title='soundcheck by 6 Minutes · '+startISO+' to '+endISO;
+      history.replaceState(null,'','?from='+startISO+'&to='+endISO);
+      setStatus('<span class="spinner"></span> Loading '+span+' days&hellip;'); gridEl.innerHTML='';
+      try{
+        var days=[]; for(var d=new Date(startISO+'T12:00:00'); d<=new Date(endISO+'T12:00:00'); d.setDate(d.getDate()+1)) days.push(isoOf(d));
+        var res=await Promise.all(days.map(fetchDay));
+        var all=[];
+        res.forEach(function(j,i){
+          var dl=new Date(days[i]+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});
+          (j.events||[]).forEach(function(e){ e._day=dl; all.push(e); });
+        });
+        setStatus('');
+        renderEvents(all, fmtRange(startISO,endISO)+' in London');
+      }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
+    }
+
     tonightBtn.addEventListener('click',function(){ load(todayISO()); });
     weekendBtn.addEventListener('click',function(){ loadWeekend(0); });
     nextBtn.addEventListener('click',function(){ loadWeekend(1); });
     pickDateBtn.addEventListener('click',openCal);
 
-    // ── on-brand calendar (Pick a date) ──
+    // ── on-brand calendar (Pick a date — single day or range) ──
     var calOverlay=document.getElementById('cal-overlay'), calEl=document.getElementById('cal'), calView=null;
+    var calMode='day';                  // 'day' | 'range'
+    var calRangeStart=null, calRangeEnd=null;   // ISO strings while picking
+    var RANGE_CAP=7;                    // max days in a single range
+    function inRange(iso, a, b){ return a && b && iso>=a && iso<=b; }
     function buildCal(){
       var tdy=new Date(); tdy.setHours(0,0,0,0);
       var y=calView.getFullYear(), m=calView.getMonth();
       var startDow=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
       var dows=['S','M','T','W','T','F','S'], h='';
+      // mode toggle
+      h+='<div class="cal-modes"><button type="button" data-cmode="day" class="'+(calMode==='day'?'on':'')+'">Day</button><button type="button" data-cmode="range" class="'+(calMode==='range'?'on':'')+'">Range</button></div>';
+      // hint line (range-only)
+      if(calMode==='range'){
+        var hint = calRangeStart && calRangeEnd ? (fmtRange(calRangeStart, calRangeEnd))
+                 : calRangeStart ? ('Start: '+fmtDateLabel(calRangeStart)+' — tap another day to set the end')
+                 : 'Tap a day to set the start, then tap another for the end.';
+        h+='<div class="cal-hint">'+esc(hint)+'</div>';
+      }
       h+='<div class="cal-head"><span class="mon">'+calView.toLocaleDateString('en-GB',{month:'long',year:'numeric'})+'</span><span class="navs"><button id="cal-prev" type="button">&lsaquo;</button><button id="cal-next" type="button">&rsaquo;</button></span></div><div class="cal-grid">';
       dows.forEach(function(d){ h+='<div class="cal-dow">'+d+'</div>'; });
       for(var p=0;p<startDow;p++) h+='<div class="cal-cell pad"></div>';
       for(var day=1;day<=days;day++){
         var d=new Date(y,m,day), di=isoOf(d), past=d<tdy, we=(d.getDay()===5||d.getDay()===6);
-        var cls='cal-cell'+(past?' past':'')+(we?' we':'')+(di===isoOf(tdy)?' today':'')+(mode==='day'&&di===currentDate?' sel':'');
+        var cls='cal-cell'+(past?' past':'')+(we?' we':'')+(di===isoOf(tdy)?' today':'');
+        if(calMode==='day' && mode==='day' && di===currentDate) cls+=' sel';
+        if(calMode==='range'){
+          var rs=calRangeStart, re=calRangeEnd||calRangeStart;
+          if(rs && re && di===rs) cls+=' range-start';
+          if(rs && re && di===re && re!==rs) cls+=' range-end';
+          if(rs && re && di>rs && di<re) cls+=' range-mid';
+          if(rs && !calRangeEnd && di===rs) cls+=' range-start range-end';
+        }
         h+='<div class="'+cls+'" data-iso="'+di+'">'+day+'</div>';
       }
-      h+='</div><div class="cal-foot"><button id="cal-today" type="button">Today</button><button id="cal-close" type="button">Close</button></div>';
+      var canApply = calMode==='range' && calRangeStart && calRangeEnd;
+      var applyBtn = calMode==='range' ? '<button id="cal-apply" class="primary" type="button"'+(canApply?'':' disabled')+'>'+(canApply?'Show '+(daysBetween(calRangeStart,calRangeEnd)+1)+' days':'Pick a range')+'</button>' : '';
+      h+='</div><div class="cal-foot"><button id="cal-today" type="button">Today</button>'+applyBtn+'<button id="cal-close" type="button">Close</button></div>';
       calEl.innerHTML=h;
+      // wire mode toggle
+      calEl.querySelectorAll('[data-cmode]').forEach(function(b){ b.onclick=function(){ calMode=b.dataset.cmode; if(calMode==='day'){ calRangeStart=calRangeEnd=null; } buildCal(); }; });
       document.getElementById('cal-prev').onclick=function(){ calView=new Date(y,m-1,1); buildCal(); };
       document.getElementById('cal-next').onclick=function(){ calView=new Date(y,m+1,1); buildCal(); };
       document.getElementById('cal-today').onclick=function(){ closeCal(); load(todayISO()); };
       document.getElementById('cal-close').onclick=closeCal;
-      calEl.querySelectorAll('.cal-cell:not(.pad):not(.past)').forEach(function(c){ c.onclick=function(){ closeCal(); load(c.dataset.iso); }; });
+      if(applyBtn){
+        document.getElementById('cal-apply').onclick=function(){
+          if(!calRangeStart||!calRangeEnd) return;
+          closeCal(); loadRange(calRangeStart, calRangeEnd);
+        };
+      }
+      calEl.querySelectorAll('.cal-cell:not(.pad):not(.past)').forEach(function(c){
+        c.onclick=function(){
+          var iso=c.dataset.iso;
+          if(calMode==='day'){ closeCal(); load(iso); return; }
+          // range mode: tap 1 = start, tap 2 = end (swap if before), tap 3 (with full range) = restart
+          if(!calRangeStart || (calRangeStart && calRangeEnd)){
+            calRangeStart=iso; calRangeEnd=null;
+          } else {
+            var a=calRangeStart, b=iso;
+            if(b<a){ var t=a; a=b; b=t; }
+            // cap range
+            if(daysBetween(a,b)+1 > RANGE_CAP){
+              alert('Max range is '+RANGE_CAP+' days. Clamping to '+RANGE_CAP+'.');
+              var dt=new Date(a+'T12:00:00'); dt.setDate(dt.getDate()+(RANGE_CAP-1)); b=isoOf(dt);
+            }
+            calRangeStart=a; calRangeEnd=b;
+          }
+          buildCal();
+        };
+      });
     }
+    function daysBetween(a,b){ return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000); }
     function openCal(){
-      var b=(mode==='day'&&currentDate)?new Date(currentDate+'T12:00:00'):new Date();
+      var b=(mode==='day'&&currentDate)?new Date(currentDate+'T12:00:00')
+           :(mode==='range'&&currentRange)?new Date(currentRange[0]+'T12:00:00')
+           :new Date();
       calView=new Date(b.getFullYear(), b.getMonth(), 1);
+      // seed range editor with the current range when re-opening in range mode
+      if(mode==='range' && currentRange){ calMode='range'; calRangeStart=currentRange[0]; calRangeEnd=currentRange[1]; }
+      else { calRangeStart=calRangeEnd=null; }
       buildCal(); calOverlay.classList.add('show');
     }
     function closeCal(){ calOverlay.classList.remove('show'); }
@@ -1185,10 +1278,12 @@
     //   ?picks=v1.<b64>               — a friend's shortlist (encoded payload includes date)
     var _qs=new URLSearchParams(location.search);
     var _qd=_qs.get('date'), _qe=_qs.get('event'), _qa=_qs.get('artist'), _qp=_qs.get('picks'), _qsd=_qs.get('d');
+    var _qfrom=_qs.get('from'), _qto=_qs.get('to');
     sharedPicks = _qp ? decodePicksParam(_qp) : null;
     sharedSingle = _qe ? {kind:'event', id:_qe} : (_qa ? {kind:'artist', slug:_qa} : null);
     var _shareDate = _qsd || (sharedPicks && sharedPicks.date) || null;
-    if(_qd) load(_qd);
+    if(_qfrom && _qto) loadRange(_qfrom,_qto);
+    else if(_qd) load(_qd);
     else if(_shareDate) load(_shareDate);
     else loadWeekend();
   </script>
