@@ -276,6 +276,76 @@
     @media (max-width:920px)  { .grid { grid-template-columns:repeat(3,1fr); } .wrap{ padding:0 28px; } }
     @media (max-width:620px)  { .grid { grid-template-columns:repeat(2,1fr); } .wrap{ padding:0 18px; } main.wrap{ display:flex; flex-direction:column; } .teaser{ order:99; border-bottom:none; border-top:1px solid var(--border); margin-top:6px; } }
     @media (max-width:380px)  { .grid { grid-template-columns:1fr; } }
+
+    /* ── Picks (Phase 1: heart + shortlist + share) ── */
+    .heart, .share-btn { background:transparent; border:1px solid var(--border); color:var(--muted); cursor:pointer; padding:0; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; transition:color .12s, border-color .12s, background .12s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .heart svg, .share-btn svg { display:block; }
+    .heart { width:26px; height:26px; }
+    .heart svg { width:13px; height:13px; }
+    .heart:hover { color:var(--accent); border-color:var(--accent); }
+    .heart.on { color:var(--accent); border-color:var(--accent); background:rgba(255,122,107,0.16); }
+    .heart.on svg { fill:var(--accent); stroke:var(--accent); }
+    .share-btn { width:26px; height:26px; }
+    .share-btn svg { width:13px; height:13px; }
+    .share-btn:hover { color:var(--accent); border-color:var(--accent); }
+    .line li .heart, .sheet-line li .heart, .line li .share-btn, .sheet-line li .share-btn { margin-left:auto; }
+    .sheet-line li .heart { width:30px; height:30px; }
+    .sheet-line li .heart svg { width:15px; height:15px; }
+    .sheet-line li .share-btn { width:30px; height:30px; margin-left:6px; }
+    .sheet-line li .share-btn svg { width:14px; height:14px; }
+
+    /* event-level pick + share buttons in the sheet header */
+    .sheet-actions { display:flex; gap:9px; align-items:center; margin:14px 0 4px; }
+    .sheet-actions .heart, .sheet-actions .share-btn { width:36px; height:36px; }
+    .sheet-actions .heart svg, .sheet-actions .share-btn svg { width:16px; height:16px; }
+    .sheet-actions .lbl { font-size:0.7rem; font-weight:600; color:var(--muted); }
+
+    /* floating "N picks · Share" chip */
+    .picks-chip { position:fixed; right:16px; bottom:24px; z-index:55; background:var(--accent); color:var(--accent-ink); border:none; border-radius:999px; padding:11px 16px; font:700 0.74rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:none; align-items:center; gap:8px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .picks-chip.show { display:inline-flex; }
+    .picks-chip svg { width:14px; height:14px; }
+    .picks-chip .count { background:rgba(26,15,14,0.16); padding:1px 7px; border-radius:999px; font-variant-numeric:tabular-nums; }
+    body.has-dock .picks-chip { bottom:calc(var(--dock-pad,96px) + 16px); }
+    @media (max-width:520px){ .picks-chip { right:12px; bottom:16px; padding:10px 13px; font-size:0.7rem; } }
+
+    /* picks tray (modal) */
+    .picks-tray-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.62); backdrop-filter:blur(3px); z-index:75; display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.22s; overscroll-behavior:contain; }
+    .picks-tray-overlay.show { opacity:1; pointer-events:auto; }
+    .picks-tray { background:var(--surface); width:100%; max-width:560px; max-height:88vh; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; border-radius:18px 18px 0 0; transform:translateY(100%); transition:transform 0.3s cubic-bezier(.4,0,.2,1); position:relative; padding:22px 22px 28px; }
+    .picks-tray-overlay.show .picks-tray { transform:translateY(0); }
+    .picks-tray h3 { font-family:var(--head); font-size:1.3rem; font-weight:800; letter-spacing:-0.01em; }
+    .picks-tray .sub { font-size:0.86rem; color:var(--muted); margin-top:4px; }
+    .picks-tray .share-main { display:flex; gap:9px; margin:16px 0 18px; }
+    .picks-tray .share-main button { flex:1; padding:12px; border-radius:10px; font:700 0.74rem var(--body); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; border:1px solid; }
+    .picks-tray .share-main .primary { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+    .picks-tray .share-main .ghost { background:transparent; color:var(--fg); border-color:var(--border); }
+    .picks-tray .share-main .ghost:hover { border-color:var(--accent); color:var(--accent); }
+    .picks-tray h4 { font-size:0.6rem; font-weight:800; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin:18px 0 8px; }
+    .tray-line { list-style:none; display:flex; flex-direction:column; gap:8px; }
+    .tray-line li { display:flex; align-items:center; gap:11px; font-size:0.96rem; font-weight:500; padding:9px 4px; border-radius:8px; }
+    .tray-line .rm { margin-left:auto; background:transparent; border:1px solid var(--border); color:var(--muted); width:28px; height:28px; border-radius:999px; cursor:pointer; font-size:14px; line-height:1; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .tray-line .rm:hover { color:var(--accent); border-color:var(--accent); }
+    .tray-line .open-ev { background:transparent; border:none; color:var(--fg); font:inherit; cursor:pointer; text-align:left; padding:0; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tray-line .open-ev:hover { color:var(--accent); }
+    .tray-line .open-ev small { color:var(--muted); font-weight:500; }
+    .tray-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:16px; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .picks-tray .clear-all { width:100%; margin-top:18px; background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:9px; font:600 0.74rem var(--body); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; }
+    .picks-tray .clear-all:hover { border-color:var(--accent); color:var(--accent); }
+    .picks-tray .empty { color:var(--muted); padding:14px 0 6px; font-size:0.9rem; }
+
+    /* shared-with-you banner */
+    .shared-banner { display:none; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:0.88rem; }
+    .shared-banner.show { display:flex; }
+    .shared-banner .b-h { font-family:var(--head); font-weight:800; color:var(--accent); letter-spacing:0.02em; }
+    .shared-banner .b-t { color:var(--fg); }
+    .shared-banner .b-actions { margin-left:auto; display:flex; gap:8px; }
+    .shared-banner .b-actions button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:8px; padding:7px 11px; font:600 0.72rem var(--body); cursor:pointer; touch-action:manipulation; }
+    .shared-banner .b-actions button.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+    .shared-banner .b-actions button:hover:not(.primary) { border-color:var(--accent); color:var(--accent); }
+
+    /* highlight shared items */
+    .gcard.picked { box-shadow:0 0 0 2px var(--accent); border-radius:12px; padding:8px; margin:-8px; }
+    .sheet-line li.picked, .line li.picked { background:rgba(255,122,107,0.07); border-radius:6px; padding:4px 6px; margin:-4px -6px; }
   </style>
 </head>
 <body>
@@ -313,6 +383,13 @@
     <div class="marquee" id="marquee"><div class="track" id="track"></div></div>
 
     <div class="status" id="status"></div>
+    <div class="shared-banner" id="shared-banner">
+      <div><div class="b-h" id="shared-h">Shared with you</div><div class="b-t" id="shared-t"></div></div>
+      <div class="b-actions">
+        <button class="primary" id="shared-add" type="button">Add to my picks</button>
+        <button id="shared-dismiss" type="button">Dismiss</button>
+      </div>
+    </div>
     <div class="grid" id="grid"></div>
 
     <section class="signup" id="signup">
@@ -353,6 +430,25 @@
     </div>
   </div>
   <div class="toast" id="toast"></div>
+
+  <button class="picks-chip" id="picks-chip" type="button" aria-label="Open my picks">
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z"/></svg>
+    <span><span class="count" id="picks-count">0</span> picks &middot; Share</span>
+  </button>
+
+  <div class="picks-tray-overlay" id="picks-tray-overlay">
+    <div class="picks-tray" id="picks-tray">
+      <button class="tray-close" id="tray-close" type="button" aria-label="Close">&times;</button>
+      <h3>Your picks</h3>
+      <div class="sub" id="tray-sub">Share this lineup with a friend &mdash; they&rsquo;ll land in soundcheck with your picks highlighted.</div>
+      <div class="share-main">
+        <button class="primary" id="share-picks" type="button">Share my picks</button>
+        <button class="ghost" id="copy-picks" type="button">Copy link</button>
+      </div>
+      <div id="tray-body"></div>
+      <button class="clear-all" id="clear-picks" type="button">Clear all picks</button>
+    </div>
+  </div>
 
   <div class="sheet-overlay" id="sheet-overlay">
     <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Event details">
@@ -624,6 +720,20 @@
           btn.textContent = exp ? 'Show less' : '+ '+btn.dataset.extra+' more';
         });
       });
+      // Heart toggles + per-item share (delegated)
+      scope.addEventListener('click',function(e){
+        var h=e.target.closest('.heart'); if(h){
+          e.preventDefault(); e.stopPropagation();
+          if(h.dataset.pickArt) toggleArtist(h.dataset.pickArt, {name:h.dataset.name});
+          else if(h.dataset.pickEvt) toggleEvent(h.dataset.pickEvt, {title:h.dataset.title, venue:h.dataset.venue, day:h.dataset.day});
+          return;
+        }
+        var s=e.target.closest('.share-btn'); if(s){
+          e.preventDefault(); e.stopPropagation();
+          if(s.dataset.shareArt) shareArtist(s.dataset.shareArt, s.dataset.name);
+          else if(s.dataset.shareEvt) shareEvent(s.dataset.shareEvt, s.dataset.title, s.dataset.venue);
+        }
+      });
     }
 
     // ── first-visit coachmark ──
@@ -655,8 +765,200 @@
       setTimeout(function(){ if(coachEl) dismissCoach(); },9000);
     }
 
+    // ── Picks: heart + shortlist + share (Phase 1, localStorage only) ──
+    var HEART_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>';
+    var SHARE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+    var PICKS_KEY='sc_picks_v1';
+    var picks={ artists:{}, events:{} };
+    try{ var raw=localStorage.getItem(PICKS_KEY); if(raw) picks=JSON.parse(raw); if(!picks.artists) picks.artists={}; if(!picks.events) picks.events={}; }catch(_){}
+    function savePicks(){ try{ localStorage.setItem(PICKS_KEY, JSON.stringify(picks)); }catch(_){} }
+    function pickCount(){ return Object.keys(picks.artists).length + Object.keys(picks.events).length; }
+    function isArtistPicked(slug){ return !!picks.artists[slug]; }
+    function isEventPicked(id){ return !!picks.events[id]; }
+    function toggleArtist(slug, meta){
+      if(!slug) return;
+      if(picks.artists[slug]) delete picks.artists[slug];
+      else picks.artists[slug] = { name:(meta&&meta.name)||slug, t:Date.now() };
+      savePicks(); afterPicksChanged(); refreshHeartsFor('art', slug);
+    }
+    function toggleEvent(id, meta){
+      if(!id) return;
+      if(picks.events[id]) delete picks.events[id];
+      else picks.events[id] = { title:(meta&&meta.title)||'', venue:(meta&&meta.venue)||'', day:(meta&&meta.day)||'', t:Date.now() };
+      savePicks(); afterPicksChanged(); refreshHeartsFor('evt', id);
+    }
+    function refreshHeartsFor(kind, key){
+      var sel = kind==='art' ? '.heart[data-pick-art="'+CSS.escape(key)+'"]' : '.heart[data-pick-evt="'+CSS.escape(key)+'"]';
+      document.querySelectorAll(sel).forEach(function(b){
+        var on = kind==='art' ? isArtistPicked(key) : isEventPicked(key);
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', on?'true':'false');
+      });
+    }
+    function afterPicksChanged(){
+      var n=pickCount(), chip=document.getElementById('picks-chip');
+      document.getElementById('picks-count').textContent=String(n);
+      chip.classList.toggle('show', n>0);
+    }
+
+    // URL encoding: base64url(JSON {a:[slugs], e:[ids], d:date})
+    function b64url(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+    function unb64url(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); var pad=s.length%4; if(pad) s+=new Array(5-pad).join('='); try{ return decodeURIComponent(escape(atob(s))); }catch(_){ return ''; } }
+    function encodePicks(p){
+      var compact={};
+      var a=Object.keys(p.artists||{}); if(a.length) compact.a=a;
+      var e=Object.keys(p.events||{}); if(e.length) compact.e=e;
+      if(currentDate) compact.d=currentDate;
+      return 'v1.'+b64url(JSON.stringify(compact));
+    }
+    function decodePicksParam(s){
+      if(!s||s.indexOf('v1.')!==0) return null;
+      var raw=unb64url(s.slice(3)); if(!raw) return null;
+      try{ var o=JSON.parse(raw); return { artists:o.a||[], events:o.e||[], date:o.d||null }; }catch(_){ return null; }
+    }
+    function shareUrl(params){
+      var u=location.origin+location.pathname, qs=[];
+      Object.keys(params).forEach(function(k){ if(params[k]!=null&&params[k]!=='') qs.push(encodeURIComponent(k)+'='+encodeURIComponent(params[k])); });
+      return u+(qs.length?'?'+qs.join('&'):'');
+    }
+    function doShare(opts){
+      if(navigator.share){ return navigator.share(opts).catch(function(){}); }
+      if(navigator.clipboard){ return navigator.clipboard.writeText(opts.url).then(function(){ showToast('Link copied'); },function(){ window.prompt('Copy this link:', opts.url); }); }
+      window.prompt('Copy this link:', opts.url);
+    }
+    function shareArtist(slug, name){
+      var url=shareUrl({artist:slug, d:currentDate||null});
+      doShare({ title:name||'Listen on soundcheck', text:'Listen to '+(name||'this DJ')+' on soundcheck', url:url });
+    }
+    function shareEvent(id, title, venue){
+      var url=shareUrl({event:id, d:currentDate||null});
+      var t=(title||'Event')+(venue?(' · '+venue):'');
+      doShare({ title:t, text:t+' — preview every DJ on soundcheck', url:url });
+    }
+    function sharePicks(){
+      if(!pickCount()) return;
+      var url=shareUrl({picks:encodePicks(picks)});
+      var a=Object.keys(picks.artists).length, e=Object.keys(picks.events).length;
+      var bits=[]; if(e) bits.push(e+' event'+(e===1?'':'s')); if(a) bits.push(a+' artist'+(a===1?'':'s'));
+      var text='My picks for tonight on soundcheck — '+bits.join(' + ');
+      doShare({ title:'My picks on soundcheck', text:text, url:url });
+    }
+    function copyPicks(){
+      if(!pickCount()) return;
+      var url=shareUrl({picks:encodePicks(picks)});
+      if(navigator.clipboard) navigator.clipboard.writeText(url).then(function(){ showToast('Link copied'); }); else window.prompt('Copy this link:', url);
+    }
+
+    // Reverse lookup index, rebuilt on each renderEvents (slug → ev, id → ev)
+    var lookup={ byArtist:{}, byEvent:{} };
+    function rebuildLookup(events){
+      lookup={ byArtist:{}, byEvent:{} };
+      (events||[]).forEach(function(ev){
+        if(ev.id!=null) lookup.byEvent[String(ev.id)]=ev;
+        (ev.artists||[]).forEach(function(a){
+          var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
+          if(slug && !lookup.byArtist[slug]) lookup.byArtist[slug]={ ev:ev, artist:a };
+        });
+      });
+    }
+
+    // ── picks tray ──
+    var trayOv=document.getElementById('picks-tray-overlay'), trayBody=document.getElementById('tray-body');
+    function trayLineArtist(slug, meta){
+      var hit=lookup.byArtist[slug], ev=hit&&hit.ev;
+      var sub = hit ? ((ev.venue||'')+(ev._day?(' &middot; '+esc(ev._day)):'')) : 'not in this view';
+      return '<li><span class="open-ev">'+esc(meta.name||slug)+' <small>'+sub+'</small></span><button class="rm" data-rm-art="'+esc(slug)+'" title="Remove">&times;</button></li>';
+    }
+    function trayLineEvent(id, meta){
+      var hit=lookup.byEvent[id], title=hit?hit.title:(meta.title||'Event'), venue=hit?hit.venue:(meta.venue||''), day=hit?(hit._day||''):(meta.day||'');
+      return '<li><button class="open-ev" data-open-evt="'+esc(id)+'">'+esc(title)+' <small>'+esc(venue||'')+(day?(' &middot; '+esc(day)):'')+'</small></button><button class="rm" data-rm-evt="'+esc(id)+'" title="Remove">&times;</button></li>';
+    }
+    function renderTray(){
+      var ev=Object.keys(picks.events), ar=Object.keys(picks.artists);
+      if(!ev.length && !ar.length){ trayBody.innerHTML='<div class="empty">No picks yet. Tap the heart on any artist or event to add.</div>'; return; }
+      var h='';
+      if(ev.length){ h+='<h4>Events ('+ev.length+')</h4><ul class="tray-line">'+ev.map(function(id){ return trayLineEvent(id, picks.events[id]); }).join('')+'</ul>'; }
+      if(ar.length){ h+='<h4>Artists ('+ar.length+')</h4><ul class="tray-line">'+ar.map(function(s){ return trayLineArtist(s, picks.artists[s]); }).join('')+'</ul>'; }
+      trayBody.innerHTML=h;
+    }
+    function openTray(){ renderTray(); trayOv.classList.add('show'); lockBody(); }
+    function closeTray(){ if(!trayOv.classList.contains('show')) return; trayOv.classList.remove('show'); unlockBody(); }
+    document.getElementById('picks-chip').addEventListener('click',openTray);
+    document.getElementById('tray-close').addEventListener('click',closeTray);
+    trayOv.addEventListener('click',function(e){ if(e.target===trayOv) closeTray(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&trayOv.classList.contains('show')) closeTray(); });
+    document.getElementById('share-picks').addEventListener('click',sharePicks);
+    document.getElementById('copy-picks').addEventListener('click',copyPicks);
+    document.getElementById('clear-picks').addEventListener('click',function(){
+      if(!pickCount()) return;
+      if(!confirm('Clear all '+pickCount()+' picks?')) return;
+      picks={artists:{},events:{}}; savePicks(); afterPicksChanged();
+      document.querySelectorAll('.heart.on').forEach(function(b){ b.classList.remove('on'); b.setAttribute('aria-pressed','false'); });
+      renderTray();
+    });
+    trayBody.addEventListener('click',function(e){
+      var a=e.target.closest('[data-rm-art]'); if(a){ toggleArtist(a.dataset.rmArt); renderTray(); return; }
+      var v=e.target.closest('[data-rm-evt]'); if(v){ toggleEvent(v.dataset.rmEvt); renderTray(); return; }
+      var o=e.target.closest('[data-open-evt]'); if(o){ var ev=lookup.byEvent[o.dataset.openEvt]; if(ev){ closeTray(); openSheet(ev); } return; }
+    });
+
+    // ── incoming-share state (set on boot from URL params) ──
+    var sharedPicks=null, sharedSingle=null, sharedHandled=false;
+    function applyShared(){
+      if(sharedHandled) return; sharedHandled=true;
+      if(sharedSingle){
+        if(sharedSingle.kind==='event'){
+          var ev=lookup.byEvent[sharedSingle.id];
+          if(ev) openSheet(ev);
+        } else if(sharedSingle.kind==='artist'){
+          var hit=lookup.byArtist[sharedSingle.slug];
+          if(hit) openSheet(hit.ev);
+        }
+        return;
+      }
+      if(!sharedPicks) return;
+      // Highlight + reorder picked events to the top of the grid
+      var ids=sharedPicks.events||[], slugs=sharedPicks.artists||[];
+      ids.forEach(function(id){
+        var card=gridEl.querySelector('.gcard[data-evt="'+CSS.escape(id)+'"]');
+        if(card){ card.classList.add('picked'); gridEl.insertBefore(card, gridEl.firstChild); }
+      });
+      // Mark shared artist rows in the grid
+      slugs.forEach(function(slug){
+        gridEl.querySelectorAll('.line li[data-slug="'+CSS.escape(slug)+'"]').forEach(function(li){ li.classList.add('picked'); });
+      });
+      // Banner
+      var bits=[]; if(ids.length) bits.push(ids.length+' event'+(ids.length===1?'':'s')); if(slugs.length) bits.push(slugs.length+' artist'+(slugs.length===1?'':'s'));
+      document.getElementById('shared-t').textContent='A friend sent you their picks — '+bits.join(' + ')+', highlighted at the top.';
+      document.getElementById('shared-banner').classList.add('show');
+    }
+    document.getElementById('shared-dismiss').addEventListener('click',function(){
+      document.getElementById('shared-banner').classList.remove('show');
+    });
+    document.getElementById('shared-add').addEventListener('click',function(){
+      if(!sharedPicks) return;
+      (sharedPicks.events||[]).forEach(function(id){
+        var ev=lookup.byEvent[id]; if(!ev) return;
+        if(!picks.events[id]) picks.events[id]={ title:ev.title, venue:ev.venue||'', day:ev._day||'', t:Date.now() };
+      });
+      (sharedPicks.artists||[]).forEach(function(slug){
+        var hit=lookup.byArtist[slug]; if(!hit) return;
+        if(!picks.artists[slug]) picks.artists[slug]={ name:hit.artist.name, t:Date.now() };
+      });
+      savePicks(); afterPicksChanged();
+      // refresh visible hearts
+      document.querySelectorAll('.heart[data-pick-art],.heart[data-pick-evt]').forEach(function(b){
+        var s=b.dataset.pickArt, i=b.dataset.pickEvt;
+        var on = s ? isArtistPicked(s) : (i ? isEventPicked(i) : false);
+        b.classList.toggle('on', on);
+      });
+      showToast('Added to your picks');
+    });
+
+    afterPicksChanged();
+
     // ── lineup + card ──
-    function lineupHTML(ev, cap){
+    function lineupHTML(ev, cap, inSheet){
       var arts=ev.artists||[];
       if(!arts.length) return '<li class="tba">Lineup TBA</li>';
       var n=arts.length, c=cap||n, html='';
@@ -667,19 +969,24 @@
         var pos=esc(ev.poster||'');
         var scBtn=sc?'<button class="play sc" data-sc="'+esc(sc)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play top SoundCloud track">'+SC_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
         var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'';
-        html+='<li'+(idx>=c?' class="hid"':'')+'>'+scBtn+ytBtn+'<span class="an">'+esc(a.name)+'</span></li>';
+        var picked=slug&&isArtistPicked(slug)?' on':'';
+        var heart=slug?'<button class="heart'+picked+'" type="button" data-pick-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-pressed="'+(picked?'true':'false')+'" aria-label="Pick '+esc(a.name)+'">'+HEART_SVG+'</button>':'';
+        var shareA = (inSheet && slug) ? '<button class="share-btn" type="button" data-share-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-label="Share '+esc(a.name)+'">'+SHARE_SVG+'</button>' : '';
+        var pickedRow = slug && sharedPicks && (sharedPicks.artists||[]).indexOf(slug)>=0 ? ' picked' : '';
+        html+='<li'+(idx>=c?' class="hid'+pickedRow+'"':(pickedRow?' class="'+pickedRow.trim()+'"':''))+(slug?' data-slug="'+esc(slug)+'"':'')+'>'+scBtn+ytBtn+'<span class="an">'+esc(a.name)+'</span>'+heart+shareA+'</li>';
       });
       return html;
     }
     function cardHTML(ev){
       var time=formatTime(ev.startTime);
       var pick=isPickVenue(ev.venue)?'<span class="pick">Pick</span>':'';
-      return '<div class="gcard">'+
+      var eid=ev.id!=null?String(ev.id):'';
+      return '<div class="gcard"'+(eid?' data-evt="'+esc(eid)+'"':'')+'>'+
         '<button class="card-poster" type="button" aria-label="View '+esc(ev.title)+' lineup">'+posterHTML(ev)+'<span class="expand-badge">'+EXPAND_SVG+'</span></button>'+
         pick+
         '<h3><button class="title-btn" type="button">'+esc(ev.title)+'</button></h3>'+
         '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
-        '<ul class="line">'+lineupHTML(ev,5)+'</ul>'+
+        '<ul class="line">'+lineupHTML(ev,5,false)+'</ul>'+
         soloCtaHTML(ev)+
       '</div>';
     }
@@ -713,14 +1020,18 @@
     }
     function openSheet(ev){
       if(!ev) return;
-      var time=formatTime(ev.startTime);
+      var time=formatTime(ev.startTime), eid=ev.id!=null?String(ev.id):'';
+      var evPicked = eid && isEventPicked(eid) ? ' on' : '';
+      var evHeart = eid ? '<button class="heart'+evPicked+'" type="button" data-pick-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" data-day="'+esc(ev._day||'')+'" aria-pressed="'+(evPicked?'true':'false')+'" aria-label="Pick this event">'+HEART_SVG+'</button>' : '';
+      var evShare = eid ? '<button class="share-btn" type="button" data-share-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" aria-label="Share this event">'+SHARE_SVG+'</button>' : '';
       sheetContent.innerHTML=
         posterHTML(ev)+
         '<div class="sheet-body">'+
           (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
           '<h3>'+esc(ev.title)+'</h3>'+
           '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
-          '<ul class="sheet-line">'+lineupHTML(ev)+'</ul>'+
+          (evHeart||evShare ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Pick or share this event</span></div>' : '')+
+          '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
           soloCtaHTML(ev)+
         '</div>';
       wireCard(sheetContent);
@@ -749,6 +1060,8 @@
         var p=card.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
         var t=card.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
       });
+      rebuildLookup(ordered);
+      applyShared();
       maybeCoach();
     }
 
@@ -863,8 +1176,18 @@
     });
 
     // Default to this weekend (Fri + Sat combined); ?date= overrides to a single day.
-    var _qd=new URLSearchParams(location.search).get('date');
-    if(_qd) load(_qd); else loadWeekend();
+    // Share params (Phase 1):
+    //   ?event=<id>[&d=YYYY-MM-DD]    — deep-link to a single event
+    //   ?artist=<slug>[&d=YYYY-MM-DD] — deep-link to a single artist
+    //   ?picks=v1.<b64>               — a friend's shortlist (encoded payload includes date)
+    var _qs=new URLSearchParams(location.search);
+    var _qd=_qs.get('date'), _qe=_qs.get('event'), _qa=_qs.get('artist'), _qp=_qs.get('picks'), _qsd=_qs.get('d');
+    sharedPicks = _qp ? decodePicksParam(_qp) : null;
+    sharedSingle = _qe ? {kind:'event', id:_qe} : (_qa ? {kind:'artist', slug:_qa} : null);
+    var _shareDate = _qsd || (sharedPicks && sharedPicks.date) || null;
+    if(_qd) load(_qd);
+    else if(_shareDate) load(_shareDate);
+    else loadWeekend();
   </script>
 </body>
 </html>
