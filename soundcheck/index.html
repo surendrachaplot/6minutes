@@ -372,6 +372,45 @@
     .shared-banner .b-list b { color:var(--accent); font-weight:700; }
     .shared-banner .b-list { color:var(--fg); line-height:1.5; }
 
+    /* ── Phase 3/4 panels (profile / feed / artist / venue) reuse tray shell ── */
+    .panel-stat { display:flex; gap:20px; margin:4px 0 14px; color:var(--muted); font-size:0.84rem; }
+    .panel-stat b { color:var(--fg); font-weight:700; }
+    .follow-btn { background:var(--accent); color:var(--accent-ink); border:none; border-radius:999px; padding:9px 18px; font:700 0.7rem var(--body); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; }
+    .follow-btn.following { background:transparent; color:var(--fg); border:1px solid var(--border); }
+    .follow-btn.following:hover { border-color:var(--accent); color:var(--accent); }
+    .panel-handle { display:inline-flex; align-items:center; gap:10px; }
+    .panel-handle .av-lg { width:44px; height:44px; border-radius:999px; background:var(--accent); color:var(--ink); display:inline-flex; align-items:center; justify-content:center; font-family:var(--head); font-weight:800; font-size:1.2rem; text-transform:uppercase; }
+    .pillrow { display:flex; flex-wrap:wrap; gap:7px; }
+    .pill-link { background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:7px 13px; font:600 0.82rem var(--body); cursor:pointer; }
+    .pill-link:hover { border-color:var(--accent); color:var(--accent); }
+    .feed-row { display:flex; gap:11px; align-items:flex-start; padding:11px 2px; border-bottom:1px solid var(--border); }
+    .feed-row:last-child { border-bottom:none; }
+    .feed-row .fav { width:30px; height:30px; border-radius:999px; background:var(--accent); color:var(--ink); display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:0.78rem; text-transform:uppercase; flex-shrink:0; }
+    .feed-row .ft { font-size:0.9rem; line-height:1.4; }
+    .feed-row .ft b { font-weight:700; }
+    .feed-row .ft .lk { color:var(--accent); cursor:pointer; }
+    .feed-row .fw { color:var(--muted); font-size:0.74rem; margin-top:2px; }
+    .an.linky { cursor:pointer; }
+    .an.linky:hover { color:var(--accent); text-decoration:underline; }
+    .venue-link { cursor:pointer; }
+    .sheet-meta b.venue-link:hover { color:var(--accent); text-decoration:underline; }
+    .agg-big { display:flex; align-items:baseline; gap:8px; margin:6px 0 2px; }
+    .agg-big .num { font-family:var(--head); font-weight:800; font-size:2.4rem; color:var(--accent); letter-spacing:-0.02em; }
+    .agg-big .of { color:var(--muted); font-size:0.84rem; }
+
+    /* log-a-gig */
+    .lg-field { margin-bottom:14px; }
+    .lg-field label { display:block; font-size:0.6rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+    .lg-field input, .lg-field textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--fg); border-radius:10px; padding:11px 13px; font:500 0.92rem var(--body); outline:none; }
+    .lg-field input:focus, .lg-field textarea:focus { border-color:var(--accent); }
+    .lg-field textarea { resize:vertical; min-height:72px; }
+    .stars { display:flex; gap:6px; }
+    .stars button { background:transparent; border:none; cursor:pointer; font-size:1.6rem; line-height:1; color:var(--border); padding:0; }
+    .stars button.on { color:var(--accent); }
+    .lg-artists { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .lg-chip { background:rgba(255,122,107,0.14); border:1px solid var(--accent); color:var(--fg); border-radius:999px; padding:5px 10px; font-size:0.8rem; display:inline-flex; gap:6px; align-items:center; }
+    .lg-chip button { background:none; border:none; color:var(--accent); cursor:pointer; font-size:0.9rem; line-height:1; }
+
     /* ── account (Phase 2 sign-in) ── */
     .account { display:inline-flex; align-items:center; gap:8px; }
     .account .signin-btn { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:7px 14px; font:700 0.62rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
@@ -537,6 +576,32 @@
       <h3 id="me-title">My picks</h3>
       <div class="sub" id="me-sub"></div>
       <div id="me-body"></div>
+    </div>
+  </div>
+
+  <!-- reusable panel: profile / feed / artist / venue -->
+  <div class="picks-tray-overlay" id="panel-overlay">
+    <div class="picks-tray" id="panel-sheet">
+      <button class="tray-close" id="panel-close" type="button" aria-label="Close">&times;</button>
+      <div id="panel-body"></div>
+    </div>
+  </div>
+
+  <!-- log a gig -->
+  <div class="picks-tray-overlay" id="log-overlay">
+    <div class="picks-tray" id="log-sheet">
+      <button class="tray-close" id="log-close" type="button" aria-label="Close">&times;</button>
+      <h3>Log a gig</h3>
+      <div class="sub">Add a night you went to — it lands in your diary and marks the DJs as seen.</div>
+      <div style="margin-top:16px">
+        <div class="lg-field"><label>Date</label><input type="date" id="lg-date"></div>
+        <div class="lg-field"><label>Venue</label><input type="text" id="lg-venue" placeholder="FOLD, Phonox, The Cause…"></div>
+        <div class="lg-field"><label>Artists you saw</label><input type="text" id="lg-artist-in" placeholder="Type a name, press Enter"><div class="lg-artists" id="lg-artists"></div></div>
+        <div class="lg-field"><label>Rating</label><div class="stars" id="lg-stars"></div></div>
+        <div class="lg-field"><label>Note (optional)</label><textarea id="lg-note" placeholder="How was it?"></textarea></div>
+        <div class="share-main"><button class="primary" id="lg-save" type="button" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);font:700 0.72rem var(--body);letter-spacing:0.14em;text-transform:uppercase;cursor:pointer">Save to diary</button></div>
+        <div class="err" id="lg-err" style="color:var(--accent);font-size:0.82rem;min-height:1em;margin-top:8px"></div>
+      </div>
     </div>
   </div>
 
@@ -829,7 +894,10 @@
           e.preventDefault(); e.stopPropagation();
           if(s.dataset.shareArt) shareArtist(s.dataset.shareArt, s.dataset.name);
           else if(s.dataset.shareEvt) shareEvent(s.dataset.shareEvt, s.dataset.title, s.dataset.venue);
+          return;
         }
+        var an=e.target.closest('.an.linky[data-artist]'); if(an){ e.preventDefault(); e.stopPropagation(); openArtist(an.dataset.artist); return; }
+        var vl=e.target.closest('.venue-link[data-venue]'); if(vl && vl.dataset.venue){ e.preventDefault(); e.stopPropagation(); openVenue(vl.dataset.venue); return; }
       });
     }
 
@@ -943,9 +1011,20 @@
       if(currentUser){
         var initial=(currentUser.handle||'?').charAt(0);
         el.innerHTML='<button class="who" id="who-btn" aria-haspopup="true"><span class="av">'+esc(initial)+'</span><span class="hn">@'+esc(currentUser.handle)+'</span></button>'+
-          '<div class="menu" id="acct-menu"><button id="menu-me" type="button">My picks</button><div class="div"></div><button id="menu-signout" type="button">Sign out</button></div>';
+          '<div class="menu" id="acct-menu">'+
+            '<button id="menu-me" type="button">My picks</button>'+
+            '<button id="menu-profile" type="button">My profile</button>'+
+            '<button id="menu-feed" type="button">Feed</button>'+
+            '<button id="menu-log" type="button">Log a gig</button>'+
+            '<div class="div"></div>'+
+            '<button id="menu-signout" type="button">Sign out</button>'+
+          '</div>';
+        var closeMenu=function(){ document.getElementById('acct-menu').classList.remove('show'); };
         document.getElementById('who-btn').addEventListener('click',function(e){ e.stopPropagation(); document.getElementById('acct-menu').classList.toggle('show'); });
-        document.getElementById('menu-me').addEventListener('click',function(){ document.getElementById('acct-menu').classList.remove('show'); openMe(); });
+        document.getElementById('menu-me').addEventListener('click',function(){ closeMenu(); openMe(); });
+        document.getElementById('menu-profile').addEventListener('click',function(){ closeMenu(); openProfile(currentUser.handle); });
+        document.getElementById('menu-feed').addEventListener('click',function(){ closeMenu(); openFeed(); });
+        document.getElementById('menu-log').addEventListener('click',function(){ closeMenu(); openLog(); });
         document.getElementById('menu-signout').addEventListener('click',signOut);
       } else {
         el.innerHTML='<button class="signin-btn" id="signin-btn" type="button">Sign in</button>';
@@ -1058,18 +1137,19 @@
       if(navigator.clipboard){ return navigator.clipboard.writeText(opts.url).then(function(){ showToast('Link copied'); },function(){ window.prompt('Copy this link:', opts.url); }); }
       window.prompt('Copy this link:', opts.url);
     }
+    function myHandle(){ return currentUser ? currentUser.handle : null; }
     function shareArtist(slug, name){
-      var url=shareUrl({artist:slug, d:currentDate||null});
+      var url=shareUrl({artist:slug, d:currentDate||null, u:myHandle()});
       doShare({ title:name||'Listen on soundcheck', text:'Listen to '+(name||'this DJ')+' on soundcheck', url:url });
     }
     function shareEvent(id, title, venue){
-      var url=shareUrl({event:id, d:currentDate||null});
+      var url=shareUrl({event:id, d:currentDate||null, u:myHandle()});
       var t=(title||'Event')+(venue?(' · '+venue):'');
       doShare({ title:t, text:t+' — preview every DJ on soundcheck', url:url });
     }
     function sharePicks(){
       if(!pickCount()) return;
-      var url=shareUrl({picks:encodePicks(picks)});
+      var url=shareUrl({picks:encodePicks(picks), u:myHandle()});
       var a=Object.keys(picks.artists).filter(function(s){return artStatus(s)==='wanna_see';}).length;
       var e=Object.keys(picks.events).filter(function(i){return evtStatus(i)==='going';}).length;
       var bits=[]; if(e) bits.push(e+' event'+(e===1?'':'s')); if(a) bits.push(a+' artist'+(a===1?'':'s'));
@@ -1159,7 +1239,16 @@
       if(!h) h='<div class="empty">Nothing here yet. Heart artists you wanna see, mark gigs you&rsquo;re going to, and tick DJs you&rsquo;ve seen live.</div>';
       meBody.innerHTML=h;
     }
-    function openMe(){ renderMe(); meOv.classList.add('show'); lockBody(); }
+    function openMe(){ renderMe(); meOv.classList.add('show'); lockBody(); if(currentUser) appendMeDiary(); }
+    async function appendMeDiary(){
+      try{
+        var r=await authedFetch('/api/diary'); var j=await r.json(); var rows=j.entries||[];
+        var h='<h4 style="display:flex;justify-content:space-between;align-items:center">Diary ('+rows.length+') <button id="me-log" type="button" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:6px 11px;font:700 0.62rem var(--body);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Log a gig</button></h4>';
+        h+= rows.length ? diaryListHTML(rows) : '<div class="empty" style="padding:6px 0">No gigs logged yet.</div>';
+        meBody.insertAdjacentHTML('beforeend', h);
+        var lb=document.getElementById('me-log'); if(lb) lb.addEventListener('click',function(){ closeMe(); openLog(); });
+      }catch(_){}
+    }
     function closeMe(){ if(!meOv.classList.contains('show')) return; meOv.classList.remove('show'); unlockBody(); }
     document.getElementById('me-close').addEventListener('click',closeMe);
     meOv.addEventListener('click',function(e){ if(e.target===meOv) closeMe(); });
@@ -1169,8 +1258,156 @@
       var v=e.target.closest('[data-rm-evt]'); if(v){ setEvent(v.dataset.rmEvt, null); renderMe(); return; }
     });
 
+    // ════ Phase 3/4: profiles · feed · artist/venue · diary (account features) ════
+    var panelOv=document.getElementById('panel-overlay'), panelBody=document.getElementById('panel-body');
+    function openPanel(html){ panelBody.innerHTML=html; panelOv.classList.add('show'); lockBody(); }
+    function closePanel(){ if(!panelOv.classList.contains('show')) return; panelOv.classList.remove('show'); unlockBody(); if(location.hash) history.replaceState(null,'',location.pathname+location.search); }
+    document.getElementById('panel-close').addEventListener('click',closePanel);
+    panelOv.addEventListener('click',function(e){ if(e.target===panelOv) closePanel(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&panelOv.classList.contains('show')) closePanel(); });
+    function relTime(iso){ try{ var s=(Date.now()-new Date(iso).getTime())/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }catch(_){ return ''; } }
+    function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
+
+    // ---- profile ----
+    async function openProfile(handle){
+      openPanel('<div class="empty">Loading @'+esc(handle)+'…</div>');
+      try{
+        var r=await authedFetch('/api/profile?handle='+encodeURIComponent(handle));
+        if(r.status===404){ openPanel('<div class="empty">No soundcheck user @'+esc(handle)+'.</div>'); return; }
+        var p=await r.json();
+        var h='<div class="panel-handle"><span class="av-lg">'+esc((p.handle||'?').charAt(0))+'</span><div><h3 style="margin:0">@'+esc(p.handle)+'</h3>'+
+          '<div class="panel-stat"><span><b>'+p.followers+'</b> followers</span><span><b>'+p.following+'</b> following</span></div></div></div>';
+        if(!p.isMe){ h+='<button class="follow-btn'+(p.isFollowing?' following':'')+'" id="follow-btn" data-handle="'+esc(p.handle)+'">'+(p.isFollowing?'Following':'Follow')+'</button>'; }
+        if(p.locked){ h+='<div class="empty">This profile is private.</div>'; openPanel(h); wireProfile(); return; }
+        var s=p.shelves||{wannaSee:[],seen:[],events:[]};
+        function artPills(list){ return '<div class="pillrow">'+(list.length?list.map(function(a){ return '<button class="pill-link" data-artist="'+esc(a.slug)+'">'+esc(a.name||a.slug)+'</button>'; }).join(''):'<span class="empty" style="padding:0">—</span>')+'</div>'; }
+        if(s.events.length){ h+='<h4>Going to ('+s.events.length+')</h4><ul class="tray-line">'+s.events.map(function(e){ return '<li><span class="open-ev">'+esc(e.title||'Event')+' <small>'+esc(e.venue||'')+'</small></span></li>'; }).join('')+'</ul>'; }
+        h+='<h4>Wanna see ('+s.wannaSee.length+')</h4>'+artPills(s.wannaSee);
+        h+='<h4 style="margin-top:16px">Seen live ('+s.seen.length+')</h4>'+artPills(s.seen);
+        if(p.diary && p.diary.length){ h+='<h4 style="margin-top:16px">Diary</h4>'+diaryListHTML(p.diary); }
+        openPanel(h); wireProfile();
+      }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that profile.</div>'); }
+    }
+    function wireProfile(){
+      var fb=document.getElementById('follow-btn');
+      if(fb) fb.addEventListener('click',async function(){
+        if(!currentUser){ closePanel(); openAuth(); return; }
+        var on=fb.classList.contains('following');
+        fb.classList.toggle('following'); fb.textContent=on?'Follow':'Following';
+        try{ await authedFetch(on?'/api/unfollow':'/api/follow',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({handle:fb.dataset.handle}) }); }catch(_){}
+      });
+      panelBody.querySelectorAll('[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); });
+    }
+    function diaryListHTML(rows){
+      return '<ul class="tray-line">'+rows.map(function(d){
+        var arts=(d.artists||[]).map(function(a){return a.name||a.slug;}).join(', ');
+        var stars=d.rating?(' · '+'★'.repeat(d.rating)):'';
+        return '<li><span class="open-ev">'+esc(d.venue||'Gig')+(d.gig_date?(' <small>'+esc(d.gig_date)+'</small>'):'')+'<br><small>'+esc(arts)+stars+(d.note?(' — '+esc(d.note)):'')+'</small></span></li>';
+      }).join('')+'</ul>';
+    }
+
+    // ---- feed ----
+    async function openFeed(){
+      if(!currentUser){ openAuth(); return; }
+      openPanel('<h3>Feed</h3><div class="empty">Loading…</div>');
+      try{
+        var r=await authedFetch('/api/feed'); var j=await r.json(); var rows=j.events||[];
+        var h='<h3>Feed</h3><div class="sub">What the people you follow are into.</div>';
+        if(!rows.length){ h+='<div class="empty">Quiet so far. Follow some people from their profiles and their picks show up here.</div>'; openPanel(h); maybeSuggest(); return; }
+        h+='<div style="margin-top:8px">'+rows.map(function(a){
+          var verb = a.kind==='wanna_see'?'wants to see':a.kind==='seen'?'saw':a.kind==='save_event'?'saved':a.kind==='follow'?'followed':a.kind==='diary'?'logged a gig at':'·';
+          var subj = a.subject_type==='artist'?'<span class="lk" data-artist="'+esc(a.subject_id)+'">'+esc(a.subject_label||a.subject_id)+'</span>':
+                     a.subject_type==='user'?'<span class="lk" data-profile="'+esc(a.subject_id)+'">@'+esc(a.subject_id)+'</span>':esc(a.subject_label||'an event');
+          return '<div class="feed-row">'+av(a.author_handle)+'<div><div class="ft"><b class="lk" data-profile="'+esc(a.author_handle)+'">@'+esc(a.author_handle)+'</b> '+verb+' '+subj+'</div><div class="fw">'+relTime(a.created_at)+'</div></div></div>';
+        }).join('')+'</div>';
+        openPanel(h); wireFeed();
+      }catch(_){ openPanel('<h3>Feed</h3><div class="empty">Couldn&rsquo;t load the feed.</div>'); }
+    }
+    function wireFeed(){
+      panelBody.querySelectorAll('[data-profile]').forEach(function(b){ b.addEventListener('click',function(){ openProfile(b.dataset.profile); }); });
+      panelBody.querySelectorAll('[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); });
+    }
+    async function maybeSuggest(){
+      try{ var r=await authedFetch('/api/suggest'); var j=await r.json(); if(!j.people||!j.people.length) return;
+        var h='<h4 style="margin-top:18px">People you might know</h4><div class="pillrow">'+j.people.map(function(p){ return '<button class="pill-link" data-profile="'+esc(p.handle)+'">@'+esc(p.handle)+' · '+p.overlap+' shared</button>'; }).join('')+'</div>';
+        panelBody.insertAdjacentHTML('beforeend', h); wireFeed();
+      }catch(_){}
+    }
+
+    // ---- artist + venue pages ----
+    async function openArtist(slug){
+      closePanel(); openPanel('<div class="empty">Loading…</div>');
+      try{
+        var r=await authedFetch('/api/artist?slug='+encodeURIComponent(slug)); var a=await r.json();
+        var mine=artStatus(slug);
+        var h='<h3>'+esc(a.name||slug)+'</h3><div class="sub">on soundcheck</div>';
+        if(a.rating){ h+='<div class="agg-big"><span class="num">'+a.rating+'</span><span class="of">avg from '+a.ratingCount+' logged gig'+(a.ratingCount===1?'':'s')+'</span></div>'; }
+        h+='<div class="panel-stat" style="margin-top:12px"><span><b>'+a.seen+'</b> have seen them live</span><span><b>'+a.wanna+'</b> wanna see</span>'+(a.networkSeen?'<span><b>'+a.networkSeen+'</b> friends seen</span>':'')+'</div>';
+        h+='<div class="share-main" style="margin-top:8px"><button class="'+(mine==='wanna_see'?'primary':'ghost')+'" id="ap-wanna" type="button">'+(mine==='wanna_see'?'✓ Wanna see':'Wanna see')+'</button><button class="'+(mine==='seen'?'primary':'ghost')+'" id="ap-seen" type="button">'+(mine==='seen'?'✓ Seen live':'Seen live')+'</button></div>';
+        openPanel(h);
+        document.getElementById('ap-wanna').addEventListener('click',function(){ toggleArtist(slug,{name:a.name}); openArtist(slug); });
+        document.getElementById('ap-seen').addEventListener('click',function(){ toggleSeen(slug,{name:a.name}); openArtist(slug); });
+      }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that artist.</div>'); }
+    }
+    async function openVenue(name){
+      closePanel(); openPanel('<div class="empty">Loading…</div>');
+      try{
+        var r=await authedFetch('/api/venue?name='+encodeURIComponent(name)); var v=await r.json();
+        var h='<h3>'+esc(name)+'</h3><div class="sub">on soundcheck</div>';
+        if(v.rating){ h+='<div class="agg-big"><span class="num">'+v.rating+'</span><span class="of">avg from '+v.ratingCount+' logged night'+(v.ratingCount===1?'':'s')+'</span></div>'; }
+        h+='<div class="panel-stat" style="margin-top:12px"><span><b>'+v.logged+'</b> logged here</span><span><b>'+v.going+'</b> saved upcoming</span></div>';
+        openPanel(h);
+      }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that venue.</div>'); }
+    }
+
+    // ---- log a gig ----
+    var logOv=document.getElementById('log-overlay'), lgArtists=[], lgRating=0;
+    function openLog(prefill){
+      lgArtists=(prefill&&prefill.artists)||[]; lgRating=0;
+      document.getElementById('lg-venue').value=(prefill&&prefill.venue)||'';
+      document.getElementById('lg-date').value=(prefill&&prefill.date)||'';
+      document.getElementById('lg-note').value=''; document.getElementById('lg-err').textContent='';
+      renderLgArtists(); renderStars();
+      logOv.classList.add('show'); lockBody();
+    }
+    function closeLog(){ if(!logOv.classList.contains('show')) return; logOv.classList.remove('show'); unlockBody(); }
+    function renderStars(){ document.getElementById('lg-stars').innerHTML=[1,2,3,4,5].map(function(n){ return '<button type="button" data-star="'+n+'" class="'+(n<=lgRating?'on':'')+'">★</button>'; }).join(''); }
+    function renderLgArtists(){ document.getElementById('lg-artists').innerHTML=lgArtists.map(function(a,i){ return '<span class="lg-chip">'+esc(a.name)+'<button type="button" data-rmlg="'+i+'">&times;</button></span>'; }).join(''); }
+    document.getElementById('log-close').addEventListener('click',closeLog);
+    logOv.addEventListener('click',function(e){ if(e.target===logOv) closeLog(); });
+    document.getElementById('lg-stars').addEventListener('click',function(e){ var b=e.target.closest('[data-star]'); if(b){ lgRating=+b.dataset.star; renderStars(); } });
+    document.getElementById('lg-artists').addEventListener('click',function(e){ var b=e.target.closest('[data-rmlg]'); if(b){ lgArtists.splice(+b.dataset.rmlg,1); renderLgArtists(); } });
+    document.getElementById('lg-artist-in').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); var v=this.value.trim(); if(v){ lgArtists.push({slug:v.toLowerCase().replace(/[^a-z0-9]+/g,'-'), name:v}); this.value=''; renderLgArtists(); } } });
+    document.getElementById('lg-save').addEventListener('click',async function(){
+      if(!currentUser){ closeLog(); openAuth(); return; }
+      var btn=this; btn.disabled=true; document.getElementById('lg-err').textContent='';
+      try{
+        var r=await authedFetch('/api/diary',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+          date:document.getElementById('lg-date').value||null, venue:document.getElementById('lg-venue').value.trim()||null,
+          note:document.getElementById('lg-note').value.trim()||null, rating:lgRating||null, artists:lgArtists }) });
+        if(!r.ok){ var j=await r.json().catch(function(){return{};}); document.getElementById('lg-err').textContent=(j.error||'Could not save')+'.'; btn.disabled=false; return; }
+        // reflect new "seen" states locally
+        lgArtists.forEach(function(a){ picks.artists[a.slug]={name:a.name,status:'seen',t:Date.now()}; });
+        savePicks();
+        closeLog(); showToast('Logged to your diary'); if(meOv.classList.contains('show')) renderMe();
+      }catch(_){ document.getElementById('lg-err').textContent='Network error.'; }
+      finally{ btn.disabled=false; }
+    });
+
+    // ---- hash router (#u/<handle>, #feed, #a/<slug>, #v/<name>, #log) ----
+    function handleRoute(){
+      var hash=decodeURIComponent(location.hash.replace(/^#/,''));
+      if(!hash) return;
+      if(hash==='feed') openFeed();
+      else if(hash==='log') openLog();
+      else if(hash.indexOf('u/')===0) openProfile(hash.slice(2));
+      else if(hash.indexOf('a/')===0) openArtist(hash.slice(2));
+      else if(hash.indexOf('v/')===0) openVenue(hash.slice(2));
+    }
+    window.addEventListener('hashchange',handleRoute);
+
     // ── incoming-share state (set on boot from URL params) ──
-    var sharedPicks=null, sharedSingle=null, sharedHandled=false;
+    var sharedPicks=null, sharedSingle=null, sharedHandled=false, sharedFrom=null;
     function applyShared(){
       if(sharedHandled) return; sharedHandled=true;
       if(sharedSingle){
@@ -1206,6 +1443,22 @@
       if(evNames.length) parts.push('Events: '+namesList(evNames, 4));
       if(arNames.length) parts.push('Artists: '+namesList(arNames, 6));
       document.getElementById('shared-t').innerHTML = parts.join('<br>') || 'A friend sent you some picks.';
+      // sender attribution (#42)
+      var hEl=document.getElementById('shared-h');
+      if(sharedFrom){
+        hEl.innerHTML='<span class="b-link" id="shared-from" style="cursor:pointer">@'+esc(sharedFrom)+'</span> shared with you';
+        document.getElementById('shared-from').addEventListener('click',function(){ openProfile(sharedFrom); });
+        var acts=document.querySelector('.shared-banner .b-actions');
+        if(acts && !document.getElementById('shared-follow')){
+          var fb=document.createElement('button'); fb.id='shared-follow'; fb.className='primary'; fb.textContent='Follow @'+sharedFrom;
+          fb.addEventListener('click',async function(){
+            if(!currentUser){ openAuth(); return; }
+            fb.textContent='Following'; fb.disabled=true;
+            try{ await authedFetch('/api/follow',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({handle:sharedFrom}) }); }catch(_){}
+          });
+          acts.insertBefore(fb, acts.firstChild);
+        }
+      } else { hEl.textContent='Shared with you'; }
       document.getElementById('shared-banner').classList.add('show');
     }
     document.getElementById('shared-dismiss').addEventListener('click',function(){
@@ -1239,7 +1492,9 @@
         var seenBtn = (inSheet && slug) ? '<button class="seen-btn'+seenOn+'" type="button" data-seen-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-label="Seen '+esc(a.name)+' live" title="Seen live">'+CHECK_SVG+'</button>' : '';
         var shareA = (inSheet && slug) ? '<button class="share-btn" type="button" data-share-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-label="Share '+esc(a.name)+'">'+SHARE_SVG+'</button>' : '';
         var pickedRow = slug && sharedPicks && (sharedPicks.artists||[]).indexOf(slug)>=0 ? ' picked' : '';
-        html+='<li'+(idx>=c?' class="hid'+pickedRow+'"':(pickedRow?' class="'+pickedRow.trim()+'"':''))+(slug?' data-slug="'+esc(slug)+'"':'')+'>'+ytBtn+'<span class="an">'+esc(a.name)+'</span>'+heart+seenBtn+shareA+'</li>';
+        var anCls = (inSheet && slug) ? 'an linky' : 'an';
+        var anAttr = (inSheet && slug) ? ' data-artist="'+esc(slug)+'" data-name="'+esc(a.name)+'"' : '';
+        html+='<li'+(idx>=c?' class="hid'+pickedRow+'"':(pickedRow?' class="'+pickedRow.trim()+'"':''))+(slug?' data-slug="'+esc(slug)+'"':'')+'>'+ytBtn+'<span class="'+anCls+'"'+anAttr+'>'+esc(a.name)+'</span>'+heart+seenBtn+shareA+'</li>';
       });
       return html;
     }
@@ -1278,14 +1533,19 @@
 
     // ── event sheet (tap a poster) ──
     var sheetOv=document.getElementById('sheet-overlay'), sheetContent=document.getElementById('sheet-content');
-    // iOS-safe body scroll lock: position:fixed + saved scrollY, restored on close
-    var savedScrollY=0;
+    // iOS-safe body scroll lock: position:fixed + saved scrollY, restored on close.
+    // Reference-counted so stacked overlays (e.g. artist panel over the event
+    // sheet) don't double-lock and jump the scroll on close.
+    var savedScrollY=0, bodyLocks=0;
     function lockBody(){
+      if(bodyLocks++ > 0) return;
       savedScrollY=window.scrollY||window.pageYOffset||0;
       var s=document.body.style;
       s.position='fixed'; s.top=(-savedScrollY)+'px'; s.left='0'; s.right='0'; s.width='100%';
     }
     function unlockBody(){
+      if(bodyLocks>0) bodyLocks--;
+      if(bodyLocks>0) return;
       var s=document.body.style;
       s.position=''; s.top=''; s.left=''; s.right=''; s.width='';
       window.scrollTo(0, savedScrollY);
@@ -1301,7 +1561,7 @@
         '<div class="sheet-body">'+
           (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
           '<h3>'+esc(ev.title)+'</h3>'+
-          '<div class="sheet-meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
+          '<div class="sheet-meta"><b class="venue-link" data-venue="'+esc(ev.venue||'')+'">'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
           (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Save or share this event</span></div>' : '')+
           '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
           soloCtaHTML(ev)+
@@ -1544,11 +1804,16 @@
     var _qfrom=_qs.get('from'), _qto=_qs.get('to');
     sharedPicks = _qp ? decodePicksParam(_qp) : null;
     sharedSingle = _qe ? {kind:'event', id:_qe} : (_qa ? {kind:'artist', slug:_qa} : null);
+    sharedFrom = (_qs.get('u')||'').toLowerCase().replace(/[^a-z0-9]/g,'') || null; // sender handle (#42)
     var _shareDate = _qsd || (sharedPicks && sharedPicks.date) || null;
     if(_qfrom && _qto) loadRange(_qfrom,_qto);
     else if(_qd) load(_qd);
     else if(_shareDate) load(_shareDate);
     else loadWeekend();
+
+    // resolve any hash route (#u/handle, #feed, #a/slug, #v/name, #log) after
+    // the account state is known (loadMe is kicked off in consumeSessionHash)
+    if(location.hash) setTimeout(handleRoute, 400);
   </script>
 </body>
 </html>
