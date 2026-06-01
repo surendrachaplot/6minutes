@@ -418,6 +418,25 @@
     .agg-big .num { font-family:var(--head); font-weight:800; font-size:2.4rem; color:var(--accent); letter-spacing:-0.02em; }
     .agg-big .of { color:var(--muted); font-size:0.84rem; }
 
+    /* account hub page */
+    .hub-head { display:flex; align-items:center; gap:14px; margin:4px 0 24px; }
+    .hub-head .av-lg { width:52px; height:52px; border-radius:999px; background:var(--accent); color:var(--ink); display:inline-flex; align-items:center; justify-content:center; font-family:var(--head); font-weight:800; font-size:1.4rem; text-transform:uppercase; }
+    .hub-head .hh-name { font-family:var(--head); font-weight:800; font-size:1.5rem; letter-spacing:-0.02em; line-height:1.1; }
+    .hub-head .hh-stat { color:var(--muted); font-size:0.84rem; margin-top:2px; }
+    .hub-head .hh-stat b { color:var(--fg); }
+    .hub-list { display:flex; flex-direction:column; gap:10px; max-width:520px; }
+    .hub-row { display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; cursor:pointer; transition:border-color .12s, background .12s; }
+    .hub-row:hover { border-color:var(--accent); }
+    .hub-row .hr-ic { width:24px; height:24px; flex-shrink:0; color:var(--accent); }
+    .hub-row .hr-ic svg { width:24px; height:24px; display:block; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .hub-row .hr-tx { flex:1; min-width:0; }
+    .hub-row .hr-t { display:block; font-family:var(--head); font-weight:700; font-size:1rem; }
+    .hub-row .hr-d { display:block; color:var(--muted); font-size:0.8rem; margin-top:2px; }
+    .hub-row .hr-ch { color:var(--muted); font-size:1.1rem; }
+    .hub-row.danger .hr-ic, .hub-row.danger .hr-t { color:var(--fg); }
+    .hub-row.danger:hover { border-color:var(--accent); }
+    .hub-row.danger .hr-ic { color:var(--muted); }
+
     /* log-a-gig */
     .lg-field { margin-bottom:14px; }
     .lg-field label { display:block; font-size:0.6rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
@@ -1044,22 +1063,8 @@
       var el=document.getElementById('account');
       if(currentUser){
         var initial=(currentUser.handle||'?').charAt(0);
-        el.innerHTML='<button class="who" id="who-btn" aria-haspopup="true"><span class="av">'+esc(initial)+'</span><span class="hn">@'+esc(currentUser.handle)+'</span></button>'+
-          '<div class="menu" id="acct-menu">'+
-            '<button id="menu-me" type="button">My picks</button>'+
-            '<button id="menu-profile" type="button">My profile</button>'+
-            '<button id="menu-feed" type="button">Feed</button>'+
-            '<button id="menu-log" type="button">Log a gig</button>'+
-            '<div class="div"></div>'+
-            '<button id="menu-signout" type="button">Sign out</button>'+
-          '</div>';
-        var closeMenu=function(){ document.getElementById('acct-menu').classList.remove('show'); };
-        document.getElementById('who-btn').addEventListener('click',function(e){ e.stopPropagation(); document.getElementById('acct-menu').classList.toggle('show'); });
-        document.getElementById('menu-me').addEventListener('click',function(){ closeMenu(); openMe(); });
-        document.getElementById('menu-profile').addEventListener('click',function(){ closeMenu(); openProfile(currentUser.handle); });
-        document.getElementById('menu-feed').addEventListener('click',function(){ closeMenu(); openFeed(); });
-        document.getElementById('menu-log').addEventListener('click',function(){ closeMenu(); openLog(); });
-        document.getElementById('menu-signout').addEventListener('click',signOut);
+        el.innerHTML='<button class="who" id="who-btn"><span class="av">'+esc(initial)+'</span><span class="hn">@'+esc(currentUser.handle)+'</span></button>';
+        document.getElementById('who-btn').addEventListener('click',function(){ openAccount(); });
       } else {
         el.innerHTML='<button class="signin-btn" id="signin-btn" type="button">Sign in</button>';
         document.getElementById('signin-btn').addEventListener('click',openAuth);
@@ -1292,6 +1297,36 @@
       var v=e.target.closest('[data-rm-evt]'); if(v){ setEvent(v.dataset.rmEvt, null); renderMe(); return; }
     });
 
+    // ── account hub page (tapping the @handle chip lands here) ──
+    var HUB_IC={
+      picks:'<svg viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>',
+      profile:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+      feed:'<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+      log:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+      out:'<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>'
+    };
+    function hubRow(id, ic, t, d, cls){ return '<button class="hub-row '+(cls||'')+'" id="'+id+'" type="button"><span class="hr-ic">'+ic+'</span><span class="hr-tx"><span class="hr-t">'+t+'</span>'+(d?'<span class="hr-d">'+d+'</span>':'')+'</span><span class="hr-ch">&rsaquo;</span></button>'; }
+    function openAccount(){
+      if(!currentUser){ openAuth(); return; }
+      setRoute('account');
+      var initial=(currentUser.handle||'?').charAt(0);
+      var h='<div class="hub-head"><span class="av-lg">'+esc(initial)+'</span><div><div class="hh-name">@'+esc(currentUser.handle)+'</div><div class="hh-stat" id="hub-stat">your account</div></div></div>'+
+        '<div class="hub-list">'+
+          hubRow('hub-picks', HUB_IC.picks, 'My picks', 'Wanna-see, seen &amp; saved nights')+
+          hubRow('hub-profile', HUB_IC.profile, 'My profile', 'How others see you')+
+          hubRow('hub-feed', HUB_IC.feed, 'Feed', 'What people you follow are into')+
+          hubRow('hub-log', HUB_IC.log, 'Log a gig', 'Add a night to your diary')+
+          hubRow('hub-out', HUB_IC.out, 'Sign out', '', 'danger')+
+        '</div>';
+      showPage(h);
+      document.getElementById('hub-picks').addEventListener('click',openMe);
+      document.getElementById('hub-profile').addEventListener('click',function(){ openProfile(currentUser.handle); });
+      document.getElementById('hub-feed').addEventListener('click',openFeed);
+      document.getElementById('hub-log').addEventListener('click',openLog);
+      document.getElementById('hub-out').addEventListener('click',signOut);
+      authedFetch('/api/profile?handle='+encodeURIComponent(currentUser.handle)).then(function(r){ return r.json(); }).then(function(p){ var s=document.getElementById('hub-stat'); if(s&&p&&p.handle) s.innerHTML='<b>'+p.followers+'</b> followers &middot; <b>'+p.following+'</b> following'; }).catch(function(){});
+    }
+
     // ════ Phase 3/4: profiles · feed · artist/venue · diary (account features) ════
     // Profile / feed / artist / venue render as full-page views (not overlays).
     var pageView=document.getElementById('page-view'), panelBody=null;
@@ -1486,7 +1521,8 @@
     function handleRoute(){
       var hash=decodeURIComponent(location.hash.replace(/^#/,''));
       if(!hash){ hidePage(); return; }   // browser-back off a page → home
-      if(hash==='feed') openFeed();
+      if(hash==='account') openAccount();
+      else if(hash==='feed') openFeed();
       else if(hash==='log') openLog();
       else if(hash.indexOf('u/')===0) openProfile(hash.slice(2));
       else if(hash.indexOf('a/')===0) openArtist(hash.slice(2));
