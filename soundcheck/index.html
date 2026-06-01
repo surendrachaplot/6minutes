@@ -1439,9 +1439,32 @@
         if(a.rating){ h+='<div class="agg-big"><span class="num">'+a.rating+'</span><span class="of">avg from '+a.ratingCount+' logged gig'+(a.ratingCount===1?'':'s')+'</span></div>'; }
         h+='<div class="panel-stat" style="margin-top:12px"><span><b>'+a.seen+'</b> have seen them live</span><span><b>'+a.wanna+'</b> wanna see</span>'+(a.networkSeen?'<span><b>'+a.networkSeen+'</b> friends seen</span>':'')+'</div>';
         h+='<div class="share-main" style="margin-top:8px"><button class="'+(mine==='wanna_see'?'primary':'ghost')+'" id="ap-wanna" type="button">'+(mine==='wanna_see'?'✓ Wanna see':'Wanna see')+'</button><button class="'+(mine==='seen'?'primary':'ghost')+'" id="ap-seen" type="button">'+(mine==='seen'?'✓ Seen live':'Seen live')+'</button></div>';
+        h+='<div id="ap-upcoming"></div>';
         openPanel(h);
         document.getElementById('ap-wanna').addEventListener('click',function(){ toggleArtist(slug,{name:a.name}); openArtist(slug); });
         document.getElementById('ap-seen').addEventListener('click',function(){ toggleSeen(slug,{name:a.name}); openArtist(slug); });
+        // Real upcoming London gigs (canonical event_artists join), home-style cards.
+        var up=document.getElementById('ap-upcoming');
+        var rows=(a.upcoming||[]).map(function(g){
+          return {
+            id:g.id, title:g.title, venue:g.venue,
+            _day:fmtDateLabel(String(g.event_date).slice(0,10)),
+            startTime:g.start_time, poster:g.poster_url,
+            artists:(g.lineup||[]).map(function(x){ return {name:x.name, contentUrl:'/dj/'+x.slug}; })
+          };
+        });
+        if(up && rows.length){
+          up.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming in London ('+rows.length+')</div>'+
+            '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">'+rows.map(cardHTML).join('')+'</div>';
+          wireCard(up);
+          var rmap={}; rows.forEach(function(ev){ if(ev.id!=null) rmap[String(ev.id)]=ev; });
+          up.querySelectorAll('.gcard').forEach(function(c){
+            var ev=rmap[c.getAttribute('data-evt')]; if(!ev) return;
+            var open=function(e){ e.preventDefault(); e.stopPropagation(); openSheet(ev); };
+            var p=c.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
+            var t=c.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
+          });
+        }
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that artist.</div>'); }
     }
     async function openVenue(name){
