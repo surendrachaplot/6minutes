@@ -656,55 +656,8 @@
     <span><span class="count" id="picks-count">0</span> picks &middot; Share</span>
   </button>
 
-  <div class="picks-tray-overlay" id="picks-tray-overlay">
-    <div class="picks-tray" id="picks-tray">
-      <button class="tray-close" id="tray-close" type="button" aria-label="Close">&times;</button>
-      <h3>Your picks</h3>
-      <div class="sub" id="tray-sub">Share this lineup with a friend &mdash; they&rsquo;ll land in soundcheck with your picks highlighted.</div>
-      <div class="share-main">
-        <button class="primary" id="share-picks" type="button">Share my picks</button>
-        <button class="ghost" id="copy-picks" type="button">Copy link</button>
-      </div>
-      <div id="tray-body"></div>
-      <button class="clear-all" id="clear-picks" type="button">Clear all picks</button>
-    </div>
-  </div>
-
-  <div class="picks-tray-overlay" id="me-overlay">
-    <div class="picks-tray" id="me-sheet">
-      <button class="tray-close" id="me-close" type="button" aria-label="Close">&times;</button>
-      <h3 id="me-title">My picks</h3>
-      <div class="sub" id="me-sub"></div>
-      <div id="me-body"></div>
-    </div>
-  </div>
-
-  <!-- reusable panel: profile / feed / artist / venue -->
-  <div class="picks-tray-overlay" id="panel-overlay">
-    <div class="picks-tray" id="panel-sheet">
-      <button class="tray-close" id="panel-close" type="button" aria-label="Close">&times;</button>
-      <div id="panel-body"></div>
-    </div>
-  </div>
-
-  <!-- log a gig -->
-  <div class="picks-tray-overlay" id="log-overlay">
-    <div class="picks-tray" id="log-sheet">
-      <button class="tray-close" id="log-close" type="button" aria-label="Close">&times;</button>
-      <h3>Log a gig</h3>
-      <div class="sub">Add a night you went to — it lands in your diary and marks the DJs as seen.</div>
-      <div style="margin-top:16px">
-        <div class="lg-field"><label>Find your gig</label><div class="sg-wrap"><input type="text" id="lg-gig-in" placeholder="Search past nights — venue or event…" autocomplete="off"><div class="sg-drop" id="lg-gig-drop"></div></div></div>
-        <div class="lg-field"><label>Date</label><input type="date" id="lg-date"></div>
-        <div class="lg-field"><label>Venue</label><div class="sg-wrap"><input type="text" id="lg-venue" placeholder="FOLD, Phonox, The Cause…" autocomplete="off"><div class="sg-drop" id="lg-venue-drop"></div></div></div>
-        <div class="lg-field"><label>Artists you saw</label><div class="sg-wrap"><input type="text" id="lg-artist-in" placeholder="Type a name…" autocomplete="off"><div class="sg-drop" id="lg-artist-drop"></div></div><div class="lg-artists" id="lg-artists"></div></div>
-        <div class="lg-field"><label>Rating</label><div class="stars" id="lg-stars"></div></div>
-        <div class="lg-field"><label>Note (optional)</label><textarea id="lg-note" placeholder="How was it?"></textarea></div>
-        <div class="share-main"><button class="primary" id="lg-save" type="button" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);font:700 0.72rem var(--body);letter-spacing:0.14em;text-transform:uppercase;cursor:pointer">Save to diary</button></div>
-        <div class="err" id="lg-err" style="color:var(--accent);font-size:0.82rem;min-height:1em;margin-top:8px"></div>
-      </div>
-    </div>
-  </div>
+  <!-- My picks, Log a gig, profile, feed, artist & venue all render as full
+       pages in #page-view now — no overlays. -->
 
   <div class="sheet-overlay" id="sheet-overlay">
     <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Event details">
@@ -1263,54 +1216,15 @@
     }
 
     // ── picks tray ──
-    var trayOv=document.getElementById('picks-tray-overlay'), trayBody=document.getElementById('tray-body');
-    function trayLineArtist(slug, meta){
-      var hit=lookup.byArtist[slug], ev=hit&&hit.ev;
-      var sub = hit ? ((ev.venue||'')+(ev._day?(' &middot; '+esc(ev._day)):'')) : 'not in this view';
-      return '<li><span class="open-ev">'+esc(meta.name||slug)+' <small>'+sub+'</small></span><button class="rm" data-rm-art="'+esc(slug)+'" title="Remove">&times;</button></li>';
-    }
-    function trayLineEvent(id, meta){
-      var hit=lookup.byEvent[id], title=hit?hit.title:(meta.title||'Event'), venue=hit?hit.venue:(meta.venue||''), day=hit?(hit._day||''):(meta.day||'');
-      return '<li><button class="open-ev" data-open-evt="'+esc(id)+'">'+esc(title)+' <small>'+esc(venue||'')+(day?(' &middot; '+esc(day)):'')+'</small></button><button class="rm" data-rm-evt="'+esc(id)+'" title="Remove">&times;</button></li>';
-    }
-    function renderTray(){
-      // the tray = your shareable picks (wanna-see artists + going events)
-      var ev=Object.keys(picks.events).filter(function(i){ return evtStatus(i)==='going'; });
-      var ar=Object.keys(picks.artists).filter(function(s){ return artStatus(s)==='wanna_see'; });
-      if(!ev.length && !ar.length){ trayBody.innerHTML='<div class="empty">No picks yet. Tap the heart on any artist or event to add.</div>'; return; }
-      var h='';
-      if(ev.length){ h+='<h4>Events ('+ev.length+')</h4><ul class="tray-line">'+ev.map(function(id){ return trayLineEvent(id, picks.events[id]); }).join('')+'</ul>'; }
-      if(ar.length){ h+='<h4>Wanna see ('+ar.length+')</h4><ul class="tray-line">'+ar.map(function(s){ return trayLineArtist(s, picks.artists[s]); }).join('')+'</ul>'; }
-      trayBody.innerHTML=h;
-    }
-    function openTray(){ renderTray(); trayOv.classList.add('show'); lockBody(); }
-    function closeTray(){ if(!trayOv.classList.contains('show')) return; trayOv.classList.remove('show'); unlockBody(); }
-    document.getElementById('picks-chip').addEventListener('click',openTray);
-    document.getElementById('tray-close').addEventListener('click',closeTray);
-    trayOv.addEventListener('click',function(e){ if(e.target===trayOv) closeTray(); });
-    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&trayOv.classList.contains('show')) closeTray(); });
-    document.getElementById('share-picks').addEventListener('click',sharePicks);
-    document.getElementById('copy-picks').addEventListener('click',copyPicks);
-    document.getElementById('clear-picks').addEventListener('click',function(){
-      if(!pickCount()) return;
-      if(!confirm('Clear all '+pickCount()+' picks?')) return;
-      picks={artists:{},events:{}}; savePicks(); afterPicksChanged();
-      document.querySelectorAll('.heart.on').forEach(function(b){ b.classList.remove('on'); b.setAttribute('aria-pressed','false'); });
-      renderTray();
-    });
-    trayBody.addEventListener('click',function(e){
-      var a=e.target.closest('[data-rm-art]'); if(a){ toggleArtist(a.dataset.rmArt); renderTray(); return; }
-      var v=e.target.closest('[data-rm-evt]'); if(v){ toggleEvent(v.dataset.rmEvt); renderTray(); return; }
-      var o=e.target.closest('[data-open-evt]'); if(o){ var ev=lookup.byEvent[o.dataset.openEvt]; if(ev){ closeTray(); openSheet(ev); } return; }
-    });
-
-    // ── /me — personal shelves (account view) ──
-    var meOv=document.getElementById('me-overlay'), meBody=document.getElementById('me-body');
+    // ── My picks — full page: shelves + share + diary (replaces the tray/overlay) ──
     function meRow(label, sub, removeAttr){
       return '<li><span class="open-ev">'+esc(label)+(sub?' <small>'+esc(sub)+'</small>':'')+'</span><button class="rm" '+removeAttr+' title="Remove">&times;</button></li>';
     }
-    function renderMe(){
-      document.getElementById('me-sub').textContent = currentUser ? ('Signed in as @'+currentUser.handle+' · synced across your devices.') : 'Your saved picks on this device.';
+    function meRowEvt(id, meta){
+      var hit=lookup.byEvent[id], title=hit?hit.title:(meta.title||'Event'), venue=hit?hit.venue:(meta.venue||''), day=hit?(hit._day||''):(meta.day||'');
+      return '<li><button class="open-ev" data-open-evt="'+esc(id)+'">'+esc(title)+' <small>'+esc(venue||'')+(day?(' &middot; '+esc(day)):'')+'</small></button><button class="rm" data-rm-evt="'+esc(id)+'" title="Remove">&times;</button></li>';
+    }
+    function picksShelvesHTML(){
       var wannaComing=[], wannaList=[], seen=[], going=[];
       Object.keys(picks.artists).forEach(function(s){
         var st=artStatus(s), nm=(picks.artists[s].name)||s, hit=lookup.byArtist[s];
@@ -1319,31 +1233,41 @@
       });
       Object.keys(picks.events).forEach(function(i){ if(evtStatus(i)==='going') going.push({i:i, e:picks.events[i]}); });
       var h='';
-      if(going.length){ h+='<h4>Saved events ('+going.length+')</h4><ul class="tray-line">'+going.map(function(g){ return meRow(g.e.title||'Event', (g.e.venue||'')+(g.e.day?(' · '+g.e.day):''), 'data-rm-evt="'+esc(g.i)+'"'); }).join('')+'</ul>'; }
-      if(wannaComing.length){ h+='<h4>Wanna see · coming up ('+wannaComing.length+')</h4><ul class="tray-line">'+wannaComing.map(function(w){ return meRow(w.nm, (w.ev.venue||'')+(w.ev._day?(' · '+w.ev._day):''), 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
-      if(wannaList.length){ h+='<h4>Wanna see · on your list ('+wannaList.length+')</h4><ul class="tray-line">'+wannaList.map(function(w){ return meRow(w.nm, 'no upcoming London date yet', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
-      if(seen.length){ h+='<h4>Seen live ('+seen.length+')</h4><ul class="tray-line">'+seen.map(function(w){ return meRow(w.nm, '', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
-      if(!h) h='<div class="empty">Nothing here yet. Heart artists you wanna see, mark gigs you&rsquo;re going to, and tick DJs you&rsquo;ve seen live.</div>';
-      meBody.innerHTML=h;
+      if(going.length){ h+='<div class="sec-h">Saved events ('+going.length+')</div><ul class="tray-line">'+going.map(function(g){ return meRowEvt(g.i, g.e); }).join('')+'</ul>'; }
+      if(wannaComing.length){ h+='<div class="sec-h" style="margin-top:18px">Wanna see · coming up ('+wannaComing.length+')</div><ul class="tray-line">'+wannaComing.map(function(w){ return meRow(w.nm, (w.ev.venue||'')+(w.ev._day?(' · '+w.ev._day):''), 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
+      if(wannaList.length){ h+='<div class="sec-h" style="margin-top:18px">Wanna see · on your list ('+wannaList.length+')</div><ul class="tray-line">'+wannaList.map(function(w){ return meRow(w.nm, 'no upcoming London date yet', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
+      if(seen.length){ h+='<div class="sec-h" style="margin-top:18px">Seen live ('+seen.length+')</div><ul class="tray-line">'+seen.map(function(w){ return meRow(w.nm, '', 'data-rm-art="'+esc(w.s)+'"'); }).join('')+'</ul>'; }
+      if(!h) h='<div class="empty">Nothing here yet. Heart artists you wanna see, save nights you&rsquo;re going to, and tick DJs you&rsquo;ve seen live.</div>';
+      return h;
     }
-    function openMe(){ renderMe(); meOv.classList.add('show'); lockBody(); if(currentUser) appendMeDiary(); }
-    async function appendMeDiary(){
+    function openMyPicks(){
+      setRoute('picks');
+      var has=pickCount()>0;
+      var h='<h3>My picks</h3><div class="sub" style="margin-bottom:14px">'+(currentUser?('Synced to @'+esc(currentUser.handle)+' across your devices.'):'Saved on this device &mdash; sign in to keep them.')+'</div>';
+      if(has) h+='<div style="display:flex;gap:9px;margin-bottom:20px;max-width:520px"><button class="btn solid" id="mp-share" type="button" style="flex:1;border:none;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Share my picks</button><button class="btn ghost" id="mp-copy" type="button" style="flex:1;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:999px;font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Copy link</button></div>';
+      h+='<div id="mp-shelves">'+picksShelvesHTML()+'</div><div id="mp-diary" style="margin-top:24px"></div>';
+      if(has) h+='<button class="hub-row danger" id="mp-clear" type="button" style="max-width:520px;margin-top:22px"><span class="hr-tx"><span class="hr-t">Clear all picks</span></span></button>';
+      showPage(h);
+      var sh=document.getElementById('mp-share'); if(sh) sh.addEventListener('click',sharePicks);
+      var cp=document.getElementById('mp-copy'); if(cp) cp.addEventListener('click',copyPicks);
+      var cl=document.getElementById('mp-clear'); if(cl) cl.addEventListener('click',function(){ if(!pickCount())return; if(!confirm('Clear all '+pickCount()+' picks?'))return; picks={artists:{},events:{}}; savePicks(); afterPicksChanged(); document.querySelectorAll('.heart.on').forEach(function(b){b.classList.remove('on');}); openMyPicks(); });
+      document.getElementById('mp-shelves').addEventListener('click',function(e){
+        var a=e.target.closest('[data-rm-art]'); if(a){ setArtist(a.dataset.rmArt,null); document.getElementById('mp-shelves').innerHTML=picksShelvesHTML(); return; }
+        var v=e.target.closest('[data-rm-evt]'); if(v){ setEvent(v.dataset.rmEvt,null); document.getElementById('mp-shelves').innerHTML=picksShelvesHTML(); return; }
+        var o=e.target.closest('[data-open-evt]'); if(o){ var ev=lookup.byEvent[o.dataset.openEvt]; if(ev) openSheet(ev); return; }
+      });
+      if(currentUser) appendPicksDiary();
+    }
+    async function appendPicksDiary(){
       try{
         var r=await authedFetch('/api/diary'); var j=await r.json(); var rows=j.entries||[];
-        var h='<h4 style="display:flex;justify-content:space-between;align-items:center">Diary ('+rows.length+') <button id="me-log" type="button" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:6px 11px;font:700 0.62rem var(--body);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Log a gig</button></h4>';
-        h+= rows.length ? diaryListHTML(rows) : '<div class="empty" style="padding:6px 0">No gigs logged yet.</div>';
-        meBody.insertAdjacentHTML('beforeend', h);
-        var lb=document.getElementById('me-log'); if(lb) lb.addEventListener('click',function(){ closeMe(); openLog(); });
+        var el=document.getElementById('mp-diary'); if(!el) return;
+        el.innerHTML='<div class="sec-h">Diary ('+rows.length+') <span class="more" id="mp-log">+ Log a gig</span></div>'+(rows.length?diaryListHTML(rows):'<div class="empty" style="padding:4px 0">No gigs logged yet.</div>');
+        var lb=document.getElementById('mp-log'); if(lb) lb.addEventListener('click',function(){ openLog(); });
       }catch(_){}
     }
-    function closeMe(){ if(!meOv.classList.contains('show')) return; meOv.classList.remove('show'); unlockBody(); }
-    document.getElementById('me-close').addEventListener('click',closeMe);
-    meOv.addEventListener('click',function(e){ if(e.target===meOv) closeMe(); });
-    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&meOv.classList.contains('show')) closeMe(); });
-    meBody.addEventListener('click',function(e){
-      var a=e.target.closest('[data-rm-art]'); if(a){ setArtist(a.dataset.rmArt, null); renderMe(); return; }
-      var v=e.target.closest('[data-rm-evt]'); if(v){ setEvent(v.dataset.rmEvt, null); renderMe(); return; }
-    });
+    document.getElementById('picks-chip').addEventListener('click',openMyPicks);
+
 
     // ── account hub page (tapping the @handle chip lands here) ──
     var HUB_IC={
@@ -1381,7 +1305,7 @@
         }
         h+='<div style="margin-top:22px;max-width:520px"><button class="hub-row danger" id="hub-out" type="button"><span class="hr-ic">'+HUB_IC.out+'</span><span class="hr-tx"><span class="hr-t">Sign out</span></span></button></div>';
         var rest=document.getElementById('hub-rest'); if(!rest) return; rest.innerHTML=h;
-        document.getElementById('hub-picks').addEventListener('click',openMe);
+        document.getElementById('hub-picks').addEventListener('click',openMyPicks);
         document.getElementById('hub-profile').addEventListener('click',function(){ openProfile(currentUser.handle); });
         document.getElementById('hub-feed').addEventListener('click',openFeed);
         document.getElementById('hub-log').addEventListener('click',openLog);
@@ -1397,8 +1321,6 @@
     function showPage(html){
       // leave any quick-overlays first (sheet/tray/me are peeks; pages are destinations)
       if(typeof closeSheet==='function') closeSheet();
-      if(trayOv && trayOv.classList.contains('show')) closeTray();
-      if(meOv && meOv.classList.contains('show')) closeMe();
       pageView.innerHTML='<div class="page-head"><button class="page-back" id="page-back" type="button">&lsaquo; Back</button></div><div id="page-body">'+html+'</div>';
       panelBody=document.getElementById('page-body');
       document.getElementById('page-back').addEventListener('click',hidePage);
@@ -1531,43 +1453,12 @@
     }
 
     // ---- log a gig ----
-    var logOv=document.getElementById('log-overlay'), lgArtists=[], lgRating=0;
-    function openLog(prefill){
-      lgArtists=(prefill&&prefill.artists)||[]; lgRating=0;
-      document.getElementById('lg-venue').value=(prefill&&prefill.venue)||'';
-      document.getElementById('lg-date').value=(prefill&&prefill.date)||'';
-      document.getElementById('lg-note').value=''; document.getElementById('lg-err').textContent='';
-      renderLgArtists(); renderStars();
-      logOv.classList.add('show'); lockBody();
-    }
-    function closeLog(){ if(!logOv.classList.contains('show')) return; logOv.classList.remove('show'); unlockBody(); }
-    function renderStars(){ document.getElementById('lg-stars').innerHTML=[1,2,3,4,5].map(function(n){ return '<button type="button" data-star="'+n+'" class="'+(n<=lgRating?'on':'')+'">★</button>'; }).join(''); }
-    function renderLgArtists(){ document.getElementById('lg-artists').innerHTML=lgArtists.map(function(a,i){ return '<span class="lg-chip">'+esc(a.name)+'<button type="button" data-rmlg="'+i+'">&times;</button></span>'; }).join(''); }
-    document.getElementById('log-close').addEventListener('click',closeLog);
-    logOv.addEventListener('click',function(e){ if(e.target===logOv) closeLog(); });
-    document.getElementById('lg-stars').addEventListener('click',function(e){ var b=e.target.closest('[data-star]'); if(b){ lgRating=+b.dataset.star; renderStars(); } });
-    document.getElementById('lg-artists').addEventListener('click',function(e){ var b=e.target.closest('[data-rmlg]'); if(b){ lgArtists.splice(+b.dataset.rmlg,1); renderLgArtists(); } });
-    document.getElementById('lg-artist-in').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); var v=this.value.trim(); if(v){ lgArtists.push({slug:v.toLowerCase().replace(/[^a-z0-9]+/g,'-'), name:v}); this.value=''; renderLgArtists(); } } });
-    document.getElementById('lg-save').addEventListener('click',async function(){
-      if(!currentUser){ closeLog(); openAuth(); return; }
-      var btn=this; btn.disabled=true; document.getElementById('lg-err').textContent='';
-      try{
-        var r=await authedFetch('/api/diary',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-          date:document.getElementById('lg-date').value||null, venue:document.getElementById('lg-venue').value.trim()||null,
-          note:document.getElementById('lg-note').value.trim()||null, rating:lgRating||null, artists:lgArtists }) });
-        if(!r.ok){ var j=await r.json().catch(function(){return{};}); document.getElementById('lg-err').textContent=(j.error||'Could not save')+'.'; btn.disabled=false; return; }
-        // reflect new "seen" states locally
-        lgArtists.forEach(function(a){ picks.artists[a.slug]={name:a.name,status:'seen',t:Date.now()}; });
-        savePicks();
-        closeLog(); showToast('Logged to your diary'); if(meOv.classList.contains('show')) renderMe();
-      }catch(_){ document.getElementById('lg-err').textContent='Network error.'; }
-      finally{ btn.disabled=false; }
-    });
-
-    // ---- autosuggest (catalog-backed) for the log-a-gig fields ----
+    // ── Log a gig — full page (was a modal) ──
+    var lgArtists=[], lgRating=0;
     function debounce(fn, ms){ var t; return function(){ var a=arguments, c=this; clearTimeout(t); t=setTimeout(function(){ fn.apply(c,a); }, ms); }; }
     function pubGet(path){ return fetch(API_BASE+path).then(function(r){ return r.json(); }).catch(function(){ return {}; }); }
     function attachSuggest(input, drop, fetcher, onPick){
+      if(!input||!drop) return;
       var cur=[];
       function hide(){ drop.classList.remove('show'); drop.innerHTML=''; }
       var run=debounce(async function(){
@@ -1582,24 +1473,64 @@
       drop.addEventListener('mousedown',function(e){ var b=e.target.closest('[data-i]'); if(b){ e.preventDefault(); onPick(cur[+b.dataset.i]); hide(); } });
       input.addEventListener('blur',function(){ setTimeout(hide,160); });
     }
-    // find your gig → fills date + venue + artist chips
-    attachSuggest(document.getElementById('lg-gig-in'), document.getElementById('lg-gig-drop'),
-      async function(qv){ var j=await pubGet('/api/gigs?q='+encodeURIComponent(qv)); return (j.gigs||[]).map(function(g){ return { label:esc(g.title||'Gig')+' <small>'+esc(g.venue||'')+(g.event_date?(' · '+esc(String(g.event_date).slice(0,10))):'')+'</small>', g:g }; }); },
-      function(pick){ var g=pick.g; if(g.event_date) document.getElementById('lg-date').value=String(g.event_date).slice(0,10); document.getElementById('lg-venue').value=g.venue||''; var arts=(typeof g.artists==='string'?JSON.parse(g.artists):g.artists)||[]; lgArtists=arts.map(function(a){ return {slug:a.slug, name:a.name}; }); renderLgArtists(); document.getElementById('lg-gig-in').value=g.title||''; });
-    // venue autosuggest
-    attachSuggest(document.getElementById('lg-venue'), document.getElementById('lg-venue-drop'),
-      async function(qv){ var j=await pubGet('/api/venues?q='+encodeURIComponent(qv)); return (j.venues||[]).map(function(v){ return { label:esc(v.name)+(v.count?(' <small>'+v.count+' nights</small>'):''), name:v.name }; }); },
-      function(pick){ document.getElementById('lg-venue').value=pick.name; });
-    // artist autosuggest (adds a chip)
-    attachSuggest(document.getElementById('lg-artist-in'), document.getElementById('lg-artist-drop'),
-      async function(qv){ var j=await pubGet('/api/artists?q='+encodeURIComponent(qv)); return (j.artists||[]).map(function(a){ return { label:esc(a.name), slug:a.slug, name:a.name }; }); },
-      function(pick){ if(!lgArtists.some(function(x){return x.slug===pick.slug;})){ lgArtists.push({slug:pick.slug, name:pick.name}); renderLgArtists(); } document.getElementById('lg-artist-in').value=''; });
+    function renderStars(){ var el=document.getElementById('lg-stars'); if(el) el.innerHTML=[1,2,3,4,5].map(function(n){ return '<button type="button" data-star="'+n+'" class="'+(n<=lgRating?'on':'')+'">★</button>'; }).join(''); }
+    function renderLgArtists(){ var el=document.getElementById('lg-artists'); if(el) el.innerHTML=lgArtists.map(function(a,i){ return '<span class="lg-chip">'+esc(a.name)+'<button type="button" data-rmlg="'+i+'">&times;</button></span>'; }).join(''); }
+    function logFormHTML(){
+      return '<h3>Log a gig</h3><div class="sub" style="margin-bottom:16px">Add a night you went to &mdash; it lands in your diary and marks the DJs as seen.</div>'+
+        '<div style="max-width:520px">'+
+          '<div class="lg-field"><label>Find your gig</label><div class="sg-wrap"><input type="text" id="lg-gig-in" placeholder="Search past nights — venue or event…" autocomplete="off"><div class="sg-drop" id="lg-gig-drop"></div></div></div>'+
+          '<div class="lg-field"><label>Date</label><input type="date" id="lg-date"></div>'+
+          '<div class="lg-field"><label>Venue</label><div class="sg-wrap"><input type="text" id="lg-venue" placeholder="FOLD, Phonox, The Cause…" autocomplete="off"><div class="sg-drop" id="lg-venue-drop"></div></div></div>'+
+          '<div class="lg-field"><label>Artists you saw</label><div class="sg-wrap"><input type="text" id="lg-artist-in" placeholder="Type a name…" autocomplete="off"><div class="sg-drop" id="lg-artist-drop"></div></div><div class="lg-artists" id="lg-artists"></div></div>'+
+          '<div class="lg-field"><label>Rating</label><div class="stars" id="lg-stars"></div></div>'+
+          '<div class="lg-field"><label>Note (optional)</label><textarea id="lg-note" placeholder="How was it?"></textarea></div>'+
+          '<button id="lg-save" type="button" style="width:100%;background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:14px;font:700 0.72rem var(--body);letter-spacing:0.14em;text-transform:uppercase;cursor:pointer">Save to diary</button>'+
+          '<div class="err" id="lg-err" style="color:var(--accent);font-size:0.82rem;min-height:1em;margin-top:8px"></div>'+
+        '</div>';
+    }
+    function openLog(prefill){
+      setRoute('log');
+      lgArtists=(prefill&&prefill.artists)?prefill.artists.slice():[]; lgRating=0;
+      showPage(logFormHTML());
+      if(prefill&&prefill.venue) document.getElementById('lg-venue').value=prefill.venue;
+      if(prefill&&prefill.date) document.getElementById('lg-date').value=prefill.date;
+      renderStars(); renderLgArtists(); wireLog();
+    }
+    function wireLog(){
+      document.getElementById('lg-stars').addEventListener('click',function(e){ var b=e.target.closest('[data-star]'); if(b){ lgRating=+b.dataset.star; renderStars(); } });
+      document.getElementById('lg-artists').addEventListener('click',function(e){ var b=e.target.closest('[data-rmlg]'); if(b){ lgArtists.splice(+b.dataset.rmlg,1); renderLgArtists(); } });
+      document.getElementById('lg-artist-in').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); var v=this.value.trim(); if(v){ lgArtists.push({slug:v.toLowerCase().replace(/[^a-z0-9]+/g,'-'), name:v}); this.value=''; renderLgArtists(); } } });
+      document.getElementById('lg-save').addEventListener('click',saveLog);
+      attachSuggest(document.getElementById('lg-gig-in'), document.getElementById('lg-gig-drop'),
+        async function(qv){ var j=await pubGet('/api/gigs?q='+encodeURIComponent(qv)); return (j.gigs||[]).map(function(g){ return { label:esc(g.title||'Gig')+' <small>'+esc(g.venue||'')+(g.event_date?(' · '+esc(String(g.event_date).slice(0,10))):'')+'</small>', g:g }; }); },
+        function(pick){ var g=pick.g; if(g.event_date) document.getElementById('lg-date').value=String(g.event_date).slice(0,10); document.getElementById('lg-venue').value=g.venue||''; var arts=(typeof g.artists==='string'?JSON.parse(g.artists):g.artists)||[]; lgArtists=arts.map(function(a){ return {slug:a.slug, name:a.name}; }); renderLgArtists(); document.getElementById('lg-gig-in').value=g.title||''; });
+      attachSuggest(document.getElementById('lg-venue'), document.getElementById('lg-venue-drop'),
+        async function(qv){ var j=await pubGet('/api/venues?q='+encodeURIComponent(qv)); return (j.venues||[]).map(function(v){ return { label:esc(v.name)+(v.count?(' <small>'+v.count+' nights</small>'):''), name:v.name }; }); },
+        function(pick){ document.getElementById('lg-venue').value=pick.name; });
+      attachSuggest(document.getElementById('lg-artist-in'), document.getElementById('lg-artist-drop'),
+        async function(qv){ var j=await pubGet('/api/artists?q='+encodeURIComponent(qv)); return (j.artists||[]).map(function(a){ return { label:esc(a.name), slug:a.slug, name:a.name }; }); },
+        function(pick){ if(!lgArtists.some(function(x){return x.slug===pick.slug;})){ lgArtists.push({slug:pick.slug, name:pick.name}); renderLgArtists(); } document.getElementById('lg-artist-in').value=''; });
+    }
+    async function saveLog(){
+      if(!currentUser){ openAuth(); return; }
+      var btn=document.getElementById('lg-save'); btn.disabled=true; document.getElementById('lg-err').textContent='';
+      try{
+        var r=await authedFetch('/api/diary',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+          date:document.getElementById('lg-date').value||null, venue:document.getElementById('lg-venue').value.trim()||null,
+          note:document.getElementById('lg-note').value.trim()||null, rating:lgRating||null, artists:lgArtists }) });
+        if(!r.ok){ var j=await r.json().catch(function(){return{};}); document.getElementById('lg-err').textContent=(j.error||'Could not save')+'.'; btn.disabled=false; return; }
+        lgArtists.forEach(function(a){ picks.artists[a.slug]={name:a.name,status:'seen',t:Date.now()}; });
+        savePicks(); afterPicksChanged();
+        showToast('Logged to your diary'); openMyPicks();
+      }catch(_){ document.getElementById('lg-err').textContent='Network error.'; btn.disabled=false; }
+    }
 
     // ---- hash router (#u/<handle>, #feed, #a/<slug>, #v/<name>, #log) ----
     function handleRoute(){
       var hash=decodeURIComponent(location.hash.replace(/^#/,''));
       if(!hash){ hidePage(); return; }   // browser-back off a page → home
       if(hash==='account') openAccount();
+      else if(hash==='picks') openMyPicks();
       else if(hash==='feed') openFeed();
       else if(hash==='log') openLog();
       else if(hash.indexOf('u/')===0) openProfile(hash.slice(2));
