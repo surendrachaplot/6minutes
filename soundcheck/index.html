@@ -472,8 +472,13 @@
     .prof-tabs button.on { color:var(--fg); border-bottom-color:var(--accent); }
     .ptiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:520px; }
     .ptile { aspect-ratio:1; border-radius:11px; position:relative; overflow:hidden; display:flex; align-items:flex-end; padding:8px; cursor:pointer; border:none; }
-    .ptile .nm { font-family:var(--head); font-weight:700; font-size:0.72rem; line-height:1.05; color:#fff; text-shadow:0 1px 8px rgba(0,0,0,0.55); position:relative; z-index:1; text-align:left; }
-    .ptile .sd { position:absolute; top:6px; right:6px; width:17px; height:17px; border-radius:999px; background:var(--accent); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:9px; z-index:2; }
+    .artist-head { display:flex; align-items:center; gap:15px; }
+    .artist-head .artist-av { width:66px; height:66px; border-radius:15px; object-fit:cover; flex-shrink:0; }
+    .artist-head-tx h3 { margin:0; }
+    .ptile .pimg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+    .ptile.has-img::after { content:''; position:absolute; inset:0; z-index:1; background:linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0.05) 60%); }
+    .ptile .nm { font-family:var(--head); font-weight:700; font-size:0.72rem; line-height:1.05; color:#fff; text-shadow:0 1px 8px rgba(0,0,0,0.55); position:relative; z-index:2; text-align:left; }
+    .ptile .sd { position:absolute; top:6px; right:6px; width:17px; height:17px; border-radius:999px; background:var(--accent); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:9px; z-index:3; }
     .prof-tl { max-width:560px; }
     .prof-tl .row { display:flex; gap:13px; }
     .prof-tl .spine { display:flex; flex-direction:column; align-items:center; }
@@ -1345,7 +1350,10 @@
     function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
     // gradient artist tiles (reuse the poster hue hash)
     function artGrad(s){ var h=((hashStr(String(s||'x'))%70)+330)%360; return 'linear-gradient(150deg,hsl('+h+' 62% 50%),hsl('+((h+22)%360)+' 42% 14%))'; }
-    function ptile(slug,name,seen){ return '<button class="ptile" data-artist="'+esc(slug)+'" style="background:'+artGrad(name||slug)+'"><span class="nm">'+esc(name||slug)+'</span>'+(seen?'<span class="sd">&#10003;</span>':'')+'</button>'; }
+    function ptile(slug,name,seen,image){
+      var img=image?'<img class="pimg" loading="lazy" decoding="async" src="'+API_BASE+'/api/img?u='+encodeURIComponent(image)+'" alt="" onerror="this.remove()">':'';
+      return '<button class="ptile'+(image?' has-img':'')+'" data-artist="'+esc(slug)+'" style="background:'+artGrad(name||slug)+'">'+img+'<span class="nm">'+esc(name||slug)+'</span>'+(seen?'<span class="sd">&#10003;</span>':'')+'</button>';
+    }
     function starStr(n){ n=n||0; return '<span style="color:var(--accent)">'+'★'.repeat(n)+'</span><span style="color:var(--border)">'+'★'.repeat(5-n)+'</span>'; }
     function hubTile(id,ic,t,d){ return '<button class="hub-tile" id="'+id+'" type="button"><span class="ic">'+ic+'</span><div class="t">'+t+'</div><div class="d">'+d+'</div></button>'; }
 
@@ -1368,8 +1376,8 @@
         wireProfile();
         var TAB={
           shelves:function(){
-            var x='<div class="sec-h">Wanna see ('+s.wannaSee.length+')</div>'+(s.wannaSee.length?'<div class="ptiles">'+s.wannaSee.map(function(a){return ptile(a.slug,a.name,false);}).join('')+'</div>':'<div class="empty" style="padding:0 0 4px">Nothing yet.</div>');
-            x+='<div class="sec-h" style="margin-top:22px">Seen live ('+s.seen.length+')</div>'+(s.seen.length?'<div class="ptiles">'+s.seen.map(function(a){return ptile(a.slug,a.name,true);}).join('')+'</div>':'<div class="empty" style="padding:0">Nothing yet.</div>');
+            var x='<div class="sec-h">Wanna see ('+s.wannaSee.length+')</div>'+(s.wannaSee.length?'<div class="ptiles">'+s.wannaSee.map(function(a){return ptile(a.slug,a.name,false,a.image);}).join('')+'</div>':'<div class="empty" style="padding:0 0 4px">Nothing yet.</div>');
+            x+='<div class="sec-h" style="margin-top:22px">Seen live ('+s.seen.length+')</div>'+(s.seen.length?'<div class="ptiles">'+s.seen.map(function(a){return ptile(a.slug,a.name,true,a.image);}).join('')+'</div>':'<div class="empty" style="padding:0">Nothing yet.</div>');
             if(s.events.length){ x+='<div class="sec-h" style="margin-top:22px">Saved events ('+s.events.length+')</div><ul class="tray-line">'+s.events.map(function(e){ return '<li><span class="open-ev">'+esc(e.title||'Event')+' <small>'+esc(e.venue||'')+'</small></span></li>'; }).join('')+'</ul>'; }
             return x;
           },
@@ -1435,7 +1443,8 @@
       try{
         var r=await authedFetch('/api/artist?slug='+encodeURIComponent(slug)); var a=await r.json();
         var mine=artStatus(slug);
-        var h='<h3>'+esc(a.name||slug)+'</h3><div class="sub">on soundcheck</div>';
+        var av=a.image?'<img class="artist-av" loading="lazy" decoding="async" src="'+API_BASE+'/api/img?u='+encodeURIComponent(a.image)+'" alt="" onerror="this.style.display=\'none\'">':'';
+        var h='<div class="artist-head">'+av+'<div class="artist-head-tx"><h3>'+esc(a.name||slug)+'</h3><div class="sub">on soundcheck</div></div></div>';
         if(a.rating){ h+='<div class="agg-big"><span class="num">'+a.rating+'</span><span class="of">avg from '+a.ratingCount+' logged gig'+(a.ratingCount===1?'':'s')+'</span></div>'; }
         h+='<div class="panel-stat" style="margin-top:12px"><span><b>'+a.seen+'</b> have seen them live</span><span><b>'+a.wanna+'</b> wanna see</span>'+(a.networkSeen?'<span><b>'+a.networkSeen+'</b> friends seen</span>':'')+'</div>';
         h+='<div class="share-main" style="margin-top:8px"><button class="'+(mine==='wanna_see'?'primary':'ghost')+'" id="ap-wanna" type="button">'+(mine==='wanna_see'?'✓ Wanna see':'Wanna see')+'</button><button class="'+(mine==='seen'?'primary':'ghost')+'" id="ap-seen" type="button">'+(mine==='seen'?'✓ Seen live':'Seen live')+'</button></div>';
