@@ -361,6 +361,16 @@
     .shared-banner .b-actions button.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
     .shared-banner .b-actions button:hover:not(.primary) { border-color:var(--accent); color:var(--accent); }
 
+    /* social proof on cards/sheet (Phase 5) */
+    .proof { display:none; align-items:center; gap:10px; font-size:0.7rem; color:var(--muted); font-weight:600; margin-top:7px; }
+    .proof.on { display:flex; }
+    .proof .pf-save { display:inline-flex; align-items:center; gap:4px; }
+    .proof .pf-save svg { width:11px; height:11px; fill:var(--muted); }
+    .proof .pf-friends { color:var(--accent); }
+    .trend-tag { display:inline-block; font-size:0.5rem; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:2px 6px; margin-bottom:6px; }
+    .sheet-proof { font-size:0.82rem; color:var(--muted); margin-top:10px; }
+    .sheet-proof b { color:var(--accent); }
+
     /* heart + share row on each grid card */
     .card-actions { display:flex; gap:7px; justify-content:flex-end; align-items:center; margin-top:8px; }
     .gcard .card-actions .heart, .gcard .card-actions .share-btn { width:28px; height:28px; }
@@ -1596,6 +1606,7 @@
         '<h3><button class="title-btn" type="button">'+esc(ev.title)+'</button></h3>'+
         '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
         actions+
+        (eid?'<div class="proof" id="proof-'+esc(eid)+'"></div>':'')+
         '<ul class="line">'+lineupHTML(ev,5,false)+'</ul>'+
         soloCtaHTML(ev)+
       '</div>';
@@ -1678,6 +1689,25 @@
       rebuildLookup(ordered);
       applyShared();
       maybeCoach();
+      decorateProof(ordered);
+    }
+    // Phase 5: social proof — save counts + friends-going on event cards.
+    async function decorateProof(events){
+      var ids=events.map(function(e){ return e.id; }).filter(function(x){ return x!=null; }).map(String);
+      if(!ids.length) return;
+      try{
+        var r=await authedFetch('/api/events/stats',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ ids:ids }) });
+        var j=await r.json(); var stats=j.stats||{}; var maxId=null, maxN=0;
+        ids.forEach(function(id){
+          var st=stats[id], el=document.getElementById('proof-'+id); if(!el) return;
+          if(st && st.saves>maxN){ maxN=st.saves; maxId=id; }
+          if(!st || (!st.saves && !st.friends)){ el.className='proof'; el.innerHTML=''; return; }
+          var bits='<span class="pf-save"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z"/></svg>'+st.saves+'</span>';
+          if(st.friends) bits+='<span class="pf-friends">'+st.friends+' friend'+(st.friends===1?'':'s')+' going</span>';
+          el.innerHTML=bits; el.className='proof on';
+        });
+        if(maxId && maxN>=3){ var card=gridEl.querySelector('.gcard[data-evt="'+CSS.escape(maxId)+'"]'); var h=card&&card.querySelector('h3'); if(h && !card.querySelector('.trend-tag')) h.insertAdjacentHTML('beforebegin','<span class="trend-tag">&#128293; Trending</span>'); }
+      }catch(_){}
     }
 
     // ── status / load ──
