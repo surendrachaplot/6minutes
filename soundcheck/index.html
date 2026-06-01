@@ -437,6 +437,54 @@
     .hub-row.danger:hover { border-color:var(--accent); }
     .hub-row.danger .hr-ic { color:var(--muted); }
 
+    /* ── hub (Concept B): stat cards + action tiles + recent diary ── */
+    .muted { color:var(--muted); }
+    .sec-h { font-family:var(--head); font-weight:800; font-size:0.82rem; letter-spacing:0.02em; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between; }
+    .sec-h .more { font-size:0.6rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent); cursor:pointer; }
+    .hub-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:18px 0; max-width:520px; }
+    .hub-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 10px; text-align:center; }
+    .hub-stat .n { font-family:var(--head); font-weight:800; font-size:1.7rem; color:var(--accent); line-height:1; }
+    .hub-stat .l { font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:5px; }
+    .hub-tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:520px; }
+    .hub-tile { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:15px; cursor:pointer; text-align:left; color:var(--fg); }
+    .hub-tile:hover { border-color:var(--accent); }
+    .hub-tile .ic { width:24px; height:24px; color:var(--accent); }
+    .hub-tile .ic svg { width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .hub-tile .t { font-family:var(--head); font-weight:700; font-size:0.95rem; margin-top:9px; }
+    .hub-tile .d { color:var(--muted); font-size:0.74rem; margin-top:1px; }
+    .hub-diary { max-width:520px; margin-top:22px; }
+    .hub-diary .row { display:flex; gap:11px; align-items:center; padding:10px 0; border-top:1px solid var(--border); cursor:pointer; }
+    .hub-diary .th { width:40px; height:40px; border-radius:9px; flex-shrink:0; }
+
+    /* ── public profile (A/C hybrid): cover + stat strip + tabs + poster shelves + diary timeline ── */
+    .prof-cover { height:128px; border-radius:14px; background:linear-gradient(120deg,var(--accent),#1c1c23 82%); margin-bottom:-36px; }
+    .prof-head { display:flex; align-items:flex-end; justify-content:space-between; padding:0 4px; position:relative; }
+    .prof-av { width:76px; height:76px; border-radius:999px; background:linear-gradient(140deg,var(--accent),#c8503f); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-family:var(--head); font-weight:800; font-size:1.7rem; border:3px solid var(--bg); text-transform:uppercase; }
+    .prof-nm { font-family:var(--head); font-weight:800; font-size:1.6rem; letter-spacing:-0.02em; margin-top:12px; }
+    .prof-hn { color:var(--muted); font-size:0.86rem; }
+    .prof-stat { display:flex; border:1px solid var(--border); border-radius:12px; overflow:hidden; margin:16px 0 0; max-width:520px; }
+    .prof-stat div { flex:1; text-align:center; padding:11px 4px; border-right:1px solid var(--border); }
+    .prof-stat div:last-child { border-right:none; }
+    .prof-stat .n { font-family:var(--head); font-weight:800; font-size:1.15rem; }
+    .prof-stat .l { font-size:0.54rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+    .prof-tabs { display:flex; gap:20px; border-bottom:1px solid var(--border); margin:20px 0 18px; }
+    .prof-tabs button { background:none; border:none; color:var(--muted); font:700 0.82rem var(--body); padding:6px 2px 12px; cursor:pointer; border-bottom:2px solid transparent; }
+    .prof-tabs button.on { color:var(--fg); border-bottom-color:var(--accent); }
+    .ptiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:520px; }
+    .ptile { aspect-ratio:1; border-radius:11px; position:relative; overflow:hidden; display:flex; align-items:flex-end; padding:8px; cursor:pointer; border:none; }
+    .ptile .nm { font-family:var(--head); font-weight:700; font-size:0.72rem; line-height:1.05; color:#fff; text-shadow:0 1px 8px rgba(0,0,0,0.55); position:relative; z-index:1; text-align:left; }
+    .ptile .sd { position:absolute; top:6px; right:6px; width:17px; height:17px; border-radius:999px; background:var(--accent); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:9px; z-index:2; }
+    .prof-tl { max-width:560px; }
+    .prof-tl .row { display:flex; gap:13px; }
+    .prof-tl .spine { display:flex; flex-direction:column; align-items:center; }
+    .prof-tl .dot { width:10px; height:10px; border-radius:999px; background:var(--accent); margin-top:6px; flex-shrink:0; }
+    .prof-tl .ln { flex:1; width:2px; background:var(--border); margin:4px 0; }
+    .prof-tl .card { flex:1; padding-bottom:20px; }
+    .prof-tl .vn { font-family:var(--head); font-weight:700; font-size:1rem; }
+    .prof-tl .mt { color:var(--muted); font-size:0.76rem; margin-top:2px; }
+    .prof-tl .nt { font-size:0.88rem; margin-top:7px; line-height:1.5; }
+    @media (max-width:480px){ .ptiles { grid-template-columns:repeat(3,1fr); } }
+
     /* log-a-gig */
     .lg-field { margin-bottom:14px; }
     .lg-field label { display:block; font-size:0.6rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
@@ -1306,25 +1354,41 @@
       out:'<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>'
     };
     function hubRow(id, ic, t, d, cls){ return '<button class="hub-row '+(cls||'')+'" id="'+id+'" type="button"><span class="hr-ic">'+ic+'</span><span class="hr-tx"><span class="hr-t">'+t+'</span>'+(d?'<span class="hr-d">'+d+'</span>':'')+'</span><span class="hr-ch">&rsaquo;</span></button>'; }
+    // Account hub — Concept B: stat cards + action tiles + recent diary.
     function openAccount(){
       if(!currentUser){ openAuth(); return; }
       setRoute('account');
       var initial=(currentUser.handle||'?').charAt(0);
-      var h='<div class="hub-head"><span class="av-lg">'+esc(initial)+'</span><div><div class="hh-name">@'+esc(currentUser.handle)+'</div><div class="hh-stat" id="hub-stat">your account</div></div></div>'+
-        '<div class="hub-list">'+
-          hubRow('hub-picks', HUB_IC.picks, 'My picks', 'Wanna-see, seen &amp; saved nights')+
-          hubRow('hub-profile', HUB_IC.profile, 'My profile', 'How others see you')+
-          hubRow('hub-feed', HUB_IC.feed, 'Feed', 'What people you follow are into')+
-          hubRow('hub-log', HUB_IC.log, 'Log a gig', 'Add a night to your diary')+
-          hubRow('hub-out', HUB_IC.out, 'Sign out', '', 'danger')+
-        '</div>';
-      showPage(h);
-      document.getElementById('hub-picks').addEventListener('click',openMe);
-      document.getElementById('hub-profile').addEventListener('click',function(){ openProfile(currentUser.handle); });
-      document.getElementById('hub-feed').addEventListener('click',openFeed);
-      document.getElementById('hub-log').addEventListener('click',openLog);
-      document.getElementById('hub-out').addEventListener('click',signOut);
-      authedFetch('/api/profile?handle='+encodeURIComponent(currentUser.handle)).then(function(r){ return r.json(); }).then(function(p){ var s=document.getElementById('hub-stat'); if(s&&p&&p.handle) s.innerHTML='<b>'+p.followers+'</b> followers &middot; <b>'+p.following+'</b> following'; }).catch(function(){});
+      openPanel('<div class="hub-head"><span class="av-lg">'+esc(initial)+'</span><div><div class="hh-name">@'+esc(currentUser.handle)+'</div><div class="hh-stat" id="hub-stat">your account</div></div></div><div id="hub-rest"><div class="empty">Loading…</div></div>');
+      authedFetch('/api/profile?handle='+encodeURIComponent(currentUser.handle)).then(function(r){ return r.json(); }).then(function(p){
+        var s=(p&&p.shelves)||{wannaSee:[],seen:[],events:[]}, diary=(p&&p.diary)||[];
+        var st=document.getElementById('hub-stat'); if(st&&p&&p.handle) st.innerHTML='<b>'+(p.followers||0)+'</b> followers &middot; <b>'+(p.following||0)+'</b> following';
+        var h='<div class="hub-stats">'+
+            '<div class="hub-stat"><div class="n">'+s.wannaSee.length+'</div><div class="l">Wanna see</div></div>'+
+            '<div class="hub-stat"><div class="n">'+s.seen.length+'</div><div class="l">Seen live</div></div>'+
+            '<div class="hub-stat"><div class="n">'+diary.length+'</div><div class="l">Gigs</div></div>'+
+          '</div>'+
+          '<div class="hub-tiles">'+
+            hubTile('hub-picks', HUB_IC.picks, 'My picks', 'Wanna-see &amp; saved')+
+            hubTile('hub-profile', HUB_IC.profile, 'My profile', 'How others see you')+
+            hubTile('hub-feed', HUB_IC.feed, 'Feed', 'Your follows')+
+            hubTile('hub-log', HUB_IC.log, 'Log a gig', 'Add to diary')+
+          '</div>';
+        if(diary.length){
+          h+='<div class="hub-diary"><div class="sec-h">Recent diary <span class="more" id="hub-diary-all">All</span></div>'+
+            diary.slice(0,3).map(function(d){ var arts=(d.artists||[]).map(function(a){return a.name||a.slug;}).join(', '); return '<div class="row" data-open-prof="1"><div class="th" style="background:'+artGrad(d.venue||arts||'x')+'"></div><div style="flex:1;min-width:0"><div style="font-weight:600">'+esc(d.venue||'Gig')+'</div><div class="muted" style="font-size:0.76rem">'+esc(arts)+'</div></div>'+(d.rating?starStr(d.rating):'')+'</div>'; }).join('')+
+          '</div>';
+        }
+        h+='<div style="margin-top:22px;max-width:520px"><button class="hub-row danger" id="hub-out" type="button"><span class="hr-ic">'+HUB_IC.out+'</span><span class="hr-tx"><span class="hr-t">Sign out</span></span></button></div>';
+        var rest=document.getElementById('hub-rest'); if(!rest) return; rest.innerHTML=h;
+        document.getElementById('hub-picks').addEventListener('click',openMe);
+        document.getElementById('hub-profile').addEventListener('click',function(){ openProfile(currentUser.handle); });
+        document.getElementById('hub-feed').addEventListener('click',openFeed);
+        document.getElementById('hub-log').addEventListener('click',openLog);
+        document.getElementById('hub-out').addEventListener('click',signOut);
+        var all=document.getElementById('hub-diary-all'); if(all) all.addEventListener('click',function(){ openProfile(currentUser.handle); });
+        rest.querySelectorAll('[data-open-prof]').forEach(function(b){ b.addEventListener('click',function(){ openProfile(currentUser.handle); }); });
+      }).catch(function(){ var rest=document.getElementById('hub-rest'); if(rest) rest.innerHTML='<div class="empty">Couldn&rsquo;t load your account.</div>'; });
     }
 
     // ════ Phase 3/4: profiles · feed · artist/venue · diary (account features) ════
@@ -1353,8 +1417,11 @@
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.body.classList.contains('page-on')) hidePage(); });
     function relTime(iso){ try{ var s=(Date.now()-new Date(iso).getTime())/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }catch(_){ return ''; } }
     function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
-    function relTime(iso){ try{ var s=(Date.now()-new Date(iso).getTime())/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }catch(_){ return ''; } }
-    function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
+    // gradient artist tiles (reuse the poster hue hash)
+    function artGrad(s){ var h=((hashStr(String(s||'x'))%70)+330)%360; return 'linear-gradient(150deg,hsl('+h+' 62% 50%),hsl('+((h+22)%360)+' 42% 14%))'; }
+    function ptile(slug,name,seen){ return '<button class="ptile" data-artist="'+esc(slug)+'" style="background:'+artGrad(name||slug)+'"><span class="nm">'+esc(name||slug)+'</span>'+(seen?'<span class="sd">&#10003;</span>':'')+'</button>'; }
+    function starStr(n){ n=n||0; return '<span style="color:var(--accent)">'+'★'.repeat(n)+'</span><span style="color:var(--border)">'+'★'.repeat(5-n)+'</span>'; }
+    function hubTile(id,ic,t,d){ return '<button class="hub-tile" id="'+id+'" type="button"><span class="ic">'+ic+'</span><div class="t">'+t+'</div><div class="d">'+d+'</div></button>'; }
 
     // ---- profile ----
     async function openProfile(handle){
@@ -1364,28 +1431,39 @@
         var r=await authedFetch('/api/profile?handle='+encodeURIComponent(handle));
         if(r.status===404){ openPanel('<div class="empty">No soundcheck user @'+esc(handle)+'.</div>'); return; }
         var p=await r.json();
-        var h='<div class="panel-handle"><span class="av-lg">'+esc((p.handle||'?').charAt(0))+'</span><div><h3 style="margin:0">@'+esc(p.handle)+'</h3>'+
-          '<div class="panel-stat"><span><b>'+p.followers+'</b> followers</span><span><b>'+p.following+'</b> following</span></div></div></div>';
-        if(!p.isMe){ h+='<button class="follow-btn'+(p.isFollowing?' following':'')+'" id="follow-btn" data-handle="'+esc(p.handle)+'">'+(p.isFollowing?'Following':'Follow')+'</button>'; }
-        if(p.locked){ h+='<div class="empty">This profile is private.</div>'; openPanel(h); wireProfile(); return; }
-        var s=p.shelves||{wannaSee:[],seen:[],events:[]};
-        function artPills(list){ return '<div class="pillrow">'+(list.length?list.map(function(a){ return '<button class="pill-link" data-artist="'+esc(a.slug)+'">'+esc(a.name||a.slug)+'</button>'; }).join(''):'<span class="empty" style="padding:0">—</span>')+'</div>'; }
-        if(s.events.length){ h+='<h4>Going to ('+s.events.length+')</h4><ul class="tray-line">'+s.events.map(function(e){ return '<li><span class="open-ev">'+esc(e.title||'Event')+' <small>'+esc(e.venue||'')+'</small></span></li>'; }).join('')+'</ul>'; }
-        h+='<h4>Wanna see ('+s.wannaSee.length+')</h4>'+artPills(s.wannaSee);
-        h+='<h4 style="margin-top:16px">Seen live ('+s.seen.length+')</h4>'+artPills(s.seen);
-        if(p.diary && p.diary.length){ h+='<h4 style="margin-top:16px">Diary</h4>'+diaryListHTML(p.diary); }
-        openPanel(h); wireProfile();
+        var s=p.shelves||{wannaSee:[],seen:[],events:[]}, diary=p.diary||[];
+        var initial=(p.handle||'?').charAt(0);
+        var head='<div class="prof-cover"></div><div class="prof-head"><span class="prof-av">'+esc(initial)+'</span>'+
+          (p.isMe?'':'<button class="follow-btn'+(p.isFollowing?' following':'')+'" id="follow-btn" data-handle="'+esc(p.handle)+'">'+(p.isFollowing?'Following':'Follow')+'</button>')+'</div>'+
+          '<div class="prof-nm">'+esc(p.displayName||('@'+p.handle))+'</div><div class="prof-hn">@'+esc(p.handle)+'</div>'+
+          '<div class="prof-stat"><div><div class="n">'+s.seen.length+'</div><div class="l">Seen</div></div><div><div class="n">'+s.wannaSee.length+'</div><div class="l">Wanna see</div></div><div><div class="n">'+diary.length+'</div><div class="l">Gigs</div></div><div><div class="n">'+(p.followers||0)+'</div><div class="l">Followers</div></div></div>';
+        if(p.locked){ openPanel(head+'<div class="empty" style="margin-top:18px">This profile is private.</div>'); wireProfile(); return; }
+        openPanel(head+'<div class="prof-tabs"><button data-tab="shelves" class="on">Shelves</button><button data-tab="diary">Diary</button><button data-tab="network">Network</button></div><div id="prof-tabbody"></div>');
+        wireProfile();
+        var TAB={
+          shelves:function(){
+            var x='<div class="sec-h">Wanna see ('+s.wannaSee.length+')</div>'+(s.wannaSee.length?'<div class="ptiles">'+s.wannaSee.map(function(a){return ptile(a.slug,a.name,false);}).join('')+'</div>':'<div class="empty" style="padding:0 0 4px">Nothing yet.</div>');
+            x+='<div class="sec-h" style="margin-top:22px">Seen live ('+s.seen.length+')</div>'+(s.seen.length?'<div class="ptiles">'+s.seen.map(function(a){return ptile(a.slug,a.name,true);}).join('')+'</div>':'<div class="empty" style="padding:0">Nothing yet.</div>');
+            if(s.events.length){ x+='<div class="sec-h" style="margin-top:22px">Saved events ('+s.events.length+')</div><ul class="tray-line">'+s.events.map(function(e){ return '<li><span class="open-ev">'+esc(e.title||'Event')+' <small>'+esc(e.venue||'')+'</small></span></li>'; }).join('')+'</ul>'; }
+            return x;
+          },
+          diary:function(){ return diary.length ? '<div class="prof-tl">'+diary.map(function(d,i){ var arts=(d.artists||[]).map(function(a){return a.name||a.slug;}).join(', '); return '<div class="row"><div class="spine"><div class="dot"></div>'+(i<diary.length-1?'<div class="ln"></div>':'')+'</div><div class="card"><div class="vn">'+esc(d.venue||'Gig')+'</div><div class="mt">'+esc(d.gig_date||'')+(arts?(' &middot; '+esc(arts)):'')+(d.rating?(' &middot; '+starStr(d.rating)):'')+'</div>'+(d.note?'<div class="nt">'+esc(d.note)+'</div>':'')+'</div></div>'; }).join('')+'</div>' : '<div class="empty">No gigs logged yet.</div>'; },
+          network:function(){ return '<div class="panel-stat"><span><b>'+(p.followers||0)+'</b> followers</span><span><b>'+(p.following||0)+'</b> following</span></div>'; }
+        };
+        var body=document.getElementById('prof-tabbody');
+        function showTab(t){ body.innerHTML=TAB[t](); body.querySelectorAll('[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); }); }
+        showTab('shelves');
+        panelBody.querySelectorAll('.prof-tabs [data-tab]').forEach(function(b){ b.addEventListener('click',function(){ panelBody.querySelectorAll('.prof-tabs button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); showTab(b.dataset.tab); }); });
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that profile.</div>'); }
     }
     function wireProfile(){
       var fb=document.getElementById('follow-btn');
       if(fb) fb.addEventListener('click',async function(){
-        if(!currentUser){ closePanel(); openAuth(); return; }
+        if(!currentUser){ openAuth(); return; }
         var on=fb.classList.contains('following');
         fb.classList.toggle('following'); fb.textContent=on?'Follow':'Following';
         try{ await authedFetch(on?'/api/unfollow':'/api/follow',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({handle:fb.dataset.handle}) }); }catch(_){}
       });
-      panelBody.querySelectorAll('[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); });
     }
     function diaryListHTML(rows){
       return '<ul class="tray-line">'+rows.map(function(d){
