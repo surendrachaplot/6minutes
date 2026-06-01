@@ -372,6 +372,16 @@
     .shared-banner .b-list b { color:var(--accent); font-weight:700; }
     .shared-banner .b-list { color:var(--fg); line-height:1.5; }
 
+    /* ── full-page views (profile / feed / artist / venue) ── */
+    .page-view { display:none; padding:6px 0 60px; }
+    body.page-on #home { display:none; }
+    body.page-on .page-view { display:block; }
+    .page-head { display:flex; align-items:center; gap:12px; margin:8px 0 20px; }
+    .page-back { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:8px 15px 8px 12px; font:600 0.74rem var(--body); cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+    .page-back:hover { border-color:var(--accent); color:var(--accent); }
+    .page-view h3 { font-family:var(--head); font-weight:800; letter-spacing:-0.02em; }
+    #page-body { max-width:760px; }
+
     /* ── Phase 3/4 panels (profile / feed / artist / venue) reuse tray shell ── */
     .panel-stat { display:flex; gap:20px; margin:4px 0 14px; color:var(--muted); font-size:0.84rem; }
     .panel-stat b { color:var(--fg); font-weight:700; }
@@ -465,6 +475,7 @@
       <div class="account account-wrap" id="account"></div>
     </nav>
 
+    <div id="home">
     <div class="teaser">
       <span class="tt">Come help us build the first <b>community-owned club in London.</b></span>
       <a href="/">6 Minutes &rarr;</a>
@@ -509,6 +520,9 @@
       </form>
       <p class="signup-success" id="signup-success" hidden>You&rsquo;re on the list. &#x2713;</p>
     </section>
+    </div><!-- /#home -->
+
+    <div id="page-view" class="page-view" hidden></div>
   </main>
 
   <div class="dock" id="dock" role="region" aria-label="Now playing">
@@ -1269,17 +1283,37 @@
     });
 
     // ════ Phase 3/4: profiles · feed · artist/venue · diary (account features) ════
-    var panelOv=document.getElementById('panel-overlay'), panelBody=document.getElementById('panel-body');
-    function openPanel(html){ panelBody.innerHTML=html; panelOv.classList.add('show'); lockBody(); }
-    function closePanel(){ if(!panelOv.classList.contains('show')) return; panelOv.classList.remove('show'); unlockBody(); if(location.hash) history.replaceState(null,'',location.pathname+location.search); }
-    document.getElementById('panel-close').addEventListener('click',closePanel);
-    panelOv.addEventListener('click',function(e){ if(e.target===panelOv) closePanel(); });
-    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&panelOv.classList.contains('show')) closePanel(); });
+    // Profile / feed / artist / venue render as full-page views (not overlays).
+    var pageView=document.getElementById('page-view'), panelBody=null;
+    function showPage(html){
+      // leave any quick-overlays first (sheet/tray/me are peeks; pages are destinations)
+      if(typeof closeSheet==='function') closeSheet();
+      if(trayOv && trayOv.classList.contains('show')) closeTray();
+      if(meOv && meOv.classList.contains('show')) closeMe();
+      pageView.innerHTML='<div class="page-head"><button class="page-back" id="page-back" type="button">&lsaquo; Back</button></div><div id="page-body">'+html+'</div>';
+      panelBody=document.getElementById('page-body');
+      document.getElementById('page-back').addEventListener('click',hidePage);
+      document.body.classList.add('page-on');
+      pageView.hidden=false;
+      window.scrollTo(0,0);
+    }
+    function hidePage(){
+      if(!document.body.classList.contains('page-on')) return;
+      document.body.classList.remove('page-on'); pageView.hidden=true; pageView.innerHTML='';
+      if(location.hash) history.replaceState(null,'',location.pathname+location.search);
+    }
+    // keep the old names so the render fns don't all change
+    function openPanel(html){ showPage(html); }
+    function closePanel(){ hidePage(); }
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.body.classList.contains('page-on')) hidePage(); });
+    function relTime(iso){ try{ var s=(Date.now()-new Date(iso).getTime())/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }catch(_){ return ''; } }
+    function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
     function relTime(iso){ try{ var s=(Date.now()-new Date(iso).getTime())/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }catch(_){ return ''; } }
     function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
 
     // ---- profile ----
     async function openProfile(handle){
+      setRoute('u/'+handle);
       openPanel('<div class="empty">Loading @'+esc(handle)+'…</div>');
       try{
         var r=await authedFetch('/api/profile?handle='+encodeURIComponent(handle));
@@ -1319,6 +1353,7 @@
     // ---- feed ----
     async function openFeed(){
       if(!currentUser){ openAuth(); return; }
+      setRoute('feed');
       openPanel('<h3>Feed</h3><div class="empty">Loading…</div>');
       try{
         var r=await authedFetch('/api/feed'); var j=await r.json(); var rows=j.events||[];
@@ -1346,7 +1381,8 @@
 
     // ---- artist + venue pages ----
     async function openArtist(slug){
-      closePanel(); openPanel('<div class="empty">Loading…</div>');
+      setRoute('a/'+slug);
+      openPanel('<div class="empty">Loading…</div>');
       try{
         var r=await authedFetch('/api/artist?slug='+encodeURIComponent(slug)); var a=await r.json();
         var mine=artStatus(slug);
@@ -1360,7 +1396,8 @@
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that artist.</div>'); }
     }
     async function openVenue(name){
-      closePanel(); openPanel('<div class="empty">Loading…</div>');
+      setRoute('v/'+encodeURIComponent(name));
+      openPanel('<div class="empty">Loading…</div>');
       try{
         var r=await authedFetch('/api/venue?name='+encodeURIComponent(name)); var v=await r.json();
         var h='<h3>'+esc(name)+'</h3><div class="sub">on soundcheck</div>';
@@ -1438,14 +1475,19 @@
     // ---- hash router (#u/<handle>, #feed, #a/<slug>, #v/<name>, #log) ----
     function handleRoute(){
       var hash=decodeURIComponent(location.hash.replace(/^#/,''));
-      if(!hash) return;
+      if(!hash){ hidePage(); return; }   // browser-back off a page → home
       if(hash==='feed') openFeed();
       else if(hash==='log') openLog();
       else if(hash.indexOf('u/')===0) openProfile(hash.slice(2));
       else if(hash.indexOf('a/')===0) openArtist(hash.slice(2));
       else if(hash.indexOf('v/')===0) openVenue(hash.slice(2));
     }
-    window.addEventListener('hashchange',handleRoute);
+    // open*() set the URL via setRoute (shareable + back-button) and suppress
+    // the resulting hashchange so we don't double-render. A real back/forward
+    // (not suppressed) runs handleRoute → that view, or home when empty.
+    var suppressHash=false;
+    function setRoute(route){ if(('#'+route)===location.hash) return; suppressHash=true; location.hash=route; setTimeout(function(){ suppressHash=false; },0); }
+    window.addEventListener('hashchange',function(){ if(suppressHash){ suppressHash=false; return; } handleRoute(); });
 
     // ── incoming-share state (set on boot from URL params) ──
     var sharedPicks=null, sharedSingle=null, sharedHandled=false, sharedFrom=null;
