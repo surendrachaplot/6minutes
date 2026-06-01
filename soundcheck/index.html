@@ -1323,20 +1323,24 @@
       if(typeof closeSheet==='function') closeSheet();
       pageView.innerHTML='<div class="page-head"><button class="page-back" id="page-back" type="button">&lsaquo; Back</button></div><div id="page-body">'+html+'</div>';
       panelBody=document.getElementById('page-body');
-      document.getElementById('page-back').addEventListener('click',hidePage);
+      document.getElementById('page-back').addEventListener('click',goBack);
       document.body.classList.add('page-on');
       pageView.hidden=false;
       window.scrollTo(0,0);
     }
+    // hidePage is pure UI — it just shows the home grid. History is driven by
+    // setRoute (pushState) + goBack (history.back) + the popstate handler.
     function hidePage(){
       if(!document.body.classList.contains('page-on')) return;
       document.body.classList.remove('page-on'); pageView.hidden=true; pageView.innerHTML='';
-      if(location.hash) history.replaceState(null,'',location.pathname+location.search);
     }
+    // The in-app "Back" steps one level through real history (matches the
+    // browser back button). At the app's first entry it lands on home.
+    function goBack(){ history.back(); }
     // keep the old names so the render fns don't all change
     function openPanel(html){ showPage(html); }
-    function closePanel(){ hidePage(); }
-    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.body.classList.contains('page-on')) hidePage(); });
+    function closePanel(){ goBack(); }
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.body.classList.contains('page-on')) goBack(); });
     function relTime(iso){ try{ var s=(Date.now()-new Date(iso).getTime())/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }catch(_){ return ''; } }
     function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
     // gradient artist tiles (reuse the poster hue hash)
@@ -1521,7 +1525,9 @@
         if(!r.ok){ var j=await r.json().catch(function(){return{};}); document.getElementById('lg-err').textContent=(j.error||'Could not save')+'.'; btn.disabled=false; return; }
         lgArtists.forEach(function(a){ picks.artists[a.slug]={name:a.name,status:'seen',t:Date.now()}; });
         savePicks(); afterPicksChanged();
-        showToast('Logged to your diary'); openMyPicks();
+        showToast('Logged to your diary');
+        // replace #log with #picks so Back doesn't return to an empty form
+        history.replaceState({sc:1},'','#picks'); openMyPicks();
       }catch(_){ document.getElementById('lg-err').textContent='Network error.'; btn.disabled=false; }
     }
 
@@ -1537,12 +1543,10 @@
       else if(hash.indexOf('a/')===0) openArtist(hash.slice(2));
       else if(hash.indexOf('v/')===0) openVenue(hash.slice(2));
     }
-    // open*() set the URL via setRoute (shareable + back-button) and suppress
-    // the resulting hashchange so we don't double-render. A real back/forward
-    // (not suppressed) runs handleRoute → that view, or home when empty.
-    var suppressHash=false;
-    function setRoute(route){ if(('#'+route)===location.hash) return; suppressHash=true; location.hash=route; setTimeout(function(){ suppressHash=false; },0); }
-    window.addEventListener('hashchange',function(){ if(suppressHash){ suppressHash=false; return; } handleRoute(); });
+    // Push a real history entry per forward navigation (pushState doesn't fire
+    // popstate, so no double-render). Back/forward fire popstate → handleRoute.
+    function setRoute(route){ if(('#'+route)===location.hash) return; history.pushState({sc:1},'','#'+route); }
+    window.addEventListener('popstate', handleRoute);
 
     // ── incoming-share state (set on boot from URL params) ──
     var sharedPicks=null, sharedSingle=null, sharedHandled=false, sharedFrom=null;
@@ -1969,9 +1973,15 @@
     else if(_shareDate) load(_shareDate);
     else loadWeekend();
 
-    // resolve any hash route (#u/handle, #feed, #a/slug, #v/name, #log) after
-    // the account state is known (loadMe is kicked off in consumeSessionHash)
-    if(location.hash) setTimeout(handleRoute, 400);
+    // Deep link to a page (#u/handle, #feed, #a/slug, #v/name, #log, #picks,
+    // #account)? Insert a "home" entry beneath it so Back lands on the grid
+    // rather than leaving the site, then render the page.
+    var _hashRoute=location.hash.replace(/^#/,'');
+    if(_hashRoute && /^(account|picks|feed|log|u\/|a\/|v\/)/.test(_hashRoute)){
+      history.replaceState({sc:1},'',location.pathname+location.search); // home
+      history.pushState({sc:1},'','#'+_hashRoute);                       // the page
+      setTimeout(handleRoute, 400);
+    }
   </script>
 </body>
 </html>
