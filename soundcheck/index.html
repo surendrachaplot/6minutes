@@ -410,6 +410,15 @@
     .lg-artists { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .lg-chip { background:rgba(255,122,107,0.14); border:1px solid var(--accent); color:var(--fg); border-radius:999px; padding:5px 10px; font-size:0.8rem; display:inline-flex; gap:6px; align-items:center; }
     .lg-chip button { background:none; border:none; color:var(--accent); cursor:pointer; font-size:0.9rem; line-height:1; }
+    /* autosuggest dropdown */
+    .sg-wrap { position:relative; }
+    .sg-drop { position:absolute; left:0; right:0; top:calc(100% + 4px); background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; z-index:5; display:none; max-height:240px; overflow-y:auto; box-shadow:0 12px 30px rgba(0,0,0,0.45); }
+    .sg-drop.show { display:block; }
+    .sg-drop button { display:block; width:100%; text-align:left; background:transparent; border:none; color:var(--fg); font:500 0.88rem var(--body); padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--border); }
+    .sg-drop button:last-child { border-bottom:none; }
+    .sg-drop button:hover, .sg-drop button.hot { background:rgba(255,122,107,0.12); }
+    .sg-drop button small { color:var(--muted); font-weight:400; }
+    .sg-drop .sg-empty { padding:10px 12px; color:var(--muted); font-size:0.84rem; }
 
     /* ── account (Phase 2 sign-in) ── */
     .account { display:inline-flex; align-items:center; gap:8px; }
@@ -594,9 +603,10 @@
       <h3>Log a gig</h3>
       <div class="sub">Add a night you went to — it lands in your diary and marks the DJs as seen.</div>
       <div style="margin-top:16px">
+        <div class="lg-field"><label>Find your gig</label><div class="sg-wrap"><input type="text" id="lg-gig-in" placeholder="Search past nights — venue or event…" autocomplete="off"><div class="sg-drop" id="lg-gig-drop"></div></div></div>
         <div class="lg-field"><label>Date</label><input type="date" id="lg-date"></div>
-        <div class="lg-field"><label>Venue</label><input type="text" id="lg-venue" placeholder="FOLD, Phonox, The Cause…"></div>
-        <div class="lg-field"><label>Artists you saw</label><input type="text" id="lg-artist-in" placeholder="Type a name, press Enter"><div class="lg-artists" id="lg-artists"></div></div>
+        <div class="lg-field"><label>Venue</label><div class="sg-wrap"><input type="text" id="lg-venue" placeholder="FOLD, Phonox, The Cause…" autocomplete="off"><div class="sg-drop" id="lg-venue-drop"></div></div></div>
+        <div class="lg-field"><label>Artists you saw</label><div class="sg-wrap"><input type="text" id="lg-artist-in" placeholder="Type a name…" autocomplete="off"><div class="sg-drop" id="lg-artist-drop"></div></div><div class="lg-artists" id="lg-artists"></div></div>
         <div class="lg-field"><label>Rating</label><div class="stars" id="lg-stars"></div></div>
         <div class="lg-field"><label>Note (optional)</label><textarea id="lg-note" placeholder="How was it?"></textarea></div>
         <div class="share-main"><button class="primary" id="lg-save" type="button" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);font:700 0.72rem var(--body);letter-spacing:0.14em;text-transform:uppercase;cursor:pointer">Save to diary</button></div>
@@ -1393,6 +1403,37 @@
       }catch(_){ document.getElementById('lg-err').textContent='Network error.'; }
       finally{ btn.disabled=false; }
     });
+
+    // ---- autosuggest (catalog-backed) for the log-a-gig fields ----
+    function debounce(fn, ms){ var t; return function(){ var a=arguments, c=this; clearTimeout(t); t=setTimeout(function(){ fn.apply(c,a); }, ms); }; }
+    function pubGet(path){ return fetch(API_BASE+path).then(function(r){ return r.json(); }).catch(function(){ return {}; }); }
+    function attachSuggest(input, drop, fetcher, onPick){
+      var cur=[];
+      function hide(){ drop.classList.remove('show'); drop.innerHTML=''; }
+      var run=debounce(async function(){
+        var qv=input.value.trim();
+        if(qv.length<2){ hide(); return; }
+        try{ cur=await fetcher(qv); }catch(_){ cur=[]; }
+        if(!cur.length){ hide(); return; }
+        drop.innerHTML=cur.map(function(it,i){ return '<button type="button" data-i="'+i+'">'+it.label+'</button>'; }).join('');
+        drop.classList.add('show');
+      },200);
+      input.addEventListener('input',run);
+      drop.addEventListener('mousedown',function(e){ var b=e.target.closest('[data-i]'); if(b){ e.preventDefault(); onPick(cur[+b.dataset.i]); hide(); } });
+      input.addEventListener('blur',function(){ setTimeout(hide,160); });
+    }
+    // find your gig → fills date + venue + artist chips
+    attachSuggest(document.getElementById('lg-gig-in'), document.getElementById('lg-gig-drop'),
+      async function(qv){ var j=await pubGet('/api/gigs?q='+encodeURIComponent(qv)); return (j.gigs||[]).map(function(g){ return { label:esc(g.title||'Gig')+' <small>'+esc(g.venue||'')+(g.event_date?(' · '+esc(String(g.event_date).slice(0,10))):'')+'</small>', g:g }; }); },
+      function(pick){ var g=pick.g; if(g.event_date) document.getElementById('lg-date').value=String(g.event_date).slice(0,10); document.getElementById('lg-venue').value=g.venue||''; var arts=(typeof g.artists==='string'?JSON.parse(g.artists):g.artists)||[]; lgArtists=arts.map(function(a){ return {slug:a.slug, name:a.name}; }); renderLgArtists(); document.getElementById('lg-gig-in').value=g.title||''; });
+    // venue autosuggest
+    attachSuggest(document.getElementById('lg-venue'), document.getElementById('lg-venue-drop'),
+      async function(qv){ var j=await pubGet('/api/venues?q='+encodeURIComponent(qv)); return (j.venues||[]).map(function(v){ return { label:esc(v.name)+(v.count?(' <small>'+v.count+' nights</small>'):''), name:v.name }; }); },
+      function(pick){ document.getElementById('lg-venue').value=pick.name; });
+    // artist autosuggest (adds a chip)
+    attachSuggest(document.getElementById('lg-artist-in'), document.getElementById('lg-artist-drop'),
+      async function(qv){ var j=await pubGet('/api/artists?q='+encodeURIComponent(qv)); return (j.artists||[]).map(function(a){ return { label:esc(a.name), slug:a.slug, name:a.name }; }); },
+      function(pick){ if(!lgArtists.some(function(x){return x.slug===pick.slug;})){ lgArtists.push({slug:pick.slug, name:pick.name}); renderLgArtists(); } document.getElementById('lg-artist-in').value=''; });
 
     // ---- hash router (#u/<handle>, #feed, #a/<slug>, #v/<name>, #log) ----
     function handleRoute(){
