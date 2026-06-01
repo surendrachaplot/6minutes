@@ -671,8 +671,9 @@
     </div>
   </div>
 
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <script src="https://w.soundcloud.com/player/api.js"></script>
+  <!-- YouTube + SoundCloud player SDKs are loaded lazily on first play (see
+       loadYtApi / loadScApi) so they stay off the critical path. The iframes
+       autoplay on their own; the SDKs only add the scrubber + dock sync. -->
 
   <script>
     // First-party API subdomain → HttpOnly Domain=.6minutes.club cookies work
@@ -711,8 +712,12 @@
       var h=hashStr(title), hue=((h%70)+340)%360, ang=110+(h%80);
       return '<div class="gen" style="--ang:'+ang+'deg;--g1:hsl('+hue+' 68% 54%);--g2:hsl('+((hue+18)%360)+' 45% 11%)"><span class="gt">'+esc(title)+'</span></div>';
     }
+    // Proxy + downscale helper. w = target CSS px; we request ~2× for retina.
+    // The proxy resizes + serves WebP (when accepted), so a 2MB flyer becomes
+    // tens of KB. Omit w to get the original.
+    function imgUrl(u, w){ return API_BASE+'/api/img?u='+encodeURIComponent(u)+(w?('&w='+w):''); }
     function posterHTML(ev){
-      var img=ev.poster?'<img class="real" loading="lazy" decoding="async" src="'+API_BASE+'/api/img?u='+encodeURIComponent(ev.poster)+'" alt="" onerror="this.style.display=\'none\'">':'';
+      var img=ev.poster?'<img class="real" loading="lazy" decoding="async" src="'+imgUrl(ev.poster,600)+'" alt="" onerror="this.style.display=\'none\'">':'';
       return '<div class="poster">'+genPoster(ev.title||'Event')+img+'<span class="tint"></span></div>';
     }
 
@@ -775,6 +780,23 @@
     var ytReady=false, pendingYt=null, ytPlayer=null, scWidget=null, currentType=null;
     window.onYouTubeIframeAPIReady=function(){ ytReady=true; if(pendingYt){ var f=pendingYt; pendingYt=null; f(); } };
 
+    // ── lazy SDK loaders (first play only — keeps both off the critical path) ──
+    var ytApiLoading=false, scApiLoading=false, scReadyCbs=[];
+    function loadYtApi(){
+      if(window.YT && window.YT.Player){ ytReady=true; return; }
+      if(ytApiLoading) return; ytApiLoading=true;
+      var s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api'; s.async=true;
+      document.head.appendChild(s); // onYouTubeIframeAPIReady flips ytReady + runs pendingYt
+    }
+    function loadScApi(cb){
+      if(window.SC && window.SC.Widget){ cb(); return; }
+      scReadyCbs.push(cb);
+      if(scApiLoading) return; scApiLoading=true;
+      var s=document.createElement('script'); s.src='https://w.soundcloud.com/player/api.js'; s.async=true;
+      s.onload=function(){ var cbs=scReadyCbs; scReadyCbs=[]; cbs.forEach(function(f){ try{ f(); }catch(_){} }); };
+      document.head.appendChild(s);
+    }
+
     var active=null;
     function setState(btn,ch){ var s=btn.querySelector('.state'); if(s) s.textContent=ch; }
     function updatePP(playing){ dockPP.innerHTML = playing ? PP_PAUSE : PP_PLAY; dockPP.setAttribute('aria-label', playing?'Pause':'Play'); }
@@ -802,7 +824,7 @@
 
     function openDockUI(btn,name,src,expand){
       dockName.textContent=name; dockSrc.textContent=src;
-      if(btn.dataset.poster){ dockThumb.src=API_BASE+'/api/img?u='+encodeURIComponent(btn.dataset.poster); dockThumb.style.display=''; }
+      if(btn.dataset.poster){ dockThumb.src=imgUrl(btn.dataset.poster,120); dockThumb.style.display=''; }
       else { dockThumb.removeAttribute('src'); dockThumb.style.display='none'; }
       dock.classList.add('show'); document.body.classList.add('has-dock');
       if(expand) dock.classList.add('expanded'); else dock.classList.remove('expanded');
@@ -830,17 +852,21 @@
       dockMedia.innerHTML='';
       // album art fills the stage (no video for SoundCloud); the iframe plays hidden
       var art=document.createElement('div'); art.className='poster stage-art';
-      art.innerHTML=genPoster(btn.dataset.name||'Now playing')+(btn.dataset.poster?'<img class="real" src="'+API_BASE+'/api/img?u='+encodeURIComponent(btn.dataset.poster)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<span class="tint"></span>';
+      art.innerHTML=genPoster(btn.dataset.name||'Now playing')+(btn.dataset.poster?'<img class="real" src="'+imgUrl(btn.dataset.poster,800)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<span class="tint"></span>';
       dockMedia.appendChild(art);
       dockMedia.appendChild(f);
       openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD', true);
-      if(window.SC && SC.Widget){
+      // The iframe already autoplays (auto_play=true); the Widget API just adds
+      // the scrubber + play/pause sync, so we bind it lazily once api.js loads.
+      loadScApi(function(){
+        if(currentType!=='sc' || !f.isConnected) return; // user moved on
         scWidget=SC.Widget(f);
         scWidget.bind(SC.Widget.Events.PLAY,function(){ updatePP(true); });
         scWidget.bind(SC.Widget.Events.PAUSE,function(){ updatePP(false); });
         scWidget.bind(SC.Widget.Events.READY,function(){ scWidget.getDuration(function(ms){ dur=(ms||0)/1000; paintScrub(); }); });
         scWidget.bind(SC.Widget.Events.PLAY_PROGRESS,function(e){ if(scrubbing) return; pos=(e.currentPosition||0)/1000; paintScrub(); });
-      }
+        try{ scWidget.getDuration(function(ms){ if(ms){ dur=ms/1000; paintScrub(); } }); }catch(_){} // READY may have already fired
+      });
     }
     function playYt(btn,videoId){
       clearPlayers(); currentType='yt';
@@ -869,7 +895,7 @@
           }
         });
       }
-      if(window.YT && YT.Player) build(); else pendingYt=build;
+      if(window.YT && YT.Player) build(); else { pendingYt=build; loadYtApi(); }
     }
     // dock controls
     dockPP.addEventListener('click',function(){
@@ -1351,7 +1377,7 @@
     // gradient artist tiles (reuse the poster hue hash)
     function artGrad(s){ var h=((hashStr(String(s||'x'))%70)+330)%360; return 'linear-gradient(150deg,hsl('+h+' 62% 50%),hsl('+((h+22)%360)+' 42% 14%))'; }
     function ptile(slug,name,seen,image){
-      var img=image?'<img class="pimg" loading="lazy" decoding="async" src="'+API_BASE+'/api/img?u='+encodeURIComponent(image)+'" alt="" onerror="this.remove()">':'';
+      var img=image?'<img class="pimg" loading="lazy" decoding="async" src="'+imgUrl(image,300)+'" alt="" onerror="this.remove()">':'';
       return '<button class="ptile'+(image?' has-img':'')+'" data-artist="'+esc(slug)+'" style="background:'+artGrad(name||slug)+'">'+img+'<span class="nm">'+esc(name||slug)+'</span>'+(seen?'<span class="sd">&#10003;</span>':'')+'</button>';
     }
     function starStr(n){ n=n||0; return '<span style="color:var(--accent)">'+'★'.repeat(n)+'</span><span style="color:var(--border)">'+'★'.repeat(5-n)+'</span>'; }
@@ -1443,7 +1469,7 @@
       try{
         var r=await authedFetch('/api/artist?slug='+encodeURIComponent(slug)); var a=await r.json();
         var mine=artStatus(slug);
-        var av=a.image?'<img class="artist-av" loading="lazy" decoding="async" src="'+API_BASE+'/api/img?u='+encodeURIComponent(a.image)+'" alt="" onerror="this.style.display=\'none\'">':'';
+        var av=a.image?'<img class="artist-av" loading="lazy" decoding="async" src="'+imgUrl(a.image,160)+'" alt="" onerror="this.style.display=\'none\'">':'';
         var h='<div class="artist-head">'+av+'<div class="artist-head-tx"><h3>'+esc(a.name||slug)+'</h3><div class="sub">on soundcheck</div></div></div>';
         if(a.rating){ h+='<div class="agg-big"><span class="num">'+a.rating+'</span><span class="of">avg from '+a.ratingCount+' logged gig'+(a.ratingCount===1?'':'s')+'</span></div>'; }
         h+='<div class="panel-stat" style="margin-top:12px"><span><b>'+a.seen+'</b> have seen them live</span><span><b>'+a.wanna+'</b> wanna see</span>'+(a.networkSeen?'<span><b>'+a.networkSeen+'</b> friends seen</span>':'')+'</div>';
