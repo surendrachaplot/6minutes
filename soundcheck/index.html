@@ -42,18 +42,12 @@
     nav .logo { margin-right:auto; }
     .logo { font-family:var(--head); font-weight:800; font-size:0.82rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--fg); text-decoration:none; }
     .logo:hover { color:var(--accent); }
-    .switch { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; flex-shrink:0; }
-    .switch a { font-size:0.62rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; padding:6px 12px; border-radius:999px; text-decoration:none; color:var(--muted); white-space:nowrap; }
-    .switch a.on { background:var(--accent); color:#1a0f0e; }
-    .switch a:not(.on):hover { color:var(--fg); }
     @media (max-width:480px){
       nav { gap:10px; }
       .logo { font-size:0.74rem; letter-spacing:0.18em; }
-      .switch a { padding:6px 9px; font-size:0.55rem; letter-spacing:0.08em; }
     }
     @media (max-width:340px){
       .logo { font-size:0.68rem; letter-spacing:0.14em; }
-      .switch a { padding:5px 7px; font-size:0.52rem; letter-spacing:0.05em; }
     }
 
     /* cross-site teaser banner (below nav) */
@@ -588,10 +582,6 @@
   <main class="wrap">
     <nav>
       <a class="logo" href=".">SOUNDCHECK</a>
-      <div class="switch">
-        <a href="/">6 Minutes</a>
-        <a class="on" href=".">Soundcheck</a>
-      </div>
       <button class="nav-search" id="nav-search" type="button" aria-label="Search events, venues, artists"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
       <div class="account account-wrap" id="account"></div>
     </nav>
