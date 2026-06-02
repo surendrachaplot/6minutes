@@ -544,6 +544,12 @@
     .auth-box .sent .big { font-size:2.4rem; }
     .auth-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:16px; cursor:pointer; }
     @media (max-width:480px){ .account .who .hn { max-width:80px; } }
+
+    /* site footer */
+    .site-foot { border-top:1px solid var(--border); margin-top:8px; padding:26px 0 64px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:0.74rem; }
+    .site-foot a { color:var(--muted); text-decoration:none; font-weight:600; }
+    .site-foot a:hover { color:var(--accent); }
+    .site-foot .dot { opacity:0.45; }
   </style>
 </head>
 <body>
@@ -602,6 +608,13 @@
       </form>
       <p class="signup-success" id="signup-success" hidden>You&rsquo;re on the list. &#x2713;</p>
     </section>
+    <footer class="site-foot">
+      <span>soundcheck &mdash; a 6 Minutes project</span>
+      <span class="dot">&middot;</span>
+      <a href="https://6minutes.club">6 Minutes</a>
+      <span class="dot">&middot;</span>
+      <a href="design-system.html">Design system</a>
+    </footer>
     </div><!-- /#home -->
 
     <div id="page-view" class="page-view" hidden></div>
