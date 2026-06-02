@@ -1589,7 +1589,8 @@
         var map=L.map(el).setView([51.5074,-0.1278], 11);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{ attribution:'&copy; OpenStreetMap, &copy; CARTO', subdomains:'abcd', maxZoom:19 }).addTo(map);
         var j; try{ j=await pubGet('/api/venues/map'); }catch(_){ j={}; }
-        var vs=(j.venues||[]).filter(function(v){ return v.lat!=null && v.lng!=null; }), pts=[];
+        // London bounding box — never plot a venue with bad/out-of-town coords.
+        var vs=(j.venues||[]).filter(function(v){ return v.lat>=51.25 && v.lat<=51.72 && v.lng>=-0.55 && v.lng<=0.34; }), pts=[];
         function pinDate(iso){ if(!iso) return ''; var d=new Date(String(iso).slice(0,10)+'T12:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}); }
         function popupHTML(v){ var up=v.upcoming?(v.upcoming+' upcoming night'+(v.upcoming===1?'':'s')):'no dates yet'; return '<b>'+esc(v.name)+'</b><br><span style="color:#9292a0">'+esc(up)+'</span><br><span class="map-link" data-venue="'+esc(v.name)+'">View venue &rsaquo;</span>'; }
         var dots=L.layerGroup(), pills=L.layerGroup();
