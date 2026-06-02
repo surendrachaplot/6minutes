@@ -4,13 +4,28 @@
   <meta charset="utf-8" />
   <title>soundcheck by 6 Minutes · London tonight</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Self-hosted Latin font slices (no third-party origin). @font-face is inline
+       in the <style> block; preload the first-paint critical weights. -->
+  <link rel="preload" as="font" type="font/woff2" href="fonts/bricolage-800.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="fonts/inter-400.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="fonts/inter-500.woff2" crossorigin />
+  <!-- Warm the API connection (TLS) before the first /api/day fetch fires. -->
+  <link rel="preconnect" href="https://api.6minutes.club" crossorigin />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <style>
+    /* ── self-hosted fonts (Latin slices from Google, vendored in /fonts) ── */
+    @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/bricolage-400.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/bricolage-500.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/bricolage-600.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/bricolage-700.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:800;font-display:swap;src:url(fonts/bricolage-800.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/inter-400.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/inter-500.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/inter-600.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+    @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/inter-700.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+
     *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
     :root {
       --bg:#0f0f12; --surface:#1b1b20; --fg:#f3ece6; --muted:#9292a0;
@@ -108,6 +123,14 @@
     .status.error { color:#ff6b6b; }
     .spinner { display:inline-block; width:14px; height:14px; margin-right:8px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; vertical-align:-3px; }
     @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* skeleton cards (shown while a day loads) */
+    .skel-card .sk-poster { width:100%; aspect-ratio:3/4; border-radius:10px; margin-bottom:13px; }
+    .skel-card .sk-line { height:11px; border-radius:5px; margin-top:7px; }
+    .skel-card .sk-line.w70 { width:70%; } .skel-card .sk-line.w45 { width:45%; }
+    .sk { background:linear-gradient(100deg, var(--surface) 30%, #24242b 50%, var(--surface) 70%); background-size:200% 100%; animation:sk 1.3s ease-in-out infinite; }
+    @keyframes sk { to { background-position:-200% 0; } }
+    @media (prefers-reduced-motion:reduce){ .sk { animation:none; } }
 
     /* grid */
     .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:26px 22px; padding:8px 0 56px; align-items:start; }
@@ -1858,22 +1881,48 @@
       document.getElementById('pick-date-label').textContent=lbl;
     }
 
+    // session-length client cache so re-fetched days (weekend reuse, prefetch,
+    // back-and-forth between dates) are instant and never re-hit the network.
+    var _dayCache={};
     async function fetchDay(date){
+      if(_dayCache[date]) return _dayCache[date];
       var res=await fetch(API_BASE+'/api/day?date='+encodeURIComponent(date));
       var json=await res.json();
       if(!res.ok) throw new Error(json.error||('HTTP '+res.status));
+      _dayCache[date]=json;
       return json;
+    }
+    function prefetchDay(date){ if(date && !_dayCache[date]) fetchDay(date).catch(function(){}); }
+    // After the first paint, quietly warm the days people switch to next.
+    var _prefetched=false;
+    function prefetchAround(){
+      if(_prefetched) return; _prefetched=true;
+      var run=function(){
+        try{
+          var tomorrow=isoOf(new Date(Date.now()+86400000));
+          var wd=weekendDatesFor(0);
+          [todayISO(), tomorrow, wd[0], wd[1]].forEach(prefetchDay);
+        }catch(_){}
+      };
+      if(window.requestIdleCallback) requestIdleCallback(run,{timeout:2500}); else setTimeout(run,1200);
+    }
+    // grid skeletons while a day loads
+    function skeletonGrid(n){
+      n=n||8;
+      var card='<div class="gcard skel-card"><div class="sk sk-poster"></div><div class="sk sk-line w70"></div><div class="sk sk-line w45"></div></div>';
+      gridEl.innerHTML=new Array(n).fill(card).join('');
     }
 
     // single-day mode
     async function load(date){
       mode='day'; currentDate=date; activePick=(date===todayISO()?'tonight':'date'); syncChips();
       document.title='soundcheck by 6 Minutes · '+date; history.replaceState(null,'','?date='+date);
-      setStatus('<span class="spinner"></span> Loading '+esc(fmtDateLabel(date))+'…'); gridEl.innerHTML='';
+      setStatus('<span class="spinner"></span> Loading '+esc(fmtDateLabel(date))+'…'); skeletonGrid();
       try{
         var json=await fetchDay(date);
         setStatus('');
         renderEvents(json.events, date===todayISO()?'Tonight in London':(fmtDateLabel(date)+' in London'));
+        prefetchAround();
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
@@ -1887,13 +1936,14 @@
       offset=offset||0; mode='weekend'; activePick=offset?'next':'weekend';
       var wd=weekendDatesFor(offset); currentDate=wd[1]; syncChips();
       document.title='soundcheck by 6 Minutes · '+(offset?'next weekend':'this weekend'); history.replaceState(null,'','?weekend='+(offset+1));
-      setStatus('<span class="spinner"></span> Loading '+(offset?'next':'this')+' weekend…'); gridEl.innerHTML='';
+      setStatus('<span class="spinner"></span> Loading '+(offset?'next':'this')+' weekend…'); skeletonGrid();
       try{
         var res=await Promise.all([fetchDay(wd[0]), fetchDay(wd[1])]);
-        var fri=(res[0].events||[]).map(function(e){ e._day='Fri'; return e; });
-        var sat=(res[1].events||[]).map(function(e){ e._day='Sat'; return e; });
+        var fri=(res[0].events||[]).map(function(e){ return Object.assign({},e,{_day:'Fri'}); });
+        var sat=(res[1].events||[]).map(function(e){ return Object.assign({},e,{_day:'Sat'}); });
         setStatus('');
         renderEvents(fri.concat(sat), (offset?'Next weekend':'This weekend')+' in London');
+        prefetchAround();
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
@@ -1906,14 +1956,14 @@
       mode='range'; activePick='date'; currentDate=startISO; currentRange=[startISO,endISO]; syncChips();
       document.title='soundcheck by 6 Minutes · '+startISO+' to '+endISO;
       history.replaceState(null,'','?from='+startISO+'&to='+endISO);
-      setStatus('<span class="spinner"></span> Loading '+span+' days&hellip;'); gridEl.innerHTML='';
+      setStatus('<span class="spinner"></span> Loading '+span+' days&hellip;'); skeletonGrid();
       try{
         var days=[]; for(var d=new Date(startISO+'T12:00:00'); d<=new Date(endISO+'T12:00:00'); d.setDate(d.getDate()+1)) days.push(isoOf(d));
         var res=await Promise.all(days.map(fetchDay));
         var all=[];
         res.forEach(function(j,i){
           var dl=new Date(days[i]+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'});
-          (j.events||[]).forEach(function(e){ e._day=dl; all.push(e); });
+          (j.events||[]).forEach(function(e){ all.push(Object.assign({},e,{_day:dl})); });
         });
         setStatus('');
         renderEvents(all, fmtRange(startISO,endISO)+' in London');
