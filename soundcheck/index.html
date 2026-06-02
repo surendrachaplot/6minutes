@@ -572,6 +572,10 @@
     .leaflet-popup-content b { font-family:var(--head); font-weight:700; }
     .leaflet-popup-content .map-link { color:var(--accent); font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; margin-top:6px; }
     .leaflet-container a.leaflet-popup-close-button { color:var(--muted); }
+    /* hybrid markers: glow-dot (zoomed out) → next-night pill (zoomed in) */
+    .vpin { display:inline-flex; align-items:center; gap:5px; background:var(--accent); color:var(--ink); font:800 11.5px var(--body); padding:4px 9px 4px 7px; border-radius:999px; white-space:nowrap; box-shadow:0 2px 10px rgba(0,0,0,0.55); border:1.5px solid rgba(255,255,255,0.32); cursor:pointer; }
+    .vpin .vd { width:6px; height:6px; border-radius:999px; background:var(--ink); flex-shrink:0; }
+    .vpin.bare { width:18px; height:18px; padding:0; border-radius:999px; }
     .search-box input::placeholder { color:var(--muted); }
     .search-box input:focus { border-color:var(--accent); }
 
@@ -1585,15 +1589,31 @@
         var map=L.map(el).setView([51.5074,-0.1278], 11);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{ attribution:'&copy; OpenStreetMap, &copy; CARTO', subdomains:'abcd', maxZoom:19 }).addTo(map);
         var j; try{ j=await pubGet('/api/venues/map'); }catch(_){ j={}; }
-        var vs=(j.venues||[]), pts=[];
+        var vs=(j.venues||[]).filter(function(v){ return v.lat!=null && v.lng!=null; }), pts=[];
+        function pinDate(iso){ if(!iso) return ''; var d=new Date(String(iso).slice(0,10)+'T12:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}); }
+        function popupHTML(v){ var up=v.upcoming?(v.upcoming+' upcoming night'+(v.upcoming===1?'':'s')):'no dates yet'; return '<b>'+esc(v.name)+'</b><br><span style="color:#9292a0">'+esc(up)+'</span><br><span class="map-link" data-venue="'+esc(v.name)+'">View venue &rsaquo;</span>'; }
+        var dots=L.layerGroup(), pills=L.layerGroup();
         vs.forEach(function(v){
-          if(v.lat==null||v.lng==null) return;
-          var up=v.upcoming?(v.upcoming+' upcoming night'+(v.upcoming===1?'':'s')):'no dates yet';
-          var m=L.circleMarker([v.lat,v.lng],{ radius:7, color:'#ff7a6b', weight:2, fillColor:'#ff7a6b', fillOpacity:0.5 }).addTo(map);
-          m.bindPopup('<b>'+esc(v.name)+'</b><br><span style="color:#9292a0">'+esc(up)+'</span><br><span class="map-link" data-venue="'+esc(v.name)+'">View venue &rsaquo;</span>');
           pts.push([v.lat,v.lng]);
+          var pop=popupHTML(v);
+          // zoomed-out: soft glow halo (= big tap target) under a crisp dot
+          var halo=L.circleMarker([v.lat,v.lng],{ radius:16, weight:0, fillColor:'#ff7a6b', fillOpacity:0.13 });
+          var dot=L.circleMarker([v.lat,v.lng],{ radius:7, color:'#fff', weight:1.5, fillColor:'#ff7a6b', fillOpacity:1 });
+          halo.bindPopup(pop); dot.bindPopup(pop);
+          dots.addLayer(halo); dots.addLayer(dot);
+          // zoomed-in: next-night date pill (bare salmon dot if no date) — large tap area
+          var label=pinDate(v.next_date);
+          var html=label ? '<div class="vpin"><span class="vd"></span>'+esc(label)+'</div>' : '<div class="vpin bare"></div>';
+          var pill=L.marker([v.lat,v.lng],{ icon:L.divIcon({ className:'', html:html, iconAnchor:[10,12] }) });
+          pill.bindPopup(pop);
+          pills.addLayer(pill);
         });
-        if(pts.length) map.fitBounds(pts,{ padding:[40,40], maxZoom:14 });
+        function sync(){ var z=map.getZoom();
+          if(z>=13){ if(map.hasLayer(dots)) map.removeLayer(dots); if(!map.hasLayer(pills)) map.addLayer(pills); }
+          else { if(map.hasLayer(pills)) map.removeLayer(pills); if(!map.hasLayer(dots)) map.addLayer(dots); }
+        }
+        map.on('zoomend',sync); sync();
+        if(pts.length) map.fitBounds(pts,{ padding:[40,40], maxZoom:13 });
         el.addEventListener('click',function(e){ var a=e.target.closest('.map-link[data-venue]'); if(a){ openVenue(a.dataset.venue); } });
         setTimeout(function(){ map.invalidateSize(); },120); // settle after layout
       });
