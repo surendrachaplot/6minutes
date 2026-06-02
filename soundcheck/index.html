@@ -568,6 +568,15 @@
     .auth-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:16px; cursor:pointer; }
     @media (max-width:480px){ .account .who .hn { max-width:80px; } }
 
+    /* nav search + search page */
+    .nav-search { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:color .12s, border-color .12s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    .nav-search:hover { border-color:var(--accent); color:var(--accent); }
+    .nav-search svg { width:16px; height:16px; display:block; }
+    .search-box input { width:100%; max-width:560px; background:var(--surface); border:1px solid var(--border); color:var(--fg); border-radius:12px; padding:14px 16px; font:500 1rem var(--body); outline:none; }
+    .search-box input::placeholder { color:var(--muted); }
+    .search-box input:focus { border-color:var(--accent); }
+    @media (max-width:480px){ .nav-search { width:30px; height:30px; } .nav-search svg { width:14px; height:14px; } }
+
     /* site footer */
     .site-foot { border-top:1px solid var(--border); margin-top:8px; padding:26px 0 64px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:0.74rem; }
     .site-foot a { color:var(--muted); text-decoration:none; font-weight:600; }
@@ -583,6 +592,7 @@
         <a href="/">6 Minutes</a>
         <a class="on" href=".">Soundcheck</a>
       </div>
+      <button class="nav-search" id="nav-search" type="button" aria-label="Search events, venues, artists"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
       <div class="account account-wrap" id="account"></div>
     </nav>
 
@@ -1499,6 +1509,66 @@
     }
 
     // ---- artist + venue pages ----
+    // Render canonical event rows (/api/artist · /api/venue · /api/search) as
+    // home-style cards into `el`, each wired to open the event sheet.
+    function mountEventCards(el, rows){
+      if(!el) return;
+      var evs=(rows||[]).map(function(g){
+        return { id:g.id, title:g.title, venue:g.venue,
+          _day:fmtDateLabel(String(g.event_date).slice(0,10)),
+          startTime:g.start_time, poster:g.poster_url,
+          artists:(g.lineup||[]).map(function(x){ return {name:x.name, contentUrl:'/dj/'+x.slug}; }) };
+      });
+      el.innerHTML='<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">'+evs.map(cardHTML).join('')+'</div>';
+      wireCard(el);
+      var rmap={}; evs.forEach(function(ev){ if(ev.id!=null) rmap[String(ev.id)]=ev; });
+      el.querySelectorAll('.gcard').forEach(function(c){
+        var ev=rmap[c.getAttribute('data-evt')]; if(!ev) return;
+        var open=function(e){ e.preventDefault(); e.stopPropagation(); openSheet(ev); };
+        var p=c.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
+        var t=c.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
+      });
+    }
+
+    // ── public search (events / venues / artists) ──
+    function openSearch(){
+      setRoute('search');
+      showPage('<h3>Search</h3><div class="sub" style="margin-bottom:14px">Find events, venues and DJs across London.</div>'+
+        '<div class="search-box"><input type="search" id="sx-input" placeholder="Search events, venues, DJs…" autocomplete="off" autocapitalize="off" autocorrect="off"></div>'+
+        '<div id="sx-results"></div>');
+      var input=document.getElementById('sx-input'), results=document.getElementById('sx-results');
+      var run=debounce(async function(){
+        var q=input.value.trim();
+        if(q.length<2){ results.innerHTML=''; return; }
+        results.innerHTML='<div class="empty" style="padding:20px 0"><span class="spinner"></span> Searching…</div>';
+        var j; try{ j=await pubGet('/api/search?q='+encodeURIComponent(q)); }catch(_){ j={}; }
+        if(input.value.trim()!==q) return; // a newer keystroke is in flight
+        renderSearch(results, j, q);
+      },220);
+      input.addEventListener('input',run);
+      setTimeout(function(){ input.focus(); },60);
+    }
+    function renderSearch(el, j, q){
+      var ev=j.events||[], ven=j.venues||[], art=j.artists||[];
+      if(!ev.length && !ven.length && !art.length){ el.innerHTML='<div class="empty" style="padding:20px 0">No matches for &ldquo;'+esc(q)+'&rdquo;.</div>'; return; }
+      var h='';
+      if(art.length){ h+='<div class="sec-h" style="margin-top:10px">Artists ('+art.length+')</div><div class="ptiles" id="sx-art"></div>'; }
+      if(ven.length){ h+='<div class="sec-h" style="margin-top:24px">Venues ('+ven.length+')</div><ul class="tray-line" id="sx-ven"></ul>'; }
+      if(ev.length){ h+='<div class="sec-h" style="margin-top:24px">Events ('+ev.length+')</div><div id="sx-ev"></div>'; }
+      el.innerHTML=h;
+      if(art.length){
+        var ae=document.getElementById('sx-art');
+        ae.innerHTML=art.map(function(a){ return ptile(a.slug,a.name,false,a.image_url); }).join('');
+        ae.querySelectorAll('[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); });
+      }
+      if(ven.length){
+        var ve=document.getElementById('sx-ven');
+        ve.innerHTML=ven.map(function(v){ return '<li><span class="open-ev" data-venue="'+esc(v.name)+'">'+esc(v.name)+' <small>'+(v.upcoming?(v.upcoming+' upcoming'):'venue')+'</small></span></li>'; }).join('');
+        ve.querySelectorAll('[data-venue]').forEach(function(b){ b.addEventListener('click',function(){ openVenue(b.dataset.venue); }); });
+      }
+      if(ev.length){ mountEventCards(document.getElementById('sx-ev'), ev); }
+    }
+
     async function openArtist(slug){
       setRoute('a/'+slug);
       openPanel('<div class="empty">Loading…</div>');
@@ -1546,7 +1616,13 @@
         var h='<h3>'+esc(name)+'</h3><div class="sub">on soundcheck</div>';
         if(v.rating){ h+='<div class="agg-big"><span class="num">'+v.rating+'</span><span class="of">avg from '+v.ratingCount+' logged night'+(v.ratingCount===1?'':'s')+'</span></div>'; }
         h+='<div class="panel-stat" style="margin-top:12px"><span><b>'+v.logged+'</b> logged here</span><span><b>'+v.going+'</b> saved upcoming</span></div>';
+        h+='<div id="vp-upcoming"></div>';
         openPanel(h);
+        var up=(v.upcoming||[]), vu=document.getElementById('vp-upcoming');
+        if(vu && up.length){
+          vu.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming at '+esc(name)+' ('+up.length+')</div><div id="vp-cards"></div>';
+          mountEventCards(document.getElementById('vp-cards'), up);
+        }
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that venue.</div>'); }
     }
 
@@ -1630,6 +1706,7 @@
       var hash=decodeURIComponent(location.hash.replace(/^#/,''));
       if(!hash){ hidePage(); return; }   // browser-back off a page → home
       if(hash==='account') openAccount();
+      else if(hash==='search') openSearch();
       else if(hash==='picks') openMyPicks();
       else if(hash==='feed') openFeed();
       else if(hash==='log') openLog();
@@ -1970,6 +2047,7 @@
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
+    document.getElementById('nav-search').addEventListener('click',openSearch);
     tonightBtn.addEventListener('click',function(){ load(todayISO()); });
     weekendBtn.addEventListener('click',function(){ loadWeekend(0); });
     nextBtn.addEventListener('click',function(){ loadWeekend(1); });
