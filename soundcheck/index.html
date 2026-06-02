@@ -562,14 +562,10 @@
     .auth-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:16px; cursor:pointer; }
     @media (max-width:480px){ .account .who .hn { max-width:80px; } }
 
-    /* nav search + search page */
-    .nav-search { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:color .12s, border-color .12s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
-    .nav-search:hover { border-color:var(--accent); color:var(--accent); }
-    .nav-search svg { width:16px; height:16px; display:block; }
+    /* search page */
     .search-box input { width:100%; max-width:560px; background:var(--surface); border:1px solid var(--border); color:var(--fg); border-radius:12px; padding:14px 16px; font:500 1rem var(--body); outline:none; }
     .search-box input::placeholder { color:var(--muted); }
     .search-box input:focus { border-color:var(--accent); }
-    @media (max-width:480px){ .nav-search { width:30px; height:30px; } .nav-search svg { width:14px; height:14px; } }
 
     /* site footer */
     .site-foot { border-top:1px solid var(--border); margin-top:8px; padding:26px 0 64px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:0.74rem; }
@@ -582,7 +578,6 @@
   <main class="wrap">
     <nav>
       <a class="logo" href=".">SOUNDCHECK</a>
-      <button class="nav-search" id="nav-search" type="button" aria-label="Search events, venues, artists"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
       <div class="account account-wrap" id="account"></div>
     </nav>
 
@@ -605,6 +600,7 @@
       <button class="qchip" id="pick-weekend" type="button">This weekend</button>
       <button class="qchip" id="pick-next" type="button">Next weekend</button>
       <button class="qchip alt" id="pick-date" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg><span id="pick-date-label">Pick a date</span></button>
+      <button class="qchip alt" id="pick-search" type="button" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Search</span></button>
     </div>
 
     <div class="cal-overlay" id="cal-overlay"><div class="cal" id="cal" role="dialog" aria-modal="true" aria-label="Pick a date"></div></div>
@@ -2037,7 +2033,7 @@
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
-    document.getElementById('nav-search').addEventListener('click',openSearch);
+    document.getElementById('pick-search').addEventListener('click',openSearch);
     tonightBtn.addEventListener('click',function(){ load(todayISO()); });
     weekendBtn.addEventListener('click',function(){ loadWeekend(0); });
     nextBtn.addEventListener('click',function(){ loadWeekend(1); });
