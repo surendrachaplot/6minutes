@@ -644,6 +644,17 @@
     .sheet-actions { flex-wrap:wrap; }
     .sheet-actions .act-night { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:0 14px; height:38px; font:700 0.72rem var(--body); cursor:pointer; white-space:nowrap; }
     .sheet-actions .act-night:hover { border-color:var(--accent); color:var(--accent); }
+    /* Taste card */
+    .tc-cta { display:block; width:100%; max-width:520px; margin:0 0 20px; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:999px; padding:12px; font:700 0.72rem var(--body); letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:background .15s,color .15s; }
+    .tc-cta:hover { background:var(--accent); color:var(--ink); }
+    .tc-box { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; width:100%; max-width:380px; position:relative; }
+    .tc-canvas-wrap { border-radius:12px; overflow:hidden; background:var(--bg); min-height:280px; display:flex; align-items:center; justify-content:center; }
+    .tc-canvas-wrap img { width:100%; display:block; border-radius:12px; }
+    .tc-loading { color:var(--muted); font-size:0.9rem; padding:70px 0; }
+    .tc-actions { display:flex; gap:10px; margin-top:14px; }
+    .tc-actions .go { flex:1; margin-top:0; background:var(--accent); color:var(--ink); border:none; border-radius:10px; padding:13px; font:700 0.72rem var(--body); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; }
+    .tc-actions .tc-save { flex:1; background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:10px; font:700 0.72rem var(--body); letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; }
+    .tc-actions .go:disabled, .tc-actions .tc-save:disabled { opacity:0.5; cursor:default; }
     /* "See more" → full event page, from the event sheet title */
     .see-more { display:inline-block; font:700 0.62rem var(--body); letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); text-decoration:none; white-space:nowrap; margin-left:10px; vertical-align:middle; cursor:pointer; }
     .see-more:hover { text-decoration:underline; }
@@ -1576,12 +1587,15 @@
       var has=pickCount()>0;
       var h='<h3>My picks</h3><div class="sub" style="margin-bottom:14px">'+(currentUser?('Synced to u/'+esc(currentUser.handle)+' across your devices.'):'Saved on this device &mdash; sign in to keep them.')+'</div>';
       if(has) h+='<div style="display:flex;gap:9px;margin-bottom:20px;max-width:520px"><button class="btn solid" id="mp-share" type="button" style="flex:1;border:none;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Share my picks</button><button class="btn ghost" id="mp-copy" type="button" style="flex:1;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:999px;font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Copy link</button></div>';
+      var hasArt=Object.keys(picks.artists).length>0;
+      if(hasArt) h+='<button class="tc-cta" id="mp-taste" type="button">◆ Share your taste card</button>';
       if(currentUser) h+='<div id="mp-nights" style="margin:6px 0 26px"></div>';
       h+='<div id="mp-shelves">'+picksShelvesHTML()+'</div><div id="mp-diary" style="margin-top:24px"></div>';
       if(has) h+='<button class="hub-row danger" id="mp-clear" type="button" style="max-width:520px;margin-top:22px"><span class="hr-tx"><span class="hr-t">Clear all picks</span></span></button>';
       showPage(h);
       var sh=document.getElementById('mp-share'); if(sh) sh.addEventListener('click',sharePicks);
       var cp=document.getElementById('mp-copy'); if(cp) cp.addEventListener('click',copyPicks);
+      var tc=document.getElementById('mp-taste'); if(tc) tc.addEventListener('click',openTasteCard);
       var cl=document.getElementById('mp-clear'); if(cl) cl.addEventListener('click',function(){ if(!pickCount())return; if(!confirm('Clear all '+pickCount()+' picks?'))return; picks={artists:{},events:{}}; savePicks(); afterPicksChanged(); document.querySelectorAll('.heart.on').forEach(function(b){b.classList.remove('on');}); openMyPicks(); });
       document.getElementById('mp-shelves').addEventListener('click',function(e){
         var a=e.target.closest('[data-rm-art]'); if(a){ setArtist(a.dataset.rmArt,null); document.getElementById('mp-shelves').innerHTML=picksShelvesHTML(); return; }
@@ -1768,6 +1782,79 @@
         list.innerHTML=rows.map(function(n){ return '<button class="hub-row open-night" data-code="'+esc(n.code)+'" type="button" style="max-width:520px"><span class="hr-tx"><span class="hr-t">'+esc(n.title||fmtNightDate(n.night_date))+'</span><span class="hr-s">'+n.events+' event'+(n.events===1?'':'s')+' &middot; '+n.members+' in</span></span></button>'; }).join('');
         list.querySelectorAll('.open-night').forEach(function(b){ b.addEventListener('click',function(){ openNight(b.dataset.code); }); });
       }catch(_){}
+    }
+
+    // ════════════ Taste card — shareable collage of your hearted artists ════════════
+    function tcLoadImg(src){ return new Promise(function(res){ var im=new Image(); im.crossOrigin='anonymous'; im.onload=function(){res(im);}; im.onerror=function(){res(null);}; im.src=src; }); }
+    function tcRR(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+    function tcFit(ctx,t,maxW){ t=String(t||''); if(ctx.measureText(t).width<=maxW) return t; var s=t; while(s.length>1 && ctx.measureText(s+'…').width>maxW){ s=s.slice(0,-1); } return s+'…'; }
+    function tcTracked(ctx,t,sp,x,y){ for(var i=0;i<t.length;i++){ ctx.fillText(t[i],x,y); x+=ctx.measureText(t[i]).width+sp; } }
+    function drawTasteCard(canvas, arts, label, images){
+      var W=1080,H=1350,P=72; canvas.width=W; canvas.height=H;
+      var ctx=canvas.getContext('2d');
+      ctx.fillStyle='#0f0f12'; ctx.fillRect(0,0,W,H);
+      var glow=ctx.createRadialGradient(W*0.82,0,0,W*0.82,0,W); glow.addColorStop(0,'rgba(255,122,107,0.20)'); glow.addColorStop(1,'rgba(255,122,107,0)'); ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
+      ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+      ctx.fillStyle='#f3ece6'; ctx.font="800 30px 'Bricolage Grotesque', system-ui, sans-serif"; tcTracked(ctx,'SOUNDCHECK',7,P,108);
+      ctx.fillStyle='#ff7a6b'; ctx.font="800 24px 'Inter', system-ui, sans-serif"; tcTracked(ctx,'THE LINEUP',6,P,166);
+      ctx.fillStyle='#f3ece6'; ctx.font="800 66px 'Bricolage Grotesque', system-ui, sans-serif"; ctx.fillText(tcFit(ctx, label, W-2*P), P, 236);
+      var n=arts.length, cols=n<=2?Math.max(1,n):3, gap=22, top=296, footerH=96;
+      var rows=Math.ceil(n/cols);
+      var cellW=(W-2*P-(cols-1)*gap)/cols;
+      var cellH=Math.min(cellW, (H-top-footerH-P-(rows-1)*gap)/rows);
+      var gridW=cols*cellW+(cols-1)*gap, x0=(W-gridW)/2;
+      for(var i=0;i<n;i++){
+        var rI=Math.floor(i/cols), cI=i%cols, x=x0+cI*(cellW+gap), y=top+rI*(cellH+gap);
+        ctx.save(); tcRR(ctx,x,y,cellW,cellH,18); ctx.clip();
+        var img=images[i];
+        if(img){ var s=Math.max(cellW/img.width, cellH/img.height), dw=img.width*s, dh=img.height*s; try{ ctx.drawImage(img, x+(cellW-dw)/2, y+(cellH-dh)/2, dw, dh); }catch(_){ img=null; } }
+        if(!img){ var hue=((hashStr(arts[i].name||arts[i].slug)%70)+330)%360, lg=ctx.createLinearGradient(x,y,x+cellW,y+cellH); lg.addColorStop(0,'hsl('+hue+',62%,50%)'); lg.addColorStop(1,'hsl('+((hue+22)%360)+',42%,14%)'); ctx.fillStyle=lg; ctx.fillRect(x,y,cellW,cellH); }
+        var sc=ctx.createLinearGradient(0,y+cellH*0.42,0,y+cellH); sc.addColorStop(0,'rgba(0,0,0,0)'); sc.addColorStop(1,'rgba(0,0,0,0.82)'); ctx.fillStyle=sc; ctx.fillRect(x,y+cellH*0.42,cellW,cellH*0.58);
+        ctx.fillStyle='#fff'; ctx.font="800 26px 'Bricolage Grotesque', system-ui, sans-serif"; ctx.fillText(tcFit(ctx, arts[i].name||arts[i].slug, cellW-26), x+15, y+cellH-18);
+        ctx.restore();
+      }
+      ctx.fillStyle='#9292a0'; ctx.font="600 24px 'Inter', system-ui, sans-serif"; ctx.textAlign='left'; ctx.fillText('6minutes.club/soundcheck', P, H-54);
+      ctx.fillStyle='#ff7a6b'; ctx.textAlign='right'; ctx.fillText(n+(n===1?' artist':' artists'), W-P, H-54); ctx.textAlign='left';
+    }
+    async function openTasteCard(){
+      var arts=[];
+      if(currentUser && currentUser.handle){
+        try{
+          var r=await authedFetch('/api/profile?handle='+encodeURIComponent(currentUser.handle)); var p=await r.json(); var sh=p.shelves||{};
+          (sh.wannaSee||[]).forEach(function(a){ arts.push({slug:a.slug,name:a.name,image:a.image}); });
+          (sh.seen||[]).forEach(function(a){ if(!arts.find(function(x){return x.slug===a.slug;})) arts.push({slug:a.slug,name:a.name,image:a.image}); });
+        }catch(_){}
+      }
+      if(!arts.length){ Object.keys(picks.artists).forEach(function(s){ arts.push({slug:s,name:picks.artists[s].name||s,image:null}); }); }
+      if(!arts.length){ showToast('Heart some artists to make your card'); return; }
+      var label = (currentUser && currentUser.handle) ? ('u/'+currentUser.handle) : 'My soundcheck';
+      renderTasteCard(arts.slice(0,9), label);
+    }
+    async function renderTasteCard(arts, label){
+      var ov=document.createElement('div'); ov.className='auth-overlay show';
+      ov.innerHTML='<div class="tc-box"><button class="auth-close" type="button" aria-label="Close">&times;</button>'+
+        '<div class="tc-canvas-wrap"><div class="tc-loading">Building your card…</div><img id="tc-img" alt="Your taste card" style="display:none"></div>'+
+        '<div class="tc-actions"><button class="go" id="tc-share" type="button" disabled>Share</button><button class="tc-save" id="tc-save" type="button" disabled>Save image</button></div></div>';
+      document.body.appendChild(ov);
+      function close(){ ov.remove(); }
+      ov.querySelector('.auth-close').addEventListener('click',close);
+      ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+      try{ await Promise.all([document.fonts.load("800 66px 'Bricolage Grotesque'"), document.fonts.load("800 26px 'Inter'"), document.fonts.load("600 24px 'Inter'")]); }catch(_){}
+      var imgs=await Promise.all(arts.map(function(a){ return a.image?tcLoadImg(imgUrl(a.image,360)+'&c=1'):Promise.resolve(null); }));
+      var canvas=document.createElement('canvas');
+      drawTasteCard(canvas, arts, label, imgs);
+      var dataUrl;
+      try{ dataUrl=canvas.toDataURL('image/png'); }
+      catch(_){ canvas=document.createElement('canvas'); drawTasteCard(canvas, arts, label, arts.map(function(){return null;})); try{ dataUrl=canvas.toDataURL('image/png'); }catch(__){ dataUrl=null; } }
+      var imgEl=ov.querySelector('#tc-img'), loading=ov.querySelector('.tc-loading');
+      if(dataUrl){ imgEl.src=dataUrl; imgEl.style.display='block'; loading.style.display='none'; } else { loading.textContent='Couldn’t build the card.'; return; }
+      var shareBtn=ov.querySelector('#tc-share'), saveBtn=ov.querySelector('#tc-save');
+      shareBtn.disabled=false; saveBtn.disabled=false;
+      function dl(blob){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='soundcheck.png'; a.click(); showToast('Saved'); }
+      shareBtn.addEventListener('click',function(){ canvas.toBlob(function(blob){ if(!blob) return; var file=new File([blob],'soundcheck.png',{type:'image/png'});
+        if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file], title:'My soundcheck', text:'My lineup on soundcheck — 6minutes.club/soundcheck'}).catch(function(){}); }
+        else dl(blob); }, 'image/png'); });
+      saveBtn.addEventListener('click',function(){ canvas.toBlob(function(blob){ if(blob) dl(blob); }, 'image/png'); });
     }
 
 
