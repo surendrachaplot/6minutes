@@ -574,6 +574,11 @@
     .auth-box .sent .big { font-size:2.4rem; }
     .auth-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:16px; cursor:pointer; }
     @media (max-width:480px){ .account .who .hn { max-width:80px; } }
+    /* avatars: generated marble or uploaded photo as a cover background */
+    .account .who .av, .hub-head .av-lg, .prof-av, .feed-row .fav, .panel-handle .av-lg { background-size:cover; background-position:center; background-repeat:no-repeat; }
+    .hub-head .av-edit { position:relative; padding:0; border:none; background:none; cursor:pointer; flex-shrink:0; }
+    .hub-head .av-edit .cam { position:absolute; right:-2px; bottom:-2px; width:22px; height:22px; border-radius:999px; background:var(--accent); color:var(--ink); border:2px solid var(--surface); display:flex; align-items:center; justify-content:center; }
+    .hub-head .av-edit .cam svg { width:11px; height:11px; }
     /* handle claim/rename field */
     .handle-field { display:flex; align-items:center; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:0 12px; margin-top:6px; }
     .handle-field:focus-within { border-color:var(--accent); }
@@ -779,6 +784,22 @@
 
     // deterministic warm gradient for generated posters
     function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+    // Deterministic generative avatar (marble): a hashed gradient + two
+    // translucent circles — unique per handle, no first-letter. Returns a data URI.
+    function genAvatar(seed){
+      var h=hashStr(String(seed||'x')), hue=h%360;
+      var c1='hsl('+hue+',62%,55%)', c2='hsl('+((hue+150+(h>>4)%70)%360)+',56%,40%)', c3='hsl('+((hue+60+(h>>8)%150)%360)+',66%,63%)';
+      var ang=(h>>2)%360, cx1=16+(h>>5)%30, cy1=16+(h>>9)%30, r1=18+(h>>11)%16, cx2=40+(h>>13)%30, cy2=42+(h>>15)%28, r2=12+(h>>17)%12;
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">'+
+        '<defs><linearGradient id="g" gradientTransform="rotate('+ang+' .5 .5)"><stop offset="0" stop-color="'+c1+'"/><stop offset="1" stop-color="'+c2+'"/></linearGradient></defs>'+
+        '<rect width="80" height="80" fill="url(#g)"/>'+
+        '<circle cx="'+cx1+'" cy="'+cy1+'" r="'+r1+'" fill="'+c3+'" opacity="0.5"/>'+
+        '<circle cx="'+cx2+'" cy="'+cy2+'" r="'+r2+'" fill="'+c1+'" opacity="0.45"/>'+
+      '</svg>';
+      return 'data:image/svg+xml,'+encodeURIComponent(svg);
+    }
+    // CSS background-image value: uploaded photo if present, else generated.
+    function avatarBg(handle, avatarUrl){ return "url('"+(avatarUrl||genAvatar(handle))+"')"; }
     function genPoster(title){
       var h=hashStr(title), hue=((h%70)+340)%360, ang=110+(h%80);
       return '<div class="gen" style="--ang:'+ang+'deg;--g1:hsl('+hue+' 68% 54%);--g2:hsl('+((hue+18)%360)+' 45% 11%)"><span class="gt">'+esc(title)+'</span></div>';
@@ -1165,8 +1186,7 @@
     function renderAccount(){
       var el=document.getElementById('account');
       if(currentUser){
-        var initial=(currentUser.handle||'?').charAt(0);
-        el.innerHTML='<button class="who" id="who-btn"><span class="av">'+esc(initial)+'</span><span class="hn">u/'+esc(currentUser.handle)+'</span></button>';
+        el.innerHTML='<button class="who" id="who-btn"><span class="av" style="background-image:'+avatarBg(currentUser.handle,currentUser.avatar)+'"></span><span class="hn">u/'+esc(currentUser.handle)+'</span></button>';
         document.getElementById('who-btn').addEventListener('click',function(){ openAccount(); });
       } else {
         el.innerHTML='<button class="signin-btn" id="signin-btn" type="button">Sign in</button>';
@@ -1264,6 +1284,44 @@
       if(!currentUser || currentUser.handleClaimed) return;
       try{ if(localStorage.getItem('sc_handle_prompted')) return; }catch(_){ return; }
       setTimeout(function(){ if(currentUser && !currentUser.handleClaimed) openHandleModal(false); }, 800);
+    }
+
+    // ── avatar upload (client-side square-crop + resize, then store) ──
+    function pickAvatar(){
+      var inp=document.createElement('input'); inp.type='file'; inp.accept='image/png,image/jpeg,image/webp';
+      inp.addEventListener('change',function(){ var f=inp.files&&inp.files[0]; if(f) uploadAvatar(f); });
+      inp.click();
+    }
+    function resizeImage(file, size){
+      return new Promise(function(resolve){
+        var img=new Image(), url=URL.createObjectURL(file);
+        img.onload=function(){
+          try{
+            var c=document.createElement('canvas'); c.width=size; c.height=size; var ctx=c.getContext('2d');
+            var s=Math.min(img.width,img.height), sx=(img.width-s)/2, sy=(img.height-s)/2;
+            ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+            resolve(c.toDataURL('image/webp', 0.82)); // falls back to png where webp export is unsupported
+          }catch(_){ resolve(null); } finally { URL.revokeObjectURL(url); }
+        };
+        img.onerror=function(){ URL.revokeObjectURL(url); resolve(null); };
+        img.src=url;
+      });
+    }
+    async function uploadAvatar(file){
+      if(!currentUser) return;
+      showToast(file?'Uploading photo…':'Removing photo…');
+      var dataUrl = file ? await resizeImage(file, 256) : '';
+      if(file && !dataUrl){ showToast('Couldn’t read that image.'); return; }
+      try{
+        var r=await authedFetch('/api/avatar',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ image:dataUrl }) });
+        var j=await r.json();
+        if(!r.ok){ showToast(j.error||'Upload failed.'); return; }
+        currentUser.avatar=j.avatar||null;
+        renderAccount();
+        var hb=document.querySelector('.hub-head .av-lg'); if(hb) hb.style.backgroundImage=avatarBg(currentUser.handle,currentUser.avatar);
+        var rm=document.getElementById('hub-avatar-rm'); if(rm && !currentUser.avatar) rm.remove();
+        showToast(file?'Photo updated ✓':'Photo removed');
+      }catch(_){ showToast('Upload failed.'); }
     }
     document.getElementById('auth-close').addEventListener('click',closeAuth);
     document.getElementById('auth-sent-done').addEventListener('click',closeAuth);
@@ -1439,8 +1497,9 @@
     function openAccount(){
       if(!currentUser){ openAuth(); return; }
       setRoute('account');
-      var initial=(currentUser.handle||'?').charAt(0);
-      openPanel('<div class="hub-head"><span class="av-lg">'+esc(initial)+'</span><div><div class="hh-name">u/'+esc(currentUser.handle)+'</div><div class="hh-stat" id="hub-stat">your account</div></div></div><div id="hub-rest"><div class="empty">Loading…</div></div>');
+      openPanel('<div class="hub-head"><button class="av-edit" id="hub-avatar" type="button" aria-label="Change photo"><span class="av-lg" style="background-image:'+avatarBg(currentUser.handle,currentUser.avatar)+'"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg></span></button><div><div class="hh-name">u/'+esc(currentUser.handle)+'</div><div class="hh-stat" id="hub-stat">your account</div>'+(currentUser.avatar?'<button class="linklike" id="hub-avatar-rm" type="button" style="background:none;border:none;color:var(--muted);font:600 0.72rem var(--body);cursor:pointer;padding:4px 0 0;text-decoration:underline">Remove photo</button>':'')+'</div></div><div id="hub-rest"><div class="empty">Loading…</div></div>');
+      document.getElementById('hub-avatar').addEventListener('click',pickAvatar);
+      var rmAv=document.getElementById('hub-avatar-rm'); if(rmAv) rmAv.addEventListener('click',function(){ uploadAvatar(null); });
       authedFetch('/api/profile?handle='+encodeURIComponent(currentUser.handle)).then(function(r){ return r.json(); }).then(function(p){
         var s=(p&&p.shelves)||{wannaSee:[],seen:[],events:[]}, diary=(p&&p.diary)||[];
         var st=document.getElementById('hub-stat'); if(st&&p&&p.handle) st.innerHTML='<b>'+(p.followers||0)+'</b> followers &middot; <b>'+(p.following||0)+'</b> following';
@@ -1503,7 +1562,7 @@
     function closePanel(){ goBack(); }
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.body.classList.contains('page-on')) goBack(); });
     function relTime(iso){ try{ var s=(Date.now()-new Date(iso).getTime())/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }catch(_){ return ''; } }
-    function av(letter){ return '<span class="fav">'+esc((letter||'?').charAt(0))+'</span>'; }
+    function av(handle){ return '<span class="fav" style="background-image:'+avatarBg(handle,null)+'"></span>'; }
     // gradient artist tiles (reuse the poster hue hash)
     function artGrad(s){ var h=((hashStr(String(s||'x'))%70)+330)%360; return 'linear-gradient(150deg,hsl('+h+' 62% 50%),hsl('+((h+22)%360)+' 42% 14%))'; }
     function ptile(slug,name,seen,image){
@@ -1522,8 +1581,7 @@
         if(r.status===404){ openPanel('<div class="empty">No soundcheck user u/'+esc(handle)+'.</div>'); return; }
         var p=await r.json();
         var s=p.shelves||{wannaSee:[],seen:[],events:[]}, diary=p.diary||[];
-        var initial=(p.handle||'?').charAt(0);
-        var head='<div class="prof-cover"></div><div class="prof-head"><span class="prof-av">'+esc(initial)+'</span>'+
+        var head='<div class="prof-cover"></div><div class="prof-head"><span class="prof-av" style="background-image:'+avatarBg(p.handle,p.avatar)+'"></span>'+
           (p.isMe?'':'<button class="follow-btn'+(p.isFollowing?' following':'')+'" id="follow-btn" data-handle="'+esc(p.handle)+'">'+(p.isFollowing?'Following':'Follow')+'</button>')+'</div>'+
           '<div class="prof-nm">'+esc(p.displayName||('u/'+p.handle))+'</div><div class="prof-hn">u/'+esc(p.handle)+'</div>'+
           '<div class="prof-stat"><div><div class="n">'+s.seen.length+'</div><div class="l">Seen</div></div><div><div class="n">'+s.wannaSee.length+'</div><div class="l">Wanna see</div></div><div><div class="n">'+diary.length+'</div><div class="l">Gigs</div></div><div><div class="n">'+(p.followers||0)+'</div><div class="l">Followers</div></div></div>';
