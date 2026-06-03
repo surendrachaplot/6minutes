@@ -2138,7 +2138,7 @@
     function renderEvents(events, eyebrowPrefix){
       stopActive();
       var evs=(events||[]).slice().sort(function(a,b){ return (b.attending||0)-(a.attending||0); });
-      document.getElementById('eyebrow').textContent=eyebrowPrefix+' — '+evs.length+' event'+(evs.length===1?'':'s');
+      document.getElementById('eyebrow').textContent=eyebrowPrefix;
       if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; return; }
       var ordered=orderEvents(evs);
       // ambient marquee of titles (duplicated for a seamless loop)
