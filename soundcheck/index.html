@@ -1601,13 +1601,14 @@
             var x='<div class="sec-h">Wanna see ('+s.wannaSee.length+')</div>'+(s.wannaSee.length?'<div class="ptiles">'+s.wannaSee.map(function(a){return ptile(a.slug,a.name,false,a.image);}).join('')+'</div>':'<div class="empty" style="padding:0 0 4px">Nothing yet.</div>');
             x+='<div class="sec-h" style="margin-top:22px">Seen live ('+s.seen.length+')</div>'+(s.seen.length?'<div class="ptiles">'+s.seen.map(function(a){return ptile(a.slug,a.name,true,a.image);}).join('')+'</div>':'<div class="empty" style="padding:0">Nothing yet.</div>');
             if(s.events.length){ x+='<div class="sec-h" style="margin-top:22px">Saved events ('+s.events.length+')</div><ul class="tray-line">'+s.events.map(function(e){ return '<li><span class="open-ev">'+esc(e.title||'Event')+' <small>'+esc(e.venue||'')+'</small></span></li>'; }).join('')+'</ul>'; }
+            if(s.venues && s.venues.length){ x+='<div class="sec-h" style="margin-top:22px">Following venues ('+s.venues.length+')</div><ul class="tray-line">'+s.venues.map(function(vn){ return '<li><span class="open-ev" data-venue="'+esc(vn.name)+'">'+esc(vn.name||'Venue')+'</span></li>'; }).join('')+'</ul>'; }
             return x;
           },
           diary:function(){ return diary.length ? '<div class="prof-tl">'+diary.map(function(d,i){ var arts=(d.artists||[]).map(function(a){return a.name||a.slug;}).join(', '); return '<div class="row"><div class="spine"><div class="dot"></div>'+(i<diary.length-1?'<div class="ln"></div>':'')+'</div><div class="card"><div class="vn">'+esc(d.venue||'Gig')+'</div><div class="mt">'+esc(d.gig_date||'')+(arts?(' &middot; '+esc(arts)):'')+(d.rating?(' &middot; '+starStr(d.rating)):'')+'</div>'+(d.note?'<div class="nt">'+esc(d.note)+'</div>':'')+'</div></div>'; }).join('')+'</div>' : '<div class="empty">No gigs logged yet.</div>'; },
           network:function(){ return '<div class="panel-stat"><span><b>'+(p.followers||0)+'</b> followers</span><span><b>'+(p.following||0)+'</b> following</span></div>'; }
         };
         var body=document.getElementById('prof-tabbody');
-        function showTab(t){ body.innerHTML=TAB[t](); body.querySelectorAll('[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); }); }
+        function showTab(t){ body.innerHTML=TAB[t](); body.querySelectorAll('[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); }); body.querySelectorAll('.open-ev[data-venue]').forEach(function(b){ b.addEventListener('click',function(){ openVenue(b.dataset.venue); }); }); }
         showTab('shelves');
         panelBody.querySelectorAll('.prof-tabs [data-tab]').forEach(function(b){ b.addEventListener('click',function(){ panelBody.querySelectorAll('.prof-tabs button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); showTab(b.dataset.tab); }); });
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that profile.</div>'); }
@@ -1818,20 +1819,51 @@
         }
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that artist.</div>'); }
     }
+    function toggleVenueFollow(v, btn){
+      if(!currentUser){ openAuth(); return; }
+      var willFollow=!btn.classList.contains('following');
+      btn.classList.toggle('following', willFollow);
+      btn.textContent=willFollow?'Following':'Follow venue';
+      v.following=willFollow;
+      authedFetch('/api/venue/follow',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ slug:v.slug, name:v.name, follow:willFollow }) })
+        .then(function(r){ if(!r.ok) throw 0; })
+        .catch(function(){ btn.classList.toggle('following', !willFollow); btn.textContent=!willFollow?'Following':'Follow venue'; v.following=!willFollow; showToast('Couldn’t update.'); });
+    }
     async function openVenue(name){
       setRoute('v/'+encodeURIComponent(name));
       openPanel('<div class="empty">Loading…</div>');
       try{
         var r=await authedFetch('/api/venue?name='+encodeURIComponent(name)); var v=await r.json();
-        var h='<h3>'+esc(name)+'</h3><div class="sub">on soundcheck</div>';
-        if(v.rating){ h+='<div class="agg-big"><span class="num">'+v.rating+'</span><span class="of">avg from '+v.ratingCount+' logged night'+(v.ratingCount===1?'':'s')+'</span></div>'; }
-        h+='<div class="panel-stat" style="margin-top:12px"><span><b>'+v.logged+'</b> logged here</span><span><b>'+v.going+'</b> saved upcoming</span></div>';
+        var dispName=v.name||name;
+        var sub=v.address?esc(v.address):(v.area?esc(v.area):'on soundcheck');
+        var av='<span class="artist-av" style="background-image:'+avatarBg(v.slug||dispName,null)+'"></span>';
+        var h='<div class="artist-head">'+av+'<div class="artist-head-tx"><h3>'+esc(dispName)+'</h3><div class="sub">'+sub+'</div></div></div>';
+        if(v.rating){ h+='<div class="agg-big" style="margin-top:14px"><span class="num">'+v.rating+'</span><span class="of">avg from '+v.ratingCount+' logged night'+(v.ratingCount===1?'':'s')+'</span></div>'; }
+        var stats=[];
+        if(v.followers) stats.push('<span><b>'+v.followers+'</b> follower'+(v.followers===1?'':'s')+'</span>');
+        if(v.logged) stats.push('<span><b>'+v.logged+'</b> logged</span>');
+        if(v.going) stats.push('<span><b>'+v.going+'</b> saved upcoming</span>');
+        if(stats.length) h+='<div class="panel-stat" style="margin-top:12px">'+stats.join('')+'</div>';
+        if(v.slug){ h+='<div class="artist-actions" style="max-width:280px"><button class="follow-btn'+(v.following?' following':'')+'" id="vf-btn" type="button">'+(v.following?'Following':'Follow venue')+'</button></div>'; }
         h+='<div id="vp-upcoming"></div>';
+        if(v.lat!=null && v.lng!=null) h+='<div class="sec-h" style="margin-top:26px">Location</div><div id="venue-loc" class="venue-map" style="height:300px"></div>';
         openPanel(h);
+        var vfBtn=document.getElementById('vf-btn');
+        if(vfBtn) vfBtn.addEventListener('click',function(){ toggleVenueFollow(v, vfBtn); });
         var up=(v.upcoming||[]), vu=document.getElementById('vp-upcoming');
         if(vu && up.length){
-          vu.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming at '+esc(name)+' ('+up.length+')</div><div id="vp-cards"></div>';
+          vu.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming at '+esc(dispName)+' ('+up.length+')</div><div id="vp-cards"></div>';
           mountEventCards(document.getElementById('vp-cards'), up);
+        }
+        if(v.lat!=null && v.lng!=null){
+          var locEl=document.getElementById('venue-loc');
+          loadLeaflet(function(){
+            if(location.hash.indexOf('v/')<0 || !document.getElementById('venue-loc')) return;
+            var map=L.map(locEl,{ scrollWheelZoom:false }).setView([v.lat,v.lng], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{ attribution:'&copy; OpenStreetMap, &copy; CARTO', subdomains:'abcd', maxZoom:19 }).addTo(map);
+            L.circleMarker([v.lat,v.lng],{ radius:9, color:'#fff', weight:2, fillColor:'#ff7a6b', fillOpacity:1 }).addTo(map).bindPopup('<b>'+esc(dispName)+'</b>'+(v.address?'<br><span style="color:#9292a0">'+esc(v.address)+'</span>':''));
+            setTimeout(function(){ map.invalidateSize(); },120);
+          });
         }
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that venue.</div>'); }
     }
