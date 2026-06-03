@@ -1464,7 +1464,9 @@
       doShare({ title:name||'Listen on soundcheck', text:'Listen to '+(name||'this DJ')+' on soundcheck', url:url });
     }
     function shareEvent(id, title, venue){
-      var url=shareUrl({event:id, d:currentDate||null, u:myHandle()});
+      // Share the canonical event page (#e/<id>); keep ?u= for sender attribution.
+      var u=myHandle();
+      var url=location.origin+location.pathname+(u?('?u='+encodeURIComponent(u)):'')+'#e/'+encodeURIComponent(id);
       var t=(title||'Event')+(venue?(' · '+venue):'');
       doShare({ title:t, text:t+' — preview every DJ on soundcheck', url:url });
     }
@@ -2071,8 +2073,7 @@
       if(sharedHandled) return; sharedHandled=true;
       if(sharedSingle){
         if(sharedSingle.kind==='event'){
-          var ev=lookup.byEvent[sharedSingle.id];
-          if(ev) openSheet(ev);
+          openEvent(sharedSingle.id);   // legacy ?event= links → full event page
         } else if(sharedSingle.kind==='artist'){
           var hit=lookup.byArtist[sharedSingle.slug];
           if(hit) openSheet(hit.ev);
@@ -2505,8 +2506,9 @@
     });
 
     // Default to this weekend (Fri + Sat combined); ?date= overrides to a single day.
-    // Share params (Phase 1):
-    //   ?event=<id>[&d=YYYY-MM-DD]    — deep-link to a single event
+    // Share params:
+    //   #e/<id>[?u=handle]            — event share → full event page (current)
+    //   ?event=<id>[&d=YYYY-MM-DD]    — legacy event deep-link (still → full page)
     //   ?artist=<slug>[&d=YYYY-MM-DD] — deep-link to a single artist
     //   ?picks=v1.<b64>               — a friend's shortlist (encoded payload includes date)
     var _qs=new URLSearchParams(location.search);
@@ -2525,7 +2527,7 @@
     // #account)? Insert a "home" entry beneath it so Back lands on the grid
     // rather than leaving the site, then render the page.
     var _hashRoute=location.hash.replace(/^#/,'');
-    if(_hashRoute && /^(account|picks|feed|log|u\/|a\/|v\/)/.test(_hashRoute)){
+    if(_hashRoute && /^(account|picks|feed|log|u\/|a\/|v\/|e\/)/.test(_hashRoute)){
       history.replaceState({sc:1},'',location.pathname+location.search); // home
       history.pushState({sc:1},'','#'+_hashRoute);                       // the page
       setTimeout(handleRoute, 400);
