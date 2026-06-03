@@ -611,6 +611,39 @@
     .claim-banner .cb-btn:hover { background:var(--accent); color:var(--ink); }
     @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:14px; } .claim-banner .cb-btn { width:100%; } }
     .venue-addr { color:var(--muted); font-size:0.88rem; line-height:1.45; margin:0 0 12px; }
+    /* ── Nights: collaborative board ── */
+    .toast-act { background:none; border:none; color:var(--accent); font-weight:700; font-size:inherit; cursor:pointer; padding:0 0 0 10px; }
+    .nstack { display:inline-flex; vertical-align:middle; }
+    .nstack-av { width:24px; height:24px; border-radius:999px; background-size:cover; background-position:center; border:2px solid var(--bg); margin-right:-7px; display:inline-block; }
+    .nb-head { margin-bottom:14px; }
+    .nb-head h3 { font-family:var(--head); font-weight:800; font-size:1.5rem; letter-spacing:-0.02em; margin:4px 0 0; }
+    .nb-head .sub { color:var(--muted); font-size:0.9rem; line-height:1.5; margin-top:8px; }
+    .nb-actions { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+    .nb-share, .nb-add { border-radius:999px; font:700 0.72rem var(--body); letter-spacing:0.04em; padding:10px 16px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+    .nb-share { background:var(--accent); color:var(--ink); border:none; }
+    .nb-share svg { width:15px; height:15px; stroke:currentColor; }
+    .nb-add { background:transparent; color:var(--fg); border:1px solid var(--border); }
+    .nb-add:hover { border-color:var(--accent); color:var(--accent); }
+    .nb-members { display:flex; align-items:center; gap:11px; margin-bottom:16px; color:var(--muted); font-size:0.84rem; }
+    .night-card { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; margin-bottom:14px; }
+    .night-card.front { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+    .front-tag { position:absolute; top:-9px; left:14px; background:var(--accent); color:var(--ink); font:800 0.56rem var(--body); letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; border-radius:5px; }
+    .nc-top { display:flex; gap:13px; align-items:center; cursor:pointer; }
+    .night-card .poster.nc-poster { width:58px; height:78px; aspect-ratio:auto; border-radius:10px; margin-bottom:0; flex-shrink:0; }
+    .night-card .poster.nc-poster .gen { padding:6px; }
+    .night-card .poster.nc-poster .gen .gt { font-size:0.5rem; }
+    .nc-tx { min-width:0; flex:1; }
+    .nc-title { font-family:var(--head); font-weight:800; font-size:1.02rem; line-height:1.15; letter-spacing:-0.01em; }
+    .nc-venue { color:var(--muted); font-size:0.84rem; font-weight:600; margin-top:3px; }
+    .rx-row { display:flex; gap:8px; margin-top:13px; }
+    .rx-pill { flex:1; background:var(--bg); border:1px solid var(--border); color:var(--fg); border-radius:10px; padding:9px 6px; font:700 0.78rem var(--body); cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
+    .rx-pill.on.down { border-color:var(--accent); background:rgba(255,122,107,0.14); color:var(--accent); }
+    .rx-pill.on.maybe { border-color:#d6b34d; background:rgba(214,179,77,0.14); color:#e8c75e; }
+    .rx-pill.on.nah { border-color:var(--muted); background:rgba(146,146,160,0.12); color:var(--fg); }
+    .nc-down { display:flex; align-items:center; gap:10px; margin-top:11px; color:var(--muted); font-size:0.8rem; }
+    .sheet-actions { flex-wrap:wrap; }
+    .sheet-actions .act-night { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:0 14px; height:38px; font:700 0.72rem var(--body); cursor:pointer; white-space:nowrap; }
+    .sheet-actions .act-night:hover { border-color:var(--accent); color:var(--accent); }
     /* "See more" → full event page, from the event sheet title */
     .see-more { display:inline-block; font:700 0.62rem var(--body); letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); text-decoration:none; white-space:nowrap; margin-left:10px; vertical-align:middle; cursor:pointer; }
     .see-more:hover { text-decoration:underline; }
@@ -904,6 +937,12 @@
     function setDockPad(){ document.body.classList.toggle('dock-collapsed', !dock.classList.contains('expanded')); }
 
     function showToast(text){ toastEl.textContent=text; toastEl.classList.add('show'); clearTimeout(toastEl._t); toastEl._t=setTimeout(function(){ toastEl.classList.remove('show'); },2800); }
+    function showToastAction(text, label, fn){
+      toastEl.innerHTML=esc(text)+' <button type="button" class="toast-act">'+esc(label)+'</button>';
+      toastEl.classList.add('show'); clearTimeout(toastEl._t);
+      var b=toastEl.querySelector('.toast-act'); if(b) b.addEventListener('click',function(){ toastEl.classList.remove('show'); fn(); });
+      toastEl._t=setTimeout(function(){ toastEl.classList.remove('show'); },5200);
+    }
 
     // YouTube IFrame API readiness
     var ytReady=false, pendingYt=null, ytPlayer=null, scWidget=null, currentType=null;
@@ -1537,6 +1576,7 @@
       var has=pickCount()>0;
       var h='<h3>My picks</h3><div class="sub" style="margin-bottom:14px">'+(currentUser?('Synced to u/'+esc(currentUser.handle)+' across your devices.'):'Saved on this device &mdash; sign in to keep them.')+'</div>';
       if(has) h+='<div style="display:flex;gap:9px;margin-bottom:20px;max-width:520px"><button class="btn solid" id="mp-share" type="button" style="flex:1;border:none;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Share my picks</button><button class="btn ghost" id="mp-copy" type="button" style="flex:1;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:999px;font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Copy link</button></div>';
+      if(currentUser) h+='<div id="mp-nights" style="margin:6px 0 26px"></div>';
       h+='<div id="mp-shelves">'+picksShelvesHTML()+'</div><div id="mp-diary" style="margin-top:24px"></div>';
       if(has) h+='<button class="hub-row danger" id="mp-clear" type="button" style="max-width:520px;margin-top:22px"><span class="hr-tx"><span class="hr-t">Clear all picks</span></span></button>';
       showPage(h);
@@ -1548,7 +1588,7 @@
         var v=e.target.closest('[data-rm-evt]'); if(v){ setEvent(v.dataset.rmEvt,null); document.getElementById('mp-shelves').innerHTML=picksShelvesHTML(); return; }
         var o=e.target.closest('[data-open-evt]'); if(o){ var ev=lookup.byEvent[o.dataset.openEvt]; if(ev) openSheet(ev); return; }
       });
-      if(currentUser) appendPicksDiary();
+      if(currentUser){ loadMyNights(); appendPicksDiary(); }
     }
     async function appendPicksDiary(){
       try{
@@ -1559,6 +1599,176 @@
       }catch(_){}
     }
     document.getElementById('picks-chip').addEventListener('click',openMyPicks);
+
+    // ════════════ Nights: collaborative night plans ════════════
+    // A "Night" = a shareable plan for one night out. Owner (signed-in) creates
+    // it, drops in candidate events; friends join by name (no account) and react
+    // (🔥 In / 👀 Maybe / ✌️ Pass) until the crew converges. Poll-refreshed.
+    var RX_META={ down:{e:'🔥',l:'In'}, maybe:{e:'👀',l:'Maybe'}, nah:{e:'✌️',l:'Pass'} };
+    var _nightPoll=null, _nightCode=null;
+    function myPid(){ try{ var t=localStorage.getItem('sc_pid'); if(!t){ t=(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,18); localStorage.setItem('sc_pid',t); } return t; }catch(_){ return 'anon0'; } }
+    function activeNight(){ try{ return localStorage.getItem('sc_night')||null; }catch(_){ return null; } }
+    function setActiveNight(code){ try{ if(code) localStorage.setItem('sc_night',code); else localStorage.removeItem('sc_night'); }catch(_){} }
+    function fmtNightDate(d){ if(!d) return 'A night out'; try{ return new Date(String(d).slice(0,10)+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}); }catch(_){ return 'A night out'; } }
+    function nightTitle(d){ return d.title || fmtNightDate(d.date); }
+    function nightAv(m){ return avatarBg(m.handle||m.participant_id, m.avatar); }
+    function goGrid(){ if(location.hash){ history.pushState({sc:1},'',location.pathname+location.search); } hidePage(); }
+
+    async function createNight(date, cb){
+      if(!currentUser){ showToast('Sign in to start a night'); openAuth(); return; }
+      try{
+        var r=await authedFetch('/api/night',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ date:date||currentDate||todayISO() }) });
+        var j=await r.json();
+        if(!r.ok||!j.code){ showToast('Couldn’t start the night'); return; }
+        setActiveNight(j.code);
+        if(cb) cb(j.code); else openNight(j.code);
+      }catch(_){ showToast('Couldn’t start the night'); }
+    }
+    function addToNight(ev){
+      if(!ev||ev.id==null){ return; }
+      var code=activeNight();
+      if(!code){
+        if(!currentUser){ showToast('Sign in to start a night'); openAuth(); return; }
+        createNight(currentDate||todayISO(), function(c){ addEventToNight(c, ev); });
+        return;
+      }
+      addEventToNight(code, ev);
+    }
+    async function addEventToNight(code, ev){
+      try{
+        var r=await authedFetch('/api/night/event',{ method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ code:code, pid:myPid(), eventId:String(ev.id), title:ev.title||null, venue:ev.venue||null, poster:ev.poster||null, startTime:ev.startTime||ev._time||null, eventDate:currentDate||null }) });
+        if(!r.ok) throw 0;
+        showToastAction('Added to your night', 'Open', function(){ openNight(code); });
+      }catch(_){ showToast('Couldn’t add to the night'); }
+    }
+
+    async function openNight(code){
+      code=String(code); setRoute('n/'+encodeURIComponent(code));
+      openPanel('<div class="empty">Loading the night…</div>');
+      loadNight(code);
+    }
+    async function loadNight(code){
+      try{
+        var r=await authedFetch('/api/night?code='+encodeURIComponent(code)+'&pid='+encodeURIComponent(myPid()));
+        if(r.status===404){ openPanel('<div class="empty">That night isn’t around anymore.</div>'); return; }
+        if(!r.ok) throw 0;
+        var d=await r.json();
+        if(location.hash.indexOf('n/')<0) return;
+        if(!d.amMember){
+          if(currentUser){ try{ await authedFetch('/api/night/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,pid:myPid()})}); }catch(_){} return loadNight(code); }
+          renderNightInvite(d); return;
+        }
+        renderNightBoard(d);
+      }catch(_){ openPanel('<div class="empty">Couldn’t load that night.</div>'); }
+    }
+    function renderNightInvite(d){
+      showPage('<div class="nb-head"><div class="eyebrow">You’re invited</div><h3>'+esc(nightTitle(d))+'</h3><p class="sub">Your mates are sorting out this night. Add your name to join in and react.</p></div>'+
+        '<button class="follow-btn" id="nb-join" type="button" style="max-width:280px">Join the night</button>');
+      document.getElementById('nb-join').addEventListener('click',function(){ openNightJoinModal(d.code, d); });
+    }
+    function openNightJoinModal(code, d){
+      var ov=document.createElement('div'); ov.className='auth-overlay show';
+      ov.innerHTML='<div class="auth-box"><button class="auth-close" type="button" aria-label="Close">&times;</button>'+
+        '<div class="eyebrow">Join the night</div><h3>'+esc(nightTitle(d))+'</h3>'+
+        '<p>Add your name so your mates know you’re in.</p>'+
+        '<input type="text" id="nj-name" maxlength="40" placeholder="Your first name" autocomplete="given-name">'+
+        '<button class="go" id="nj-go" type="button">Join the night</button>'+
+        '<p style="margin-top:12px;font-size:0.82rem;color:var(--muted)">Have an account? <button class="b-link" id="nj-signin" type="button" style="background:none;border:none;color:var(--accent);font:inherit;cursor:pointer;padding:0">Sign in</button></p>'+
+        '<div class="err" id="nj-err"></div></div>';
+      document.body.appendChild(ov);
+      function close(){ ov.remove(); }
+      ov.querySelector('.auth-close').addEventListener('click',close);
+      ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+      ov.querySelector('#nj-signin').addEventListener('click',function(){ close(); openAuth(); });
+      var go=ov.querySelector('#nj-go'), err=ov.querySelector('#nj-err'), nm=ov.querySelector('#nj-name');
+      nm.addEventListener('keydown',function(e){ if(e.key==='Enter') go.click(); });
+      go.addEventListener('click',async function(){
+        var name=nm.value.trim();
+        if(!name){ err.textContent='Enter your name.'; return; }
+        go.disabled=true; err.textContent='';
+        try{
+          var r=await authedFetch('/api/night/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,pid:myPid(),name:name})});
+          if(!r.ok) throw 0; close(); loadNight(code);
+        }catch(_){ err.textContent='Couldn’t join. Try again.'; go.disabled=false; }
+      });
+      setTimeout(function(){ nm.focus(); },50);
+    }
+    function renderNightBoard(d){
+      _nightCode=d.code; setActiveNight(d.code);
+      var head='<div class="nb-head"><div class="eyebrow">Night out</div><h3>'+esc(nightTitle(d))+'</h3></div>'+
+        '<div class="nb-actions"><button class="nb-share" id="nb-share" type="button">'+SHARE_SVG+'<span>Share</span></button>'+
+        '<button class="nb-add" id="nb-add" type="button">＋ Add events</button></div>';
+      showPage(head+'<div id="night-board"></div>');
+      document.getElementById('nb-share').addEventListener('click',function(){ shareNight(d.code, nightTitle(d)); });
+      document.getElementById('nb-add').addEventListener('click',function(){ setActiveNight(d.code); showToast('Browse events and tap ＋ Add to night'); goGrid(); });
+      var board=document.getElementById('night-board');
+      board.addEventListener('click',function(e){
+        var pill=e.target.closest('.rx-pill'); if(pill){ var on=pill.classList.contains('on'); reactNight(d.code, pill.dataset.evt, on?null:pill.dataset.rx); return; }
+        var t=e.target.closest('[data-open-evt]'); if(t){ openEvent(t.dataset.openEvt); return; }
+      });
+      paintNightBoard(d);
+      startNightPoll(d.code);
+    }
+    function paintNightBoard(d){
+      var board=document.getElementById('night-board'); if(!board) return;
+      var members={}; (d.members||[]).forEach(function(m){ members[m.participant_id]=m; });
+      var avs=(d.members||[]).slice(0,8).map(function(m){ return '<span class="nstack-av" style="background-image:'+nightAv(m)+'" title="'+esc(m.name||'')+'"></span>'; }).join('');
+      var strip='<div class="nb-members"><span class="nstack">'+avs+'</span><span>'+(d.members||[]).length+' in</span></div>';
+      var evs=(d.events||[]); var maxDown=0; evs.forEach(function(e){ maxDown=Math.max(maxDown,((e.reactions||{}).down||[]).length); });
+      var cards= evs.length ? evs.map(function(e){ return nightCardHTML(e,members,d.myPid,maxDown); }).join('')
+        : '<div class="empty" style="margin-top:18px">No events yet. Tap <b>＋ Add events</b> and drop in some options.</div>';
+      board.innerHTML=strip+cards;
+    }
+    function nightCardHTML(e, members, myP, maxDown){
+      var rx=e.reactions||{down:[],maybe:[],nah:[]}, down=rx.down||[], maybe=rx.maybe||[], nah=rx.nah||[];
+      var mine= down.indexOf(myP)>=0?'down':(maybe.indexOf(myP)>=0?'maybe':(nah.indexOf(myP)>=0?'nah':null));
+      var front= down.length>0 && down.length===maxDown ? ' front' : '';
+      var poster= e.poster_url ? '<img class="real" loading="lazy" decoding="async" src="'+imgUrl(e.poster_url,200)+'" alt="" onerror="this.style.display=\'none\'">' : '';
+      var dnames= down.map(function(pid){ return members[pid]?members[pid].name:''; }).filter(Boolean);
+      var dav= down.slice(0,6).map(function(pid){ var m=members[pid]; return m?'<span class="nstack-av" style="background-image:'+nightAv(m)+'" title="'+esc(m.name||'')+'"></span>':''; }).join('');
+      function pill(k){ var arr=k==='down'?down:(k==='maybe'?maybe:nah); var on=mine===k?' on':''; return '<button class="rx-pill '+k+on+'" data-evt="'+esc(e.id)+'" data-rx="'+k+'" type="button">'+RX_META[k].e+' '+RX_META[k].l+(arr.length?' <b>'+arr.length+'</b>':'')+'</button>'; }
+      return '<div class="night-card'+front+'">'+(front?'<span class="front-tag">Front-runner</span>':'')+
+        '<div class="nc-top" data-open-evt="'+esc(e.id)+'">'+
+          '<div class="poster nc-poster">'+genPoster(e.title||'Event')+poster+'<span class="tint"></span></div>'+
+          '<div class="nc-tx"><div class="nc-title">'+esc(e.title||'Event')+'</div><div class="nc-venue">'+esc(e.venue||'')+'</div></div>'+
+        '</div>'+
+        '<div class="rx-row">'+pill('down')+pill('maybe')+pill('nah')+'</div>'+
+        (down.length?'<div class="nc-down"><span class="nstack">'+dav+'</span><span>'+esc(dnames.slice(0,3).join(', '))+(down.length>3?(' +'+(down.length-3)):'')+' in</span></div>':'')+
+      '</div>';
+    }
+    async function reactNight(code, eventId, reaction){
+      try{ await authedFetch('/api/night/react',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,pid:myPid(),eventId:eventId,reaction:reaction})}); }catch(_){}
+      refreshNightData(code);
+    }
+    async function refreshNightData(code){
+      try{ var r=await authedFetch('/api/night?code='+encodeURIComponent(code)+'&pid='+encodeURIComponent(myPid())); if(!r.ok) return; var d=await r.json(); if(location.hash.indexOf('n/')<0) return; paintNightBoard(d); }catch(_){}
+    }
+    function startNightPoll(code){
+      if(_nightPoll) clearInterval(_nightPoll);
+      _nightPoll=setInterval(function(){
+        if(location.hash.indexOf('#n/'+code)<0){ clearInterval(_nightPoll); _nightPoll=null; return; }
+        if(document.hidden) return; refreshNightData(code);
+      }, 10000);
+    }
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden && _nightCode && location.hash.indexOf('#n/'+_nightCode)>=0) refreshNightData(_nightCode); });
+    function shareNight(code, title){
+      var url=location.origin+location.pathname+'#n/'+encodeURIComponent(code);
+      doShare({ title:title||'A night out on soundcheck', text:(title||'A night out')+' — sort the plan on soundcheck', url:url });
+    }
+    async function loadMyNights(){
+      var el=document.getElementById('mp-nights'); if(!el) return;
+      el.innerHTML='<div class="sec-h" style="margin-top:4px">Your nights</div>'+
+        '<button class="hub-row" id="mp-plan" type="button" style="max-width:520px"><span class="hr-tx"><span class="hr-t">＋ Plan a night</span><span class="hr-s">Pick events, share with your mates, decide together</span></span></button>'+
+        '<div id="mp-nights-list"></div>';
+      document.getElementById('mp-plan').addEventListener('click',function(){ createNight(currentDate||todayISO()); });
+      try{
+        var r=await authedFetch('/api/nights'); var j=await r.json(); var rows=j.nights||[];
+        var list=document.getElementById('mp-nights-list'); if(!list) return;
+        list.innerHTML=rows.map(function(n){ return '<button class="hub-row open-night" data-code="'+esc(n.code)+'" type="button" style="max-width:520px"><span class="hr-tx"><span class="hr-t">'+esc(n.title||fmtNightDate(n.night_date))+'</span><span class="hr-s">'+n.events+' event'+(n.events===1?'':'s')+' &middot; '+n.members+' in</span></span></button>'; }).join('');
+        list.querySelectorAll('.open-night').forEach(function(b){ b.addEventListener('click',function(){ openNight(b.dataset.code); }); });
+      }catch(_){}
+    }
 
 
     // ── account hub page (tapping the @handle chip lands here) ──
@@ -1957,18 +2167,19 @@
             (isPickVenue(ev.venue)?'<span class="pick">Pick</span>':'')+
             '<h3>'+esc(ev.title||'Event')+'</h3>'+
             '<div class="sheet-meta"><b class="venue-link" data-venue="'+esc(ev.venue||'')+'">'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
-            (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Save or share</span></div>' : '')+
+            (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<button class="act-night" type="button" data-night-add>＋ Add to night</button></div>' : '')+
           '</div>'+
         '</div>'+
         '<div class="sec-h" style="margin-top:28px">Line-up'+(n?' ('+n+')':'')+'</div>'+
         '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
         (ev.venue?'<button class="more-venue venue-link" type="button" data-venue="'+esc(ev.venue)+'">More nights at '+esc(ev.venue)+' &rsaquo;</button>':'');
     }
+    function wireEventNight(ev){ var nb=document.querySelector('#page-body [data-night-add]'); if(nb) nb.addEventListener('click',function(){ addToNight(ev); }); }
     async function openEvent(id){
       id=String(id);
       setRoute('e/'+encodeURIComponent(id));
       var ev=lookup.byEvent[id];
-      if(ev){ openPanel(eventPageHTML(ev)); wireCard(document.getElementById('page-body')); return; }
+      if(ev){ openPanel(eventPageHTML(ev)); wireCard(document.getElementById('page-body')); wireEventNight(ev); return; }
       openPanel('<div class="empty">Loading…</div>');
       try{
         var r=await authedFetch('/api/event?id='+encodeURIComponent(id));
@@ -1980,7 +2191,7 @@
           _time: (d.start_time && !/T/.test(String(d.start_time))) ? d.start_time : '',
           artists:(d.lineup||[]).map(function(a){ return { name:a.name, contentUrl:'/'+a.slug, soundcloud:a.soundcloud, image:a.image }; }) };
         if(location.hash.indexOf('e/')<0) return;   // navigated away while loading
-        openPanel(eventPageHTML(ev)); wireCard(document.getElementById('page-body'));
+        openPanel(eventPageHTML(ev)); wireCard(document.getElementById('page-body')); wireEventNight(ev);
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that event.</div>'); }
     }
 
@@ -2073,6 +2284,7 @@
       else if(hash.indexOf('a/')===0) openArtist(hash.slice(2));
       else if(hash.indexOf('v/')===0) openVenue(hash.slice(2));
       else if(hash.indexOf('e/')===0) openEvent(hash.slice(2));
+      else if(hash.indexOf('n/')===0) openNight(hash.slice(2));
     }
     // Push a real history entry per forward navigation (pushState doesn't fire
     // popstate, so no double-render). Back/forward fire popstate → handleRoute.
@@ -2235,13 +2447,15 @@
           (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
           '<h3>'+esc(ev.title)+(eid?' <a class="see-more" role="button" tabindex="0" data-see-more="'+esc(eid)+'">See more &rsaquo;</a>':'')+'</h3>'+
           '<div class="sheet-meta"><b class="venue-link" data-venue="'+esc(ev.venue||'')+'">'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
-          (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Save or share this event</span></div>' : '')+
+          (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<button class="act-night" type="button" data-night-add>＋ Add to night</button></div>' : '')+
           '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
           soloCtaHTML(ev)+
         '</div>';
       wireCard(sheetContent);
       var sm=sheetContent.querySelector('.see-more');
       if(sm) sm.addEventListener('click',function(){ if(eid) openEvent(eid); });
+      var snb=sheetContent.querySelector('[data-night-add]');
+      if(snb) snb.addEventListener('click',function(){ addToNight(ev); });
       sheetOv.classList.add('show'); lockBody();
     }
     function closeSheet(){ if(!sheetOv.classList.contains('show')) return; sheetOv.classList.remove('show'); unlockBody(); }
@@ -2539,7 +2753,7 @@
     // #account)? Insert a "home" entry beneath it so Back lands on the grid
     // rather than leaving the site, then render the page.
     var _hashRoute=location.hash.replace(/^#/,'');
-    if(_hashRoute && /^(account|picks|feed|log|u\/|a\/|v\/|e\/)/.test(_hashRoute)){
+    if(_hashRoute && /^(account|picks|feed|log|u\/|a\/|v\/|e\/|n\/)/.test(_hashRoute)){
       history.replaceState({sc:1},'',location.pathname+location.search); // home
       history.pushState({sc:1},'','#'+_hashRoute);                       // the page
       setTimeout(handleRoute, 400);
