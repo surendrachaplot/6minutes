@@ -568,6 +568,14 @@
     .auth-box .sent .big { font-size:2.4rem; }
     .auth-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:16px; cursor:pointer; }
     @media (max-width:480px){ .account .who .hn { max-width:80px; } }
+    /* handle claim/rename field */
+    .handle-field { display:flex; align-items:center; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:0 12px; margin-top:6px; }
+    .handle-field:focus-within { border-color:var(--accent); }
+    .handle-field .hpre { color:var(--muted); font-weight:800; font-size:16px; font-family:var(--head); }
+    .handle-field input { flex:1; min-width:0; background:transparent; border:none; color:var(--fg); font:700 16px var(--body); padding:13px 4px; outline:none; }
+    .handle-status { font-size:0.82rem; min-height:1.3em; margin-top:9px; color:var(--muted); }
+    .handle-status.ok { color:var(--accent); font-weight:600; }
+    .handle-status.bad { color:#ff6b6b; }
 
     /* search page */
     .search-box input { width:100%; max-width:560px; background:var(--surface); border:1px solid var(--border); color:var(--fg); border-radius:12px; padding:14px 16px; font:500 1rem var(--body); outline:none; }
@@ -1147,7 +1155,7 @@
       var el=document.getElementById('account');
       if(currentUser){
         var initial=(currentUser.handle||'?').charAt(0);
-        el.innerHTML='<button class="who" id="who-btn"><span class="av">'+esc(initial)+'</span><span class="hn">@'+esc(currentUser.handle)+'</span></button>';
+        el.innerHTML='<button class="who" id="who-btn"><span class="av">'+esc(initial)+'</span><span class="hn">u/'+esc(currentUser.handle)+'</span></button>';
         document.getElementById('who-btn').addEventListener('click',function(){ openAccount(); });
       } else {
         el.innerHTML='<button class="signin-btn" id="signin-btn" type="button">Sign in</button>';
@@ -1166,7 +1174,7 @@
         currentUser=j.user||null;
       }catch(_){ currentUser=null; }
       renderAccount();
-      if(currentUser) await hydrateShelf();
+      if(currentUser){ await hydrateShelf(); maybePromptHandle(); }
     }
     // Pull server shelves into the local `picks` model so the UI (hearts,
     // chip, tray) reflects the account everywhere, on every device.
@@ -1191,6 +1199,61 @@
     var authOv=document.getElementById('auth-overlay');
     function openAuth(){ document.getElementById('auth-form-state').hidden=false; document.getElementById('auth-sent-state').hidden=true; document.getElementById('auth-err').textContent=''; authOv.classList.add('show'); setTimeout(function(){ var i=document.getElementById('auth-email'); if(i) i.focus(); },60); }
     function closeAuth(){ authOv.classList.remove('show'); }
+
+    // ── claim / rename handle (Reddit-style u/) ──
+    function openHandleModal(isRename){
+      if(!currentUser) return;
+      var cur=currentUser.handle||'';
+      var ov=document.createElement('div'); ov.className='auth-overlay show';
+      ov.innerHTML='<div class="auth-box">'+
+        '<button class="auth-close" type="button" aria-label="Close">&times;</button>'+
+        '<div class="eyebrow">'+(isRename?'Change handle':'Claim your handle')+'</div>'+
+        '<h3>Pick your u/</h3>'+
+        '<p>This is how London finds you on soundcheck &mdash; lowercase letters, numbers and underscores.</p>'+
+        '<div class="handle-field"><span class="hpre">u/</span><input type="text" id="hc-in" maxlength="20" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="'+esc(cur)+'"></div>'+
+        '<div class="handle-status" id="hc-status"></div>'+
+        '<button class="go" id="hc-go" type="button" disabled>'+(isRename?'Save':'Claim it')+'</button>'+
+        '<div class="err" id="hc-err"></div>'+
+      '</div>';
+      document.body.appendChild(ov);
+      try{ localStorage.setItem('sc_handle_prompted','1'); }catch(_){}
+      var input=ov.querySelector('#hc-in'), status=ov.querySelector('#hc-status'), go=ov.querySelector('#hc-go'), err=ov.querySelector('#hc-err');
+      var okHandle=null;
+      function close(){ ov.remove(); }
+      ov.querySelector('.auth-close').addEventListener('click',close);
+      ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+      var check=debounce(async function(){
+        var h=input.value.trim().toLowerCase(); okHandle=null; go.disabled=true; err.textContent='';
+        if(h.length<3){ status.className='handle-status'; status.textContent=''; return; }
+        if(h===cur.toLowerCase()){ status.className='handle-status ok'; status.textContent='That’s your current handle.'; okHandle=h; go.disabled=false; return; }
+        status.className='handle-status'; status.textContent='Checking…';
+        var j; try{ var r=await authedFetch('/api/handle/available?h='+encodeURIComponent(h)); j=await r.json(); }catch(_){ j={}; }
+        if(input.value.trim().toLowerCase()!==h) return; // a newer keystroke is in flight
+        if(j.available){ status.className='handle-status ok'; status.innerHTML='✓ u/'+esc(h)+' is available'; okHandle=h; go.disabled=false; }
+        else { status.className='handle-status bad'; status.textContent=j.reason||'Not available.'; }
+      },220);
+      input.addEventListener('input',check);
+      input.addEventListener('keydown',function(e){ if(e.key==='Enter' && !go.disabled) go.click(); });
+      check(); // validate the prefilled current handle so it can be claimed as-is
+      go.addEventListener('click',async function(){
+        if(!okHandle) return; go.disabled=true; err.textContent='';
+        try{
+          var r=await authedFetch('/api/handle',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ handle:okHandle }) });
+          var j=await r.json();
+          if(!r.ok){ err.textContent=j.error||'Could not save.'; go.disabled=false; return; }
+          currentUser.handle=j.handle; currentUser.handleClaimed=true;
+          renderAccount(); showToast('You’re u/'+j.handle); close();
+        }catch(_){ err.textContent='Could not save.'; go.disabled=false; }
+      });
+      setTimeout(function(){ input.focus(); input.select(); },50);
+    }
+    // Prompt unclaimed users to pick a handle — once per device (they can always
+    // change it later from the account hub).
+    function maybePromptHandle(){
+      if(!currentUser || currentUser.handleClaimed) return;
+      try{ if(localStorage.getItem('sc_handle_prompted')) return; }catch(_){ return; }
+      setTimeout(function(){ if(currentUser && !currentUser.handleClaimed) openHandleModal(false); }, 800);
+    }
     document.getElementById('auth-close').addEventListener('click',closeAuth);
     document.getElementById('auth-sent-done').addEventListener('click',closeAuth);
     authOv.addEventListener('click',function(e){ if(e.target===authOv) closeAuth(); });
@@ -1326,7 +1389,7 @@
     function openMyPicks(){
       setRoute('picks');
       var has=pickCount()>0;
-      var h='<h3>My picks</h3><div class="sub" style="margin-bottom:14px">'+(currentUser?('Synced to @'+esc(currentUser.handle)+' across your devices.'):'Saved on this device &mdash; sign in to keep them.')+'</div>';
+      var h='<h3>My picks</h3><div class="sub" style="margin-bottom:14px">'+(currentUser?('Synced to u/'+esc(currentUser.handle)+' across your devices.'):'Saved on this device &mdash; sign in to keep them.')+'</div>';
       if(has) h+='<div style="display:flex;gap:9px;margin-bottom:20px;max-width:520px"><button class="btn solid" id="mp-share" type="button" style="flex:1;border:none;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Share my picks</button><button class="btn ghost" id="mp-copy" type="button" style="flex:1;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:999px;font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Copy link</button></div>';
       h+='<div id="mp-shelves">'+picksShelvesHTML()+'</div><div id="mp-diary" style="margin-top:24px"></div>';
       if(has) h+='<button class="hub-row danger" id="mp-clear" type="button" style="max-width:520px;margin-top:22px"><span class="hr-tx"><span class="hr-t">Clear all picks</span></span></button>';
@@ -1366,7 +1429,7 @@
       if(!currentUser){ openAuth(); return; }
       setRoute('account');
       var initial=(currentUser.handle||'?').charAt(0);
-      openPanel('<div class="hub-head"><span class="av-lg">'+esc(initial)+'</span><div><div class="hh-name">@'+esc(currentUser.handle)+'</div><div class="hh-stat" id="hub-stat">your account</div></div></div><div id="hub-rest"><div class="empty">Loading…</div></div>');
+      openPanel('<div class="hub-head"><span class="av-lg">'+esc(initial)+'</span><div><div class="hh-name">u/'+esc(currentUser.handle)+'</div><div class="hh-stat" id="hub-stat">your account</div></div></div><div id="hub-rest"><div class="empty">Loading…</div></div>');
       authedFetch('/api/profile?handle='+encodeURIComponent(currentUser.handle)).then(function(r){ return r.json(); }).then(function(p){
         var s=(p&&p.shelves)||{wannaSee:[],seen:[],events:[]}, diary=(p&&p.diary)||[];
         var st=document.getElementById('hub-stat'); if(st&&p&&p.handle) st.innerHTML='<b>'+(p.followers||0)+'</b> followers &middot; <b>'+(p.following||0)+'</b> following';
@@ -1386,8 +1449,12 @@
             diary.slice(0,3).map(function(d){ var arts=(d.artists||[]).map(function(a){return a.name||a.slug;}).join(', '); return '<div class="row" data-open-prof="1"><div class="th" style="background:'+artGrad(d.venue||arts||'x')+'"></div><div style="flex:1;min-width:0"><div style="font-weight:600">'+esc(d.venue||'Gig')+'</div><div class="muted" style="font-size:0.76rem">'+esc(arts)+'</div></div>'+(d.rating?starStr(d.rating):'')+'</div>'; }).join('')+
           '</div>';
         }
-        h+='<div style="margin-top:22px;max-width:520px"><button class="hub-row danger" id="hub-out" type="button"><span class="hr-ic">'+HUB_IC.out+'</span><span class="hr-tx"><span class="hr-t">Sign out</span></span></button></div>';
+        h+='<div style="margin-top:22px;max-width:520px">'+
+          '<button class="hub-row" id="hub-handle" type="button"><span class="hr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></span><span class="hr-tx"><span class="hr-t">Change handle</span><span class="hr-d">u/'+esc(currentUser.handle)+'</span></span><span class="hr-ch">&rsaquo;</span></button>'+
+          '<button class="hub-row danger" id="hub-out" type="button" style="margin-top:10px"><span class="hr-ic">'+HUB_IC.out+'</span><span class="hr-tx"><span class="hr-t">Sign out</span></span></button>'+
+        '</div>';
         var rest=document.getElementById('hub-rest'); if(!rest) return; rest.innerHTML=h;
+        document.getElementById('hub-handle').addEventListener('click',function(){ openHandleModal(true); });
         document.getElementById('hub-picks').addEventListener('click',openMyPicks);
         document.getElementById('hub-profile').addEventListener('click',function(){ openProfile(currentUser.handle); });
         document.getElementById('hub-feed').addEventListener('click',openFeed);
@@ -1438,16 +1505,16 @@
     // ---- profile ----
     async function openProfile(handle){
       setRoute('u/'+handle);
-      openPanel('<div class="empty">Loading @'+esc(handle)+'…</div>');
+      openPanel('<div class="empty">Loading u/'+esc(handle)+'…</div>');
       try{
         var r=await authedFetch('/api/profile?handle='+encodeURIComponent(handle));
-        if(r.status===404){ openPanel('<div class="empty">No soundcheck user @'+esc(handle)+'.</div>'); return; }
+        if(r.status===404){ openPanel('<div class="empty">No soundcheck user u/'+esc(handle)+'.</div>'); return; }
         var p=await r.json();
         var s=p.shelves||{wannaSee:[],seen:[],events:[]}, diary=p.diary||[];
         var initial=(p.handle||'?').charAt(0);
         var head='<div class="prof-cover"></div><div class="prof-head"><span class="prof-av">'+esc(initial)+'</span>'+
           (p.isMe?'':'<button class="follow-btn'+(p.isFollowing?' following':'')+'" id="follow-btn" data-handle="'+esc(p.handle)+'">'+(p.isFollowing?'Following':'Follow')+'</button>')+'</div>'+
-          '<div class="prof-nm">'+esc(p.displayName||('@'+p.handle))+'</div><div class="prof-hn">@'+esc(p.handle)+'</div>'+
+          '<div class="prof-nm">'+esc(p.displayName||('u/'+p.handle))+'</div><div class="prof-hn">u/'+esc(p.handle)+'</div>'+
           '<div class="prof-stat"><div><div class="n">'+s.seen.length+'</div><div class="l">Seen</div></div><div><div class="n">'+s.wannaSee.length+'</div><div class="l">Wanna see</div></div><div><div class="n">'+diary.length+'</div><div class="l">Gigs</div></div><div><div class="n">'+(p.followers||0)+'</div><div class="l">Followers</div></div></div>';
         if(p.locked){ openPanel(head+'<div class="empty" style="margin-top:18px">This profile is private.</div>'); wireProfile(); return; }
         openPanel(head+'<div class="prof-tabs"><button data-tab="shelves" class="on">Shelves</button><button data-tab="diary">Diary</button><button data-tab="network">Network</button></div><div id="prof-tabbody"></div>');
@@ -1497,8 +1564,8 @@
         h+='<div style="margin-top:8px">'+rows.map(function(a){
           var verb = a.kind==='wanna_see'?'wants to see':a.kind==='seen'?'saw':a.kind==='save_event'?'saved':a.kind==='follow'?'followed':a.kind==='diary'?'logged a gig at':'·';
           var subj = a.subject_type==='artist'?'<span class="lk" data-artist="'+esc(a.subject_id)+'">'+esc(a.subject_label||a.subject_id)+'</span>':
-                     a.subject_type==='user'?'<span class="lk" data-profile="'+esc(a.subject_id)+'">@'+esc(a.subject_id)+'</span>':esc(a.subject_label||'an event');
-          return '<div class="feed-row">'+av(a.author_handle)+'<div><div class="ft"><b class="lk" data-profile="'+esc(a.author_handle)+'">@'+esc(a.author_handle)+'</b> '+verb+' '+subj+'</div><div class="fw">'+relTime(a.created_at)+'</div></div></div>';
+                     a.subject_type==='user'?'<span class="lk" data-profile="'+esc(a.subject_id)+'">u/'+esc(a.subject_id)+'</span>':esc(a.subject_label||'an event');
+          return '<div class="feed-row">'+av(a.author_handle)+'<div><div class="ft"><b class="lk" data-profile="'+esc(a.author_handle)+'">u/'+esc(a.author_handle)+'</b> '+verb+' '+subj+'</div><div class="fw">'+relTime(a.created_at)+'</div></div></div>';
         }).join('')+'</div>';
         openPanel(h); wireFeed();
       }catch(_){ openPanel('<h3>Feed</h3><div class="empty">Couldn&rsquo;t load the feed.</div>'); }
@@ -1509,7 +1576,7 @@
     }
     async function maybeSuggest(){
       try{ var r=await authedFetch('/api/suggest'); var j=await r.json(); if(!j.people||!j.people.length) return;
-        var h='<h4 style="margin-top:18px">People you might know</h4><div class="pillrow">'+j.people.map(function(p){ return '<button class="pill-link" data-profile="'+esc(p.handle)+'">@'+esc(p.handle)+' · '+p.overlap+' shared</button>'; }).join('')+'</div>';
+        var h='<h4 style="margin-top:18px">People you might know</h4><div class="pillrow">'+j.people.map(function(p){ return '<button class="pill-link" data-profile="'+esc(p.handle)+'">u/'+esc(p.handle)+' · '+p.overlap+' shared</button>'; }).join('')+'</div>';
         panelBody.insertAdjacentHTML('beforeend', h); wireFeed();
       }catch(_){}
     }
@@ -1818,7 +1885,7 @@
       // sender attribution (#42)
       var hEl=document.getElementById('shared-h');
       if(sharedFrom){
-        hEl.innerHTML='<span class="b-link" id="shared-from" style="cursor:pointer">@'+esc(sharedFrom)+'</span> shared with you';
+        hEl.innerHTML='<span class="b-link" id="shared-from" style="cursor:pointer">u/'+esc(sharedFrom)+'</span> shared with you';
         document.getElementById('shared-from').addEventListener('click',function(){ openProfile(sharedFrom); });
         var acts=document.querySelector('.shared-banner .b-actions');
         if(acts && !document.getElementById('shared-follow')){
