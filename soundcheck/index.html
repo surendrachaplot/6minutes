@@ -2138,7 +2138,7 @@
     function renderEvents(events, eyebrowPrefix){
       stopActive();
       var evs=(events||[]).slice().sort(function(a,b){ return (b.attending||0)-(a.attending||0); });
-      document.getElementById('eyebrow').textContent=eyebrowPrefix;
+      document.getElementById('eyebrow').textContent=eyebrowPrefix+' — '+evs.length+' event'+(evs.length===1?'':'s');
       if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; return; }
       var ordered=orderEvents(evs);
       // ambient marquee of titles (duplicated for a seamless loop)
@@ -2244,7 +2244,7 @@
       try{
         var json=await fetchDay(date);
         setStatus('');
-        renderEvents(json.events, date===todayISO()?'Tonight in London':(fmtDateLabel(date)+' in London'));
+        renderEvents(json.events, date===todayISO()?'Tonight':fmtDateLabel(date));
         prefetchAround();
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
@@ -2265,7 +2265,7 @@
         var fri=(res[0].events||[]).map(function(e){ return Object.assign({},e,{_day:'Fri'}); });
         var sat=(res[1].events||[]).map(function(e){ return Object.assign({},e,{_day:'Sat'}); });
         setStatus('');
-        renderEvents(fri.concat(sat), (offset?'Next weekend':'This weekend')+' in London');
+        renderEvents(fri.concat(sat), offset?'Next weekend':'This weekend');
         prefetchAround();
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
@@ -2289,7 +2289,7 @@
           (j.events||[]).forEach(function(e){ all.push(Object.assign({},e,{_day:dl})); });
         });
         setStatus('');
-        renderEvents(all, fmtRange(startISO,endISO)+' in London');
+        renderEvents(all, fmtRange(startISO,endISO));
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
