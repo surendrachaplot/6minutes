@@ -592,6 +592,16 @@
     .handle-field:focus-within { border-color:var(--accent); }
     .handle-field .hpre { color:var(--muted); font-weight:800; font-size:16px; font-family:var(--head); }
     .handle-field input { flex:1; min-width:0; background:transparent; border:none; color:var(--fg); font:700 16px var(--body); padding:13px 4px; outline:none; }
+    /* "Claim this page" banner on venue pages */
+    .claim-banner { display:flex; align-items:center; gap:16px; margin-top:28px; padding:18px 20px; border-radius:16px; border:1px solid var(--border);
+      background:linear-gradient(100deg, rgba(124,108,230,0.22), rgba(255,122,107,0.14) 58%, rgba(196,142,104,0.20)); }
+    .claim-banner .cb-wave { font-size:1.7rem; line-height:1; flex:none; }
+    .claim-banner .cb-tx { flex:1; min-width:0; }
+    .claim-banner .cb-h { font-family:var(--head); font-weight:800; font-size:1rem; letter-spacing:-0.01em; color:var(--fg); }
+    .claim-banner .cb-s { color:var(--muted); font-size:0.85rem; line-height:1.45; margin-top:3px; }
+    .claim-banner .cb-btn { flex:none; background:var(--fg); color:var(--ink); border:none; border-radius:10px; padding:11px 16px; font:700 0.66rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
+    .claim-banner .cb-btn:hover { opacity:0.92; }
+    @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:12px; } .claim-banner .cb-btn { width:100%; } }
     .handle-status { font-size:0.82rem; min-height:1.3em; margin-top:9px; color:var(--muted); }
     .handle-status.ok { color:var(--accent); font-weight:600; }
     .handle-status.bad { color:#ff6b6b; }
@@ -1299,6 +1309,44 @@
       setTimeout(function(){ if(currentUser && !currentUser.handleClaimed) openHandleModal(false); }, 800);
     }
 
+    // ── claim a venue page (owner / team lead) ──
+    function openClaimModal(venueName, venueSlug){
+      var ov=document.createElement('div'); ov.className='auth-overlay show';
+      ov.innerHTML='<div class="auth-box">'+
+        '<button class="auth-close" type="button" aria-label="Close">&times;</button>'+
+        '<div class="eyebrow">Claim your venue</div>'+
+        '<h3>Claim '+esc(venueName)+'</h3>'+
+        '<p>Fill in your details and we&rsquo;ll get in touch with you as soon as possible.</p>'+
+        '<input type="text" id="cl-first" placeholder="First name" autocomplete="given-name">'+
+        '<input type="text" id="cl-last" placeholder="Last name" autocomplete="family-name" style="margin-top:8px">'+
+        '<input type="email" id="cl-email" placeholder="email@example.com" autocomplete="email" inputmode="email" style="margin-top:8px">'+
+        '<div class="handle-field" style="margin-top:8px"><span class="hpre">+44</span><input type="tel" id="cl-phone" placeholder="Phone" autocomplete="tel" inputmode="tel"></div>'+
+        '<button class="go" id="cl-go" type="button">Submit</button>'+
+        '<div class="err" id="cl-err"></div>'+
+      '</div>';
+      document.body.appendChild(ov);
+      var err=ov.querySelector('#cl-err'), go=ov.querySelector('#cl-go');
+      function close(){ ov.remove(); }
+      ov.querySelector('.auth-close').addEventListener('click',close);
+      ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+      go.addEventListener('click',async function(){
+        var email=ov.querySelector('#cl-email').value.trim();
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err.textContent='Enter a valid email.'; return; }
+        go.disabled=true; err.textContent='';
+        var payload={ slug:venueSlug||null, name:venueName,
+          firstName:ov.querySelector('#cl-first').value.trim(),
+          lastName:ov.querySelector('#cl-last').value.trim(),
+          email:email, phone:ov.querySelector('#cl-phone').value.trim() };
+        try{
+          var r=await authedFetch('/api/venue/claim',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+          var j=await r.json();
+          if(!r.ok){ err.textContent=j.error||'Could not submit.'; go.disabled=false; return; }
+          close(); showToast('Thanks — we’ll be in touch soon.');
+        }catch(_){ err.textContent='Could not submit. Try again.'; go.disabled=false; }
+      });
+      setTimeout(function(){ var i=ov.querySelector('#cl-first'); if(i) i.focus(); },50);
+    }
+
     // ── avatar upload (client-side square-crop + resize, then store) ──
     function pickAvatar(){
       var inp=document.createElement('input'); inp.type='file'; inp.accept='image/png,image/jpeg,image/webp';
@@ -1850,9 +1898,12 @@
         if(v.slug){ h+='<div class="artist-actions" style="max-width:280px"><button class="follow-btn'+(v.following?' following':'')+'" id="vf-btn" type="button">'+(v.following?'Following':'Follow venue')+'</button></div>'; }
         h+='<div id="vp-upcoming"></div>';
         if(v.lat!=null && v.lng!=null) h+='<div class="sec-h" style="margin-top:26px">Location</div><div id="venue-loc" class="venue-map" style="height:300px"></div>';
+        h+='<div class="claim-banner"><span class="cb-wave">👋</span><div class="cb-tx"><div class="cb-h">Are you part of '+esc(dispName)+'? Claim your page</div><div class="cb-s">Unlock access to your community and manage your events.</div></div><button class="cb-btn" id="vp-claim" type="button">Claim this page</button></div>';
         openPanel(h);
         var vfBtn=document.getElementById('vf-btn');
         if(vfBtn) vfBtn.addEventListener('click',function(){ toggleVenueFollow(v, vfBtn); });
+        var cbBtn=document.getElementById('vp-claim');
+        if(cbBtn) cbBtn.addEventListener('click',function(){ openClaimModal(dispName, v.slug); });
         var up=(v.upcoming||[]), vu=document.getElementById('vp-upcoming');
         if(vu && up.length){
           vu.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming at '+esc(dispName)+' ('+up.length+')</div><div id="vp-cards"></div>';
