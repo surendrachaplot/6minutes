@@ -1782,7 +1782,6 @@
         var avImg=a.image?'<img loading="lazy" decoding="async" src="'+imgUrl(a.image,160)+'" alt="" onerror="this.remove()">':'';
         var av='<span class="artist-av" style="background-image:'+avatarBg(slug,null)+'">'+avImg+'</span>';
         var h='<div class="artist-head">'+av+'<div class="artist-head-tx"><h3>'+esc(a.name||slug)+'</h3><div class="sub">on soundcheck</div></div></div>';
-        if(a.rating){ h+='<div class="agg-big" style="margin-top:14px"><span class="num">'+a.rating+'</span><span class="of">avg from '+a.ratingCount+' logged gig'+(a.ratingCount===1?'':'s')+'</span></div>'; }
         var stats=[];
         if(a.seen) stats.push('<span><b>'+a.seen+'</b> seen live</span>');
         if(a.networkSeen) stats.push('<span class="pf-friends"><b>'+a.networkSeen+'</b> friends seen</span>');
@@ -1838,7 +1837,6 @@
         var sub=v.address?esc(v.address):(v.area?esc(v.area):'on soundcheck');
         var av='<span class="artist-av" style="background-image:'+avatarBg(v.slug||dispName,null)+'"></span>';
         var h='<div class="artist-head">'+av+'<div class="artist-head-tx"><h3>'+esc(dispName)+'</h3><div class="sub">'+sub+'</div></div></div>';
-        if(v.rating){ h+='<div class="agg-big" style="margin-top:14px"><span class="num">'+v.rating+'</span><span class="of">avg from '+v.ratingCount+' logged night'+(v.ratingCount===1?'':'s')+'</span></div>'; }
         var stats=[];
         if(v.followers) stats.push('<span><b>'+v.followers+'</b> follower'+(v.followers===1?'':'s')+'</span>');
         if(v.logged) stats.push('<span><b>'+v.logged+'</b> logged</span>');
