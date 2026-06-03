@@ -602,6 +602,11 @@
     .claim-banner .cb-btn { flex:none; background:var(--fg); color:var(--ink); border:none; border-radius:10px; padding:11px 16px; font:700 0.66rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
     .claim-banner .cb-btn:hover { opacity:0.92; }
     @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:12px; } .claim-banner .cb-btn { width:100%; } }
+    /* "See more" → full event page, from the event sheet title */
+    .see-more { display:inline-block; font:700 0.62rem var(--body); letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); text-decoration:none; white-space:nowrap; margin-left:10px; vertical-align:middle; cursor:pointer; }
+    .see-more:hover { text-decoration:underline; }
+    .more-venue { display:inline-block; margin-top:20px; background:none; border:none; color:var(--accent); font:700 0.84rem var(--body); cursor:pointer; padding:0; text-align:left; }
+    .more-venue:hover { text-decoration:underline; }
     .handle-status { font-size:0.82rem; min-height:1.3em; margin-top:9px; color:var(--muted); }
     .handle-status.ok { color:var(--accent); font-weight:600; }
     .handle-status.bad { color:#ff6b6b; }
@@ -1922,6 +1927,49 @@
       }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that venue.</div>'); }
     }
 
+    // ── full event page (the sustainable, linkable version of the sheet) ──
+    function fmtEventDay(d){
+      try{ return new Date(String(d).slice(0,10)+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}); }
+      catch(_){ return String(d||'').slice(0,10); }
+    }
+    function eventPageHTML(ev){
+      var time=formatTime(ev.startTime)||ev._time||'';
+      var eid=ev.id!=null?String(ev.id):'';
+      var evPicked = eid && isEventPicked(eid) ? ' on' : '';
+      var evHeart = eid ? '<button class="heart'+evPicked+'" type="button" data-pick-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" data-day="'+esc(ev._day||'')+'" aria-pressed="'+(evPicked?'true':'false')+'" aria-label="Save this event">'+HEART_SVG+'</button>' : '';
+      var evShare = eid ? '<button class="share-btn" type="button" data-share-evt="'+esc(eid)+'" data-title="'+esc(ev.title||'')+'" data-venue="'+esc(ev.venue||'')+'" aria-label="Share this event">'+SHARE_SVG+'</button>' : '';
+      var n=(ev.artists||[]).length;
+      return posterHTML(ev)+
+        '<div class="sheet-body">'+
+          (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
+          '<h3>'+esc(ev.title||'Event')+'</h3>'+
+          '<div class="sheet-meta"><b class="venue-link" data-venue="'+esc(ev.venue||'')+'">'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
+          (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Save or share this event</span></div>' : '')+
+          '<div class="sec-h" style="margin-top:24px">Line-up'+(n?' ('+n+')':'')+'</div>'+
+          '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
+          (ev.venue?'<button class="more-venue venue-link" type="button" data-venue="'+esc(ev.venue)+'">More nights at '+esc(ev.venue)+' &rsaquo;</button>':'')+
+        '</div>';
+    }
+    async function openEvent(id){
+      id=String(id);
+      setRoute('e/'+encodeURIComponent(id));
+      var ev=lookup.byEvent[id];
+      if(ev){ openPanel(eventPageHTML(ev)); wireCard(document.getElementById('page-body')); return; }
+      openPanel('<div class="empty">Loading…</div>');
+      try{
+        var r=await authedFetch('/api/event?id='+encodeURIComponent(id));
+        if(!r.ok) throw 0;
+        var d=await r.json();
+        ev={ id:String(d.id), title:d.title, venue:d.venue, poster:d.poster_url,
+          _day: d.event_date ? fmtEventDay(d.event_date) : '',
+          startTime: (d.start_time && /T\d{2}:\d{2}/.test(String(d.start_time))) ? d.start_time : null,
+          _time: (d.start_time && !/T/.test(String(d.start_time))) ? d.start_time : '',
+          artists:(d.lineup||[]).map(function(a){ return { name:a.name, contentUrl:'/'+a.slug, soundcloud:a.soundcloud, image:a.image }; }) };
+        if(location.hash.indexOf('e/')<0) return;   // navigated away while loading
+        openPanel(eventPageHTML(ev)); wireCard(document.getElementById('page-body'));
+      }catch(_){ openPanel('<div class="empty">Couldn&rsquo;t load that event.</div>'); }
+    }
+
     // ---- log a gig ----
     // ── Log a gig — full page (was a modal) ──
     var lgArtists=[], lgRating=0;
@@ -2010,6 +2058,7 @@
       else if(hash.indexOf('u/')===0) openProfile(hash.slice(2));
       else if(hash.indexOf('a/')===0) openArtist(hash.slice(2));
       else if(hash.indexOf('v/')===0) openVenue(hash.slice(2));
+      else if(hash.indexOf('e/')===0) openEvent(hash.slice(2));
     }
     // Push a real history entry per forward navigation (pushState doesn't fire
     // popstate, so no double-render). Back/forward fire popstate → handleRoute.
@@ -2171,13 +2220,15 @@
         posterHTML(ev)+
         '<div class="sheet-body">'+
           (isPickVenue(ev.venue)?'<span class="pick">Pick</span><br>':'')+
-          '<h3>'+esc(ev.title)+'</h3>'+
+          '<h3>'+esc(ev.title)+(eid?' <a class="see-more" role="button" tabindex="0" data-see-more="'+esc(eid)+'">See more &rsaquo;</a>':'')+'</h3>'+
           '<div class="sheet-meta"><b class="venue-link" data-venue="'+esc(ev.venue||'')+'">'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
           (eid ? '<div class="sheet-actions">'+evHeart+evShare+'<span class="lbl">Save or share this event</span></div>' : '')+
           '<ul class="sheet-line">'+lineupHTML(ev,null,true)+'</ul>'+
           soloCtaHTML(ev)+
         '</div>';
       wireCard(sheetContent);
+      var sm=sheetContent.querySelector('.see-more');
+      if(sm) sm.addEventListener('click',function(){ if(eid) openEvent(eid); });
       sheetOv.classList.add('show'); lockBody();
     }
     function closeSheet(){ if(!sheetOv.classList.contains('show')) return; sheetOv.classList.remove('show'); unlockBody(); }
