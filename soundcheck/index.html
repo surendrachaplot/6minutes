@@ -576,7 +576,7 @@
     .account-wrap { position:relative; }
 
     /* sign-in modal */
-    .auth-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.66); backdrop-filter:blur(4px); z-index:95; display:flex; align-items:center; justify-content:center; padding:22px; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .auth-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.66); backdrop-filter:blur(4px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:22px; opacity:0; pointer-events:none; transition:opacity .2s; }
     .auth-overlay.show { opacity:1; pointer-events:auto; }
     .auth-box { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px 26px 24px; width:100%; max-width:380px; position:relative; transform:translateY(10px); transition:transform .2s; }
     .auth-overlay.show .auth-box { transform:translateY(0); }
@@ -603,15 +603,14 @@
     .handle-field .hpre { color:var(--muted); font-weight:800; font-size:16px; font-family:var(--head); }
     .handle-field input { flex:1; min-width:0; background:transparent; border:none; color:var(--fg); font:700 16px var(--body); padding:13px 4px; outline:none; }
     /* "Claim this page" banner on venue pages */
-    .claim-banner { display:flex; align-items:center; gap:16px; margin-top:28px; padding:18px 20px; border-radius:16px; border:1px solid var(--border);
-      background:linear-gradient(100deg, rgba(124,108,230,0.22), rgba(255,122,107,0.14) 58%, rgba(196,142,104,0.20)); }
-    .claim-banner .cb-wave { font-size:1.7rem; line-height:1; flex:none; }
+    .claim-banner { display:flex; align-items:center; gap:18px; margin-top:30px; padding:18px 20px; border-radius:16px; border:1px solid var(--border); background:var(--surface); }
     .claim-banner .cb-tx { flex:1; min-width:0; }
     .claim-banner .cb-h { font-family:var(--head); font-weight:800; font-size:1rem; letter-spacing:-0.01em; color:var(--fg); }
-    .claim-banner .cb-s { color:var(--muted); font-size:0.85rem; line-height:1.45; margin-top:3px; }
-    .claim-banner .cb-btn { flex:none; background:var(--fg); color:var(--ink); border:none; border-radius:10px; padding:11px 16px; font:700 0.66rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
-    .claim-banner .cb-btn:hover { opacity:0.92; }
-    @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:12px; } .claim-banner .cb-btn { width:100%; } }
+    .claim-banner .cb-s { color:var(--muted); font-size:0.85rem; line-height:1.45; margin-top:4px; }
+    .claim-banner .cb-btn { flex:none; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:10px 16px; font:700 0.66rem var(--body); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
+    .claim-banner .cb-btn:hover { background:var(--accent); color:var(--ink); }
+    @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:14px; } .claim-banner .cb-btn { width:100%; } }
+    .venue-addr { color:var(--muted); font-size:0.88rem; line-height:1.45; margin:0 0 12px; }
     /* "See more" → full event page, from the event sheet title */
     .see-more { display:inline-block; font:700 0.62rem var(--body); letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); text-decoration:none; white-space:nowrap; margin-left:10px; vertical-align:middle; cursor:pointer; }
     .see-more:hover { text-decoration:underline; }
@@ -1329,9 +1328,9 @@
       var ov=document.createElement('div'); ov.className='auth-overlay show';
       ov.innerHTML='<div class="auth-box">'+
         '<button class="auth-close" type="button" aria-label="Close">&times;</button>'+
-        '<div class="eyebrow">Claim your venue</div>'+
+        '<div class="eyebrow">Venue claim</div>'+
         '<h3>Claim '+esc(venueName)+'</h3>'+
-        '<p>Fill in your details and we&rsquo;ll get in touch with you as soon as possible.</p>'+
+        '<p>Drop your details and we&rsquo;ll be in touch to get you set up.</p>'+
         '<input type="text" id="cl-first" placeholder="First name" autocomplete="given-name">'+
         '<input type="text" id="cl-last" placeholder="Last name" autocomplete="family-name" style="margin-top:8px">'+
         '<input type="email" id="cl-email" placeholder="email@example.com" autocomplete="email" inputmode="email" style="margin-top:8px">'+
@@ -1914,8 +1913,8 @@
         if(stats.length) h+='<div class="panel-stat" style="margin-top:12px">'+stats.join('')+'</div>';
         if(v.slug){ h+='<div class="artist-actions" style="max-width:280px"><button class="follow-btn'+(v.following?' following':'')+'" id="vf-btn" type="button">'+(v.following?'Following':'Follow venue')+'</button></div>'; }
         h+='<div id="vp-upcoming"></div>';
-        if(v.lat!=null && v.lng!=null) h+='<div class="sec-h" style="margin-top:26px">Location</div><div id="venue-loc" class="venue-map" style="height:300px"></div>';
-        h+='<div class="claim-banner"><span class="cb-wave">👋</span><div class="cb-tx"><div class="cb-h">Are you part of '+esc(dispName)+'? Claim your page</div><div class="cb-s">Unlock access to your community and manage your events.</div></div><button class="cb-btn" id="vp-claim" type="button">Claim this page</button></div>';
+        if(v.lat!=null && v.lng!=null) h+='<div class="sec-h" style="margin-top:26px">Location</div>'+(v.address?'<div class="venue-addr">'+esc(v.address)+'</div>':'')+'<div id="venue-loc" class="venue-map" style="height:300px"></div>';
+        h+='<div class="claim-banner"><div class="cb-tx"><div class="cb-h">Do you run '+esc(dispName)+'?</div><div class="cb-s">Claim your page to keep your line-ups current and reach the people who follow you on soundcheck.</div></div><button class="cb-btn" id="vp-claim" type="button">Claim this venue</button></div>';
         openPanel(h);
         var vfBtn=document.getElementById('vf-btn');
         if(vfBtn) vfBtn.addEventListener('click',function(){ toggleVenueFollow(v, vfBtn); });
@@ -1931,8 +1930,8 @@
           loadLeaflet(function(){
             if(location.hash.indexOf('v/')<0 || !document.getElementById('venue-loc')) return;
             var map=L.map(locEl,{ scrollWheelZoom:false }).setView([v.lat,v.lng], 15);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{ attribution:'&copy; OpenStreetMap, &copy; CARTO', subdomains:'abcd', maxZoom:19 }).addTo(map);
-            L.circleMarker([v.lat,v.lng],{ radius:9, color:'#fff', weight:2, fillColor:'#ff7a6b', fillOpacity:1 }).addTo(map).bindPopup('<b>'+esc(dispName)+'</b>'+(v.address?'<br><span style="color:#9292a0">'+esc(v.address)+'</span>':''));
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{ attribution:'&copy; OpenStreetMap, &copy; CARTO', subdomains:'abcd', maxZoom:19 }).addTo(map);
+            L.circleMarker([v.lat,v.lng],{ radius:9, color:'#1a0f0e', weight:2, fillColor:'#ff7a6b', fillOpacity:1 }).addTo(map).bindPopup('<b>'+esc(dispName)+'</b>'+(v.address?'<br><span style="color:#9292a0">'+esc(v.address)+'</span>':''));
             setTimeout(function(){ map.invalidateSize(); },120);
           });
         }
