@@ -781,7 +781,12 @@
     // South London community CTA — shows on these venues' cards
     var SOLO_WHATSAPP='https://chat.whatsapp.com/Ee2P0HuVne2GOgiK54ujqI?mode=gi_t';
     function isSoloVenue(v){ if(!v) return false; return RE_MOT.test(v)||RE_PHONOX.test(v)||RE_CARPET.test(v); }
+    // "Going solo?" community CTA — temporarily disabled; to be redesigned.
+    // Returns nothing everywhere it's called (cards + event sheet); the WhatsApp
+    // link + venue-matching logic below stay ready for the rebuild.
     function soloCtaHTML(ev){
+      return '';
+      /* eslint-disable no-unreachable */
       if(!isSoloVenue(ev.venue)) return '';
       return '<a class="solo-cta" href="'+SOLO_WHATSAPP+'" target="_blank" rel="noopener">'+
         '<span class="solo-h">Going solo?</span>'+
