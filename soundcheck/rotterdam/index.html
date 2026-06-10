@@ -629,15 +629,6 @@
       .fab-stack { display:none; }                          /* Picks tab replaces the chip */
       .dock { bottom:calc(58px + env(safe-area-inset-bottom)); }  /* player sits above the nav */
     }
-    /* weekend radio (hero) */
-    .hero-radio { display:inline-flex; align-items:center; gap:13px; margin-top:18px; background:var(--accent); color:var(--ink); border:none; border-radius:14px; padding:12px 18px; cursor:pointer; text-align:left; box-shadow:0 10px 30px rgba(255,122,107,0.22); transition:transform .12s; }
-    .hero-radio:hover { transform:translateY(-1px); }
-    .hero-radio:disabled { opacity:0.7; cursor:default; }
-    .hero-radio .hr-play { font-size:1rem; line-height:1; }
-    .hero-radio .hr-t { display:block; font:800 0.98rem var(--head); letter-spacing:-0.01em; }
-    .hero-radio .hr-sub { display:block; font:600 0.7rem var(--body); opacity:0.78; margin-top:2px; }
-    .hero-radio.on { background:var(--surface); color:var(--fg); border:1px solid var(--accent); box-shadow:none; }
-    .hero-radio.on .hr-play { color:var(--accent); animation:radio-pulse 1.6s ease-in-out infinite; }
     @keyframes radio-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
     /* city picker */
     .city-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:54vh; overflow-y:auto; margin-top:6px; }
@@ -741,7 +732,6 @@
         <p class="eyebrow" id="eyebrow">Tonight</p>
         <h1><span class="ac">Soundcheck</span> <span id="hero-city">Rotterdam</span>.</h1>
         <p class="lede">Hit <span class="lede-play">&#9654;</span> next to any DJ to preview their music &mdash; heart any artist or event to add to your picks &amp; share with your mates.</p>
-        <button class="hero-radio" id="hero-radio" type="button"><span class="hr-play">&#9654;</span><span class="hr-tx"><span class="hr-t">Weekend radio</span><span class="hr-sub">6 minutes with every DJ playing this weekend</span></span></button>
       </div>
     </div>
 
@@ -1313,9 +1303,11 @@
       var hb=document.getElementById('hero-radio');
       if(radio.on){ stopActive(); return; } // acts as the off switch
       if(!(await gateForPlay())) return;
-      if(hb){ hb.disabled=true; hb.querySelector('.hr-sub').textContent='Tuning in…'; }
+      if(hb){ hb.disabled=true; var hs=hb.querySelector('.hr-sub'); if(hs) hs.textContent='Tuning in…'; }
+      var rl=document.getElementById('radio-fab-label'); if(rl) rl.textContent='Tuning…';
       var q=await buildStation();
       if(hb) hb.disabled=false;
+      if(rl) rl.textContent='Radio';
       if(!q.length){ showToast('No line-ups for this weekend yet — try again shortly.'); radioHeroReset(); return; }
       stopActive();
       var wd=weekendDatesFor(0);
@@ -1342,7 +1334,6 @@
       var hb=document.getElementById('hero-radio'); if(hb) hb.classList.add('on');
       radioTuneIn();
     }
-    document.getElementById('hero-radio').addEventListener('click',startRadio);
 
     // ── mobile bottom nav ──
     function syncTabs(){
