@@ -1723,12 +1723,15 @@
     }
     function renderNightBoard(d){
       _nightCode=d.code; setActiveNight(d.code);
+      var canLog = currentUser && d.date && (String(d.date).slice(0,10) <= todayISO());
       var head='<div class="nb-head"><div class="eyebrow">Night out</div><h3>'+esc(nightTitle(d))+'</h3></div>'+
         '<div class="nb-actions"><button class="nb-share" id="nb-share" type="button">'+SHARE_SVG+'<span>Share</span></button>'+
-        '<button class="nb-add" id="nb-add" type="button">＋ Add events</button></div>';
+        '<button class="nb-add" id="nb-add" type="button">＋ Add events</button>'+
+        (canLog?'<button class="nb-add" id="nb-log" type="button">✎ Log this night</button>':'')+'</div>';
       showPage(head+'<div id="night-board"></div>');
       document.getElementById('nb-share').addEventListener('click',function(){ shareNight(d.code, nightTitle(d)); });
       document.getElementById('nb-add').addEventListener('click',function(){ setActiveNight(d.code); showToast('Browse events and tap ＋ Add to night'); goGrid(); });
+      var lb=document.getElementById('nb-log'); if(lb) lb.addEventListener('click',function(){ logThisNight(d); });
       var board=document.getElementById('night-board');
       board.addEventListener('click',function(e){
         var pill=e.target.closest('.rx-pill'); if(pill){ var on=pill.classList.contains('on'); reactNight(d.code, pill.dataset.evt, on?null:pill.dataset.rx); return; }
@@ -1783,6 +1786,16 @@
       var url=location.origin+location.pathname+'#n/'+encodeURIComponent(code);
       doShare({ title:title||'A night out on soundcheck', text:(title||'A night out')+' — sort the plan on soundcheck', url:url });
     }
+    // Log this night → prefill the diary with the event you were most "in" on.
+    function logThisNight(d){
+      var evs=d.events||[]; if(!evs.length){ showToast('Add an event first'); return; }
+      var mine=evs.filter(function(e){ return ((e.reactions||{}).down||[]).indexOf(d.myPid)>=0; });
+      var pool=(mine.length?mine:evs).slice();
+      pool.sort(function(a,b){ return (((b.reactions||{}).down)||[]).length-(((a.reactions||{}).down)||[]).length; });
+      var ev=pool[0];
+      var arts=(ev.lineup||[]).map(function(a){ return {slug:a.slug, name:a.name}; });
+      openLog({ date: d.date?String(d.date).slice(0,10):null, venue: ev.venue||'', artists: arts });
+    }
     async function loadMyNights(){
       var el=document.getElementById('mp-nights'); if(!el) return;
       el.innerHTML='<div class="sec-h" style="margin-top:4px">Your nights</div>'+
@@ -1829,18 +1842,19 @@
       ctx.fillStyle='#9292a0'; ctx.font="600 24px 'Inter', system-ui, sans-serif"; ctx.textAlign='left'; ctx.fillText('6minutes.club/soundcheck', P, H-54);
       ctx.fillStyle='#ff7a6b'; ctx.textAlign='right'; ctx.fillText(n+(n===1?' artist':' artists'), W-P, H-54); ctx.textAlign='left';
     }
-    async function openTasteCard(){
-      var arts=[];
-      if(currentUser && currentUser.handle){
+    async function openTasteCard(handle){
+      var who = handle || (currentUser && currentUser.handle) || null;
+      var arts=[], label='My soundcheck';
+      if(who){
         try{
-          var r=await authedFetch('/api/profile?handle='+encodeURIComponent(currentUser.handle)); var p=await r.json(); var sh=p.shelves||{};
+          var r=await authedFetch('/api/profile?handle='+encodeURIComponent(who)); var p=await r.json(); var sh=p.shelves||{};
           (sh.wannaSee||[]).forEach(function(a){ arts.push({slug:a.slug,name:a.name,image:a.image}); });
           (sh.seen||[]).forEach(function(a){ if(!arts.find(function(x){return x.slug===a.slug;})) arts.push({slug:a.slug,name:a.name,image:a.image}); });
+          if(p.handle) label='u/'+p.handle;
         }catch(_){}
       }
-      if(!arts.length){ Object.keys(picks.artists).forEach(function(s){ arts.push({slug:s,name:picks.artists[s].name||s,image:null}); }); }
-      if(!arts.length){ showToast('Heart some artists to make your card'); return; }
-      var label = (currentUser && currentUser.handle) ? ('u/'+currentUser.handle) : 'My soundcheck';
+      if(!arts.length && !handle){ Object.keys(picks.artists).forEach(function(s){ arts.push({slug:s,name:picks.artists[s].name||s,image:null}); }); label='My soundcheck'; }
+      if(!arts.length){ showToast('No artists hearted yet'); return; }
       renderTasteCard(arts.slice(0,9), label);
     }
     async function renderTasteCard(arts, label){
@@ -1972,9 +1986,11 @@
           (p.isMe?'':'<button class="follow-btn'+(p.isFollowing?' following':'')+'" id="follow-btn" data-handle="'+esc(p.handle)+'">'+(p.isFollowing?'Following':'Follow')+'</button>')+'</div>'+
           '<div class="prof-nm">'+esc(p.displayName||('u/'+p.handle))+'</div><div class="prof-hn">u/'+esc(p.handle)+'</div>'+
           '<div class="prof-stat"><div><div class="n">'+s.seen.length+'</div><div class="l">Seen</div></div><div><div class="n">'+s.wannaSee.length+'</div><div class="l">Wanna see</div></div><div><div class="n">'+diary.length+'</div><div class="l">Gigs</div></div><div><div class="n">'+(p.followers||0)+'</div><div class="l">Followers</div></div></div>';
+        if(!p.locked && ((s.wannaSee&&s.wannaSee.length)||(s.seen&&s.seen.length))) head += '<button class="tc-cta" id="prof-tc" data-handle="'+esc(p.handle)+'" style="margin-top:16px">◆ '+(p.isMe?'Share your taste card':(esc('u/'+p.handle)+'’s taste card'))+'</button>';
         if(p.locked){ openPanel(head+'<div class="empty" style="margin-top:18px">This profile is private.</div>'); wireProfile(); return; }
         openPanel(head+'<div class="prof-tabs"><button data-tab="shelves" class="on">Shelves</button><button data-tab="diary">Diary</button><button data-tab="network">Network</button></div><div id="prof-tabbody"></div>');
         wireProfile();
+        var ptc=document.getElementById('prof-tc'); if(ptc) ptc.addEventListener('click',function(){ openTasteCard(ptc.dataset.handle); });
         var TAB={
           shelves:function(){
             var x='<div class="sec-h">Wanna see ('+s.wannaSee.length+')</div>'+(s.wannaSee.length?'<div class="ptiles">'+s.wannaSee.map(function(a){return ptile(a.slug,a.name,false,a.image);}).join('')+'</div>':'<div class="empty" style="padding:0 0 4px">Nothing yet.</div>');
