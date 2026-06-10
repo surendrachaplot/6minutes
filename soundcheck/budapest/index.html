@@ -68,6 +68,10 @@
     .eyebrow { font-size:0.64rem; font-weight:700; letter-spacing:0.24em; text-transform:uppercase; color:var(--accent); margin-bottom:16px; }
     h1 { font-family:var(--head); font-weight:800; font-size:clamp(2.8rem,7vw,5rem); line-height:0.94; letter-spacing:-0.04em; }
     h1 .ac { color:var(--accent); }
+    /* city switcher woven into the headline (replaces the old datebar chip) */
+    h1 .city-switch { font:inherit; letter-spacing:inherit; color:inherit; background:none; border:0; padding:0; margin:0; cursor:pointer; display:inline; -webkit-tap-highlight-color:transparent; text-decoration:underline dotted; text-decoration-color:var(--accent); text-decoration-thickness:0.045em; text-underline-offset:0.1em; transition:color .15s ease; }
+    h1 .city-switch:hover, h1 .city-switch:focus-visible { color:var(--accent); outline:none; text-decoration-style:solid; }
+    h1 .cs-chev { width:0.46em; height:0.46em; stroke:var(--accent); vertical-align:0.02em; margin-left:0.06em; }
     .lede { margin-top:16px; max-width:540px; color:var(--muted); font-size:0.96rem; font-weight:500; line-height:1.5; }
     .lede .lede-play { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:999px; border:1px solid var(--accent); color:var(--accent); font-size:8px; line-height:1; vertical-align:middle; position:relative; top:-1px; padding-left:1px; }
     /* date bar: quick picks + on-brand calendar */
@@ -644,7 +648,6 @@
     .city-row:hover { border-color:var(--accent); }
     .city-row.on { border-color:var(--accent); color:var(--accent); }
     .city-row .cf { font-size:1.05rem; line-height:1; }
-    #pick-city svg { width:14px; height:14px; }
     /* ── Nights: collaborative board ── */
     .toast-act { background:none; border:none; color:var(--accent); font-weight:700; font-size:inherit; cursor:pointer; padding:0 0 0 10px; }
     .nstack { display:inline-flex; vertical-align:middle; }
@@ -738,13 +741,12 @@
     <div class="hero">
       <div>
         <p class="eyebrow" id="eyebrow">Tonight</p>
-        <h1><span class="ac">Soundcheck</span> <span id="hero-city">Budapest</span>.</h1>
+        <h1><span class="ac">Soundcheck</span> <button id="hero-city" class="city-switch" type="button" aria-label="Change city — currently London"><span id="hero-city-name">London</span><svg class="cs-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>.</h1>
         <p class="lede">Hit <span class="lede-play">&#9654;</span> next to any DJ to preview their music &mdash; heart any artist or event to add to your picks &amp; share with your mates.</p>
       </div>
     </div>
 
     <div class="datebar">
-      <button class="qchip alt" id="pick-city" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span id="pick-city-label">London</span> <span style="opacity:.6">▾</span></button>
       <button class="qchip" id="pick-tonight" type="button">Tonight</button>
       <button class="qchip" id="pick-weekend" type="button">This weekend</button>
       <button class="qchip" id="pick-next" type="button">Next weekend</button>
@@ -3035,8 +3037,8 @@
     function flagEmoji(cc){ cc=cc==='UK'?'GB':cc; if(!/^[A-Z]{2}$/.test(cc)) return ''; return String.fromCodePoint(0x1F1E6+cc.charCodeAt(0)-65, 0x1F1E6+cc.charCodeAt(1)-65); }
     function renderCityUI(){
       var m=cityMeta();
-      var lb=document.getElementById('pick-city-label'); if(lb) lb.textContent=m.name;
-      var hc=document.getElementById('hero-city'); if(hc) hc.textContent=m.name;
+      var hn=document.getElementById('hero-city-name'); if(hn) hn.textContent=m.name;
+      var hc=document.getElementById('hero-city'); if(hc) hc.setAttribute('aria-label','Change city — currently '+m.name);
     }
     async function loadCities(){
       try{
@@ -3087,7 +3089,7 @@
         if(b){ close(); setCity(b.dataset.city); }
       });
     }
-    document.getElementById('pick-city').addEventListener('click',openCityPicker);
+    document.getElementById('hero-city').addEventListener('click',openCityPicker);
 
     async function fetchDay(date){
       var key=currentCity+'|'+date;
