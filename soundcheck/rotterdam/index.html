@@ -1073,6 +1073,9 @@
     document.getElementById('skip-back').addEventListener('click',function(){ if(active) seekTo(livePos()-15); });
     document.getElementById('skip-fwd').addEventListener('click',function(){ if(active) seekTo(livePos()+15); });
 
+    // On phones the player opens as the compact bar (audio + transport); the
+    // big video stage is one tap away via the thumb. Desktop still expands.
+    function isSmallScreen(){ return window.matchMedia && matchMedia('(max-width:620px)').matches; }
     function openDockUI(btn,name,src,expand){
       dockName.textContent=name; dockSrc.textContent=src;
       if(btn.dataset.poster){ dockThumb.src=imgUrl(btn.dataset.poster,120); dockThumb.style.display=''; }
@@ -1107,7 +1110,7 @@
       art.innerHTML=genPoster(btn.dataset.name||'Now playing')+(btn.dataset.poster?'<img class="real" src="'+imgUrl(btn.dataset.poster,800)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<span class="tint"></span>';
       dockMedia.appendChild(art);
       dockMedia.appendChild(f);
-      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD', true);
+      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD', !isSmallScreen());
       // The iframe already autoplays (auto_play=true); the Widget API just adds
       // the scrubber + play/pause sync, so we bind it lazily once api.js loads.
       loadScApi(function(){
@@ -1136,7 +1139,7 @@
       f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(videoId)+
             '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&start='+(Math.max(0,Math.floor(startSec||360)))+'&origin='+encodeURIComponent(location.origin);
       dockMedia.innerHTML=''; dockMedia.appendChild(f);
-      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE', true);
+      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE', !isSmallScreen());
       function build(){
         ytPlayer=new YT.Player(f,{
           events:{
