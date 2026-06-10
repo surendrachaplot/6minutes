@@ -614,6 +614,18 @@
     .claim-banner .cb-btn:hover { background:var(--accent); color:var(--ink); }
     @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:14px; } .claim-banner .cb-btn { width:100%; } }
     .venue-addr { color:var(--muted); font-size:0.88rem; line-height:1.45; margin:0 0 12px; }
+    /* mobile bottom nav */
+    .bnav { display:none; position:fixed; left:0; right:0; bottom:0; z-index:70; background:rgba(15,15,18,0.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-top:1px solid var(--border); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); }
+    .bnav-tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--muted); font:600 0.6rem var(--body); letter-spacing:0.04em; cursor:pointer; padding:6px 0 4px; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .bnav-tab svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .bnav-tab.on { color:var(--accent); }
+    .bnav-tab.onair svg { animation:radio-pulse 1.6s ease-in-out infinite; }
+    @media (max-width:620px){
+      .bnav { display:flex; }
+      body { padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
+      .fab-stack { display:none; }                          /* Picks tab replaces the chip */
+      .dock { bottom:calc(58px + env(safe-area-inset-bottom)); }  /* player sits above the nav */
+    }
     /* weekend radio (hero) */
     .hero-radio { display:inline-flex; align-items:center; gap:13px; margin-top:18px; background:var(--accent); color:var(--ink); border:none; border-radius:14px; padding:12px 18px; cursor:pointer; text-align:left; box-shadow:0 10px 30px rgba(255,122,107,0.22); transition:transform .12s; }
     .hero-radio:hover { transform:translateY(-1px); }
@@ -831,6 +843,14 @@
     </button>
   </div>
 
+  <!-- mobile bottom nav -->
+  <nav class="bnav" id="bnav" aria-label="Main">
+    <button class="bnav-tab on" id="bnav-home" type="button"><svg viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="bnav-tab" id="bnav-radio" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg><span>Radio</span></button>
+    <button class="bnav-tab" id="bnav-picks" type="button"><svg viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg><span>Picks</span></button>
+    <button class="bnav-tab" id="bnav-profile" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></button>
+  </nav>
+
   <!-- My picks, Log a gig, profile, feed, artist & venue all render as full
        pages in #page-view now — no overlays. -->
 
@@ -918,10 +938,36 @@
     }
 
     // ── email gate ──
-    function hasEmail(){ try{ var v=localStorage.getItem('sc_email'); return !!v && EMAIL_RE.test(v);}catch(_){return false;} }
+    // ── identity + server-side prefs (nothing user-shaped lives in localStorage) ──
+    // Everyone who interacts gets an identity: real accounts via magic link,
+    // everyone else via an anonymous users row behind the same HttpOnly session
+    // cookie (POST /api/anon/start). Picks live in Postgres through that
+    // identity; small UI prefs live in users.prefs (jsonb) via /api/prefs.
+    var prefs={}, anonUser=false, _identityP=null, _memToken='';
+    function ensureIdentity(){
+      if(currentUser||anonUser) return Promise.resolve(true);
+      if(_identityP) return _identityP;
+      _identityP=authedFetch('/api/anon/start',{ method:'POST' })
+        .then(function(r){ if(r.ok){ anonUser=true; return true; } _identityP=null; return false; })
+        .catch(function(){ _identityP=null; return false; });
+      return _identityP;
+    }
+    var _prefsOut=null;
+    function setPref(k,v){
+      prefs[k]=v;
+      clearTimeout(_prefsOut);
+      _prefsOut=setTimeout(function(){
+        var snap={}; snap[k]=v; // send the latest value of this key (cheap + idempotent)
+        ensureIdentity().then(function(ok){
+          if(ok) authedFetch('/api/prefs',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(snap) }).catch(function(){});
+        });
+      },400);
+    }
+
+    function hasEmail(){ return !!prefs.emailGated; }
     // The first successful play is free; from the second, ask for an email.
-    function playCount(){ try{ return parseInt(localStorage.getItem('sc_plays')||'0',10)||0; }catch(_){ return 0; } }
-    function bumpPlayCount(){ try{ localStorage.setItem('sc_plays', String(playCount()+1)); }catch(_){} }
+    function playCount(){ return parseInt(prefs.plays,10)||0; }
+    function bumpPlayCount(){ setPref('plays', playCount()+1); }
     function gateForPlay(){
       if(hasEmail()) return Promise.resolve(true);
       if(playCount() < 1) return Promise.resolve(true);   // first one is free
@@ -952,7 +998,7 @@
           if(!EMAIL_RE.test(email)||email.length>254){ errEl.textContent='That doesn’t look like an email.'; return; }
           submit.disabled=true;
           try{ await fetch(API_BASE+'/api/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}); }catch(_){}
-          try{ localStorage.setItem('sc_email',email); }catch(_){}
+          setPref('emailGated', true);
           document.removeEventListener('keydown',onEsc); ov.remove(); resolve(true);
         });
       });
@@ -1169,6 +1215,7 @@
       if(radio.tick){ clearInterval(radio.tick); radio.tick=null; }
       radio.on=false; radio.queue=[]; radio.i=-1; radio.played=0;
       radioHeroReset();
+      if(typeof syncTabs==='function') syncTabs();
     }
     async function buildStation(){
       var wd=weekendDatesFor(0), days=[{d:wd[0],label:'Fri'},{d:wd[1],label:'Sat'}];
@@ -1223,6 +1270,7 @@
         if(radio.played>=RADIO_SECONDS){ clearInterval(radio.tick); radio.tick=null; radioAdvance(1); }
       },1000);
       for(var k=1;k<=2;k++){ var nx=radio.queue[(radio.i+k)%radio.queue.length]; if(nx) radioResolve(nx); } // preload next two
+      if(typeof syncTabs==='function') syncTabs();
     }
     async function startRadio(){
       var hb=document.getElementById('hero-radio');
@@ -1238,6 +1286,28 @@
       radioAdvance(1);
     }
     document.getElementById('hero-radio').addEventListener('click',startRadio);
+
+    // ── mobile bottom nav ──
+    function syncTabs(){
+      var onPage=document.body.classList.contains('page-on'), hash=location.hash;
+      function setTab(id,on){ var t=document.getElementById(id); if(t) t.classList.toggle('on',!!on); }
+      setTab('bnav-home', !onPage);
+      setTab('bnav-picks', hash==='#picks');
+      setTab('bnav-profile', hash==='#account' || (currentUser && hash==='#u/'+currentUser.handle));
+      var r=document.getElementById('bnav-radio');
+      if(r){ r.classList.toggle('on', !!radio.on); r.classList.toggle('onair', !!radio.on); }
+    }
+    document.getElementById('bnav-home').addEventListener('click',function(){
+      if(document.body.classList.contains('page-on')) goGrid();
+      window.scrollTo({top:0,behavior:'smooth'}); syncTabs();
+    });
+    document.getElementById('bnav-radio').addEventListener('click',function(){
+      if(document.body.classList.contains('page-on')) goGrid();
+      startRadio(); // toggles on/off; syncTabs runs from radio start/stop
+    });
+    document.getElementById('bnav-picks').addEventListener('click',function(){ openMyPicks(); });
+    document.getElementById('bnav-profile').addEventListener('click',function(){ if(currentUser) openAccount(); else openAuth(); });
+    window.addEventListener('popstate', function(){ setTimeout(syncTabs,0); });
 
     function wireCard(scope){
       scope.querySelectorAll('.play.sc').forEach(function(btn){
@@ -1288,7 +1358,7 @@
       if(coachEl){ coachEl.remove(); coachEl=null; }
       window.removeEventListener('scroll',placeCoach,true);
       window.removeEventListener('resize',placeCoach);
-      try{ localStorage.setItem('sc_coach','1'); }catch(_){}
+      setPref('coach',1);
     }
     function placeCoach(){
       if(!coachEl) return;
@@ -1298,7 +1368,7 @@
       coachEl.style.left=(window.scrollX+r.left)+'px';
     }
     function maybeCoach(){
-      try{ if(localStorage.getItem('sc_coach')) return; }catch(_){ return; }
+      if(prefs.coach) return;
       if(coachEl) return;
       var btn=gridEl.querySelector('.play'); if(!btn) return;
       coachEl=document.createElement('div'); coachEl.className='coach';
@@ -1311,14 +1381,18 @@
       setTimeout(function(){ if(coachEl) dismissCoach(); },9000);
     }
 
-    // ── Picks: heart + shortlist + share (Phase 1, localStorage only) ──
+    // ── Picks: heart + shortlist + share ──
+    // In-memory model synced to the server through the cookie identity (anon
+    // or signed-in). The localStorage read below is legacy-only: pre-cookie
+    // picks load once for instant UI, get adopted server-side, then the key
+    // is deleted for good (adoptLegacyLocal).
     var HEART_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>';
     var SHARE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
     var CHECK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
     var PICKS_KEY='sc_picks_v1';
     var picks={ artists:{}, events:{} };
     try{ var raw=localStorage.getItem(PICKS_KEY); if(raw) picks=JSON.parse(raw); if(!picks.artists) picks.artists={}; if(!picks.events) picks.events={}; }catch(_){}
-    function savePicks(){ try{ localStorage.setItem(PICKS_KEY, JSON.stringify(picks)); }catch(_){} }
+    function savePicks(){ /* in-memory only — the server (shelf/rsvp) is the store */ }
     // Status-aware: artists carry wanna_see|seen, events carry going|not_going.
     // Rows from before this change (no .status) default to wanna_see / going.
     function artStatus(slug){ var a=picks.artists[slug]; return a ? (a.status||'wanna_see') : null; }
@@ -1331,13 +1405,14 @@
       var e=Object.keys(picks.events).filter(function(i){ return evtStatus(i)==='going'; }).length;
       return a+e;
     }
-    // setters (status null = remove). Mirror to server when signed in.
+    // setters (status null = remove). Always mirrored to the server — a first
+    // pick from a brand-new visitor mints an anonymous identity on the spot.
     function setArtist(slug, status, name){
       if(!slug) return;
       if(status===null) delete picks.artists[slug];
       else picks.artists[slug] = { name:(name||(picks.artists[slug]&&picks.artists[slug].name)||slug), status:status, t:Date.now() };
       savePicks(); afterPicksChanged(); refreshArtistButtons(slug);
-      if(currentUser) syncArtist(slug, status, name);
+      ensureIdentity().then(function(ok){ if(ok) syncArtist(slug, status, name); });
     }
     function setEvent(id, status, meta){
       if(!id) return;
@@ -1345,7 +1420,7 @@
       if(status===null) delete picks.events[id];
       else picks.events[id] = { title:(meta&&meta.title)||cur.title||'', venue:(meta&&meta.venue)||cur.venue||'', day:(meta&&meta.day)||cur.day||'', status:status, t:Date.now() };
       savePicks(); afterPicksChanged(); refreshEventButtons(id);
-      if(currentUser) syncEvent(id, status, meta);
+      ensureIdentity().then(function(ok){ if(ok) syncEvent(id, status, meta); });
     }
     // heart taps = toggle the want-to-go state
     function toggleArtist(slug, meta){ if(slug) setArtist(slug, artStatus(slug)==='wanna_see' ? null : 'wanna_see', meta&&meta.name); }
@@ -1372,7 +1447,10 @@
     // ── account / sign-in (Phase 2; optional + additive) ──
     var currentUser=null;
     var SESSION_KEY='sc_session';
-    function sessionToken(){ try{ return localStorage.getItem(SESSION_KEY)||''; }catch(_){ return ''; } }
+    // The session lives in the HttpOnly cookie. _memToken covers the magic-link
+    // hand-back within this page-load; the localStorage read is legacy-only
+    // (sessions stored before the cookie era) and is never written again.
+    function sessionToken(){ if(_memToken) return _memToken; try{ return localStorage.getItem(SESSION_KEY)||''; }catch(_){ return ''; } }
     // Cookie auth works first-party (api.6minutes.club ↔ 6minutes.club); the
     // bearer token is a belt-and-braces fallback for any context where the
     // cookie can't ride along.
@@ -1406,10 +1484,55 @@
       try{
         var r=await authedFetch('/api/auth/me');
         var j=await r.json().catch(function(){return {};});
-        currentUser=j.user||null;
+        currentUser=(j.user && !j.user.isAnon) ? j.user : null;   // anon identities aren't "signed in" UI-wise
+        anonUser=!!(j.user && j.user.isAnon);
+        if(j.user && j.user.prefs) prefs=Object.assign({}, j.user.prefs, prefs); // local writes this session win
       }catch(_){ currentUser=null; }
       renderAccount();
-      if(currentUser){ await hydrateShelf(); maybePromptHandle(); }
+      if(currentUser||anonUser) await hydrateShelf();
+      if(currentUser) maybePromptHandle();
+      applyPrefCity();
+      adoptLegacyLocal();
+    }
+    // City preference (server-side) applies only when the URL didn't pick one.
+    function applyPrefCity(){
+      try{
+        if(_cityExplicit || !prefs.city || prefs.city===currentCity) return;
+        if(typeof setCity==='function') setCity(String(prefs.city));
+      }catch(_){}
+    }
+    // One-time adoption: push any pre-cookie-era localStorage state to the
+    // server (picks → shelf, flags → prefs), then delete the keys for good.
+    var _adopting=false;
+    async function adoptLegacyLocal(){
+      if(_adopting) return; _adopting=true;
+      var legacyPicks=null, legacy={};
+      try{
+        var raw=localStorage.getItem(PICKS_KEY); if(raw) legacyPicks=JSON.parse(raw);
+        if(localStorage.getItem('sc_email')) legacy.emailGated=true;
+        var pl=parseInt(localStorage.getItem('sc_plays')||'0',10); if(pl) legacy.plays=pl;
+        if(localStorage.getItem('sc_coach')) legacy.coach=1;
+        if(localStorage.getItem('sc_handle_prompted')) legacy.handlePrompted=1;
+        var ct=(localStorage.getItem('sc_city')||'').toLowerCase(); if(ct) legacy.city=ct;
+      }catch(_){ return; }
+      var hasPicks=legacyPicks && (Object.keys(legacyPicks.artists||{}).length || Object.keys(legacyPicks.events||{}).length);
+      if(!hasPicks && !Object.keys(legacy).length) return;
+      Object.keys(legacy).forEach(function(k){ if(prefs[k]==null) prefs[k]=legacy[k]; });
+      try{
+        if(!(await ensureIdentity())) return; // offline etc. — retry next boot
+        if(hasPicks){
+          await authedFetch('/api/picks/migrate',{ method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              artists:Object.keys(legacyPicks.artists||{}).map(function(s){ return { slug:s, name:(legacyPicks.artists[s]||{}).name }; }),
+              events:Object.keys(legacyPicks.events||{}).map(function(i){ var e=legacyPicks.events[i]||{}; return { id:i, title:e.title, venue:e.venue, day:e.day }; })
+            }) });
+        }
+        if(Object.keys(legacy).length){
+          await authedFetch('/api/prefs',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(legacy) });
+        }
+        ['sc_picks_v1','sc_email','sc_plays','sc_coach','sc_handle_prompted','sc_city','sc_pid','sc_night'].forEach(function(k){ try{ localStorage.removeItem(k); }catch(_){} });
+        if(hasPicks) hydrateShelf();
+      }catch(_){}
     }
     // Pull server shelves into the local `picks` model so the UI (hearts,
     // chip, tray) reflects the account everywhere, on every device.
@@ -1451,7 +1574,7 @@
         '<div class="err" id="hc-err"></div>'+
       '</div>';
       document.body.appendChild(ov);
-      try{ localStorage.setItem('sc_handle_prompted','1'); }catch(_){}
+      setPref('handlePrompted',1);
       var input=ov.querySelector('#hc-in'), status=ov.querySelector('#hc-status'), go=ov.querySelector('#hc-go'), err=ov.querySelector('#hc-err');
       var okHandle=null;
       function close(){ ov.remove(); }
@@ -1486,7 +1609,7 @@
     // change it later from the account hub).
     function maybePromptHandle(){
       if(!currentUser || currentUser.handleClaimed) return;
-      try{ if(localStorage.getItem('sc_handle_prompted')) return; }catch(_){ return; }
+      if(prefs.handlePrompted) return;
       setTimeout(function(){ if(currentUser && !currentUser.handleClaimed) openHandleModal(false); }, 800);
     }
 
@@ -1590,7 +1713,7 @@
     (function consumeSessionHash(){
       var m=(location.hash||'').match(/session=([a-f0-9]+)/i);
       if(m){
-        try{ localStorage.setItem(SESSION_KEY, m[1]); }catch(_){}
+        _memToken=m[1]; // cookie is primary; never persisted client-side
         history.replaceState(null,'',location.pathname+location.search);
         // First sign-in: migrate any anonymous localStorage picks into the account.
         var hadLocal=pickCount()>0;
@@ -1742,9 +1865,10 @@
     // (🔥 In / 👀 Maybe / ✌️ Pass) until the crew converges. Poll-refreshed.
     var RX_META={ down:{e:'🔥',l:'In'}, maybe:{e:'👀',l:'Maybe'}, nah:{e:'✌️',l:'Pass'} };
     var _nightPoll=null, _nightCode=null;
-    function myPid(){ try{ var t=localStorage.getItem('sc_pid'); if(!t){ t=(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,18); localStorage.setItem('sc_pid',t); } return t; }catch(_){ return 'anon0'; } }
-    function activeNight(){ try{ return localStorage.getItem('sc_night')||null; }catch(_){ return null; } }
-    function setActiveNight(code){ try{ if(code) localStorage.setItem('sc_night',code); else localStorage.removeItem('sc_night'); }catch(_){} }
+    var _scPid=null, _scNight=null;
+    function myPid(){ if(!_scPid) _scPid=(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,18); return _scPid; }
+    function activeNight(){ return _scNight; }
+    function setActiveNight(code){ _scNight=code||null; }
     function fmtNightDate(d){ if(!d) return 'A night out'; try{ return new Date(String(d).slice(0,10)+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}); }catch(_){ return 'A night out'; } }
     function nightTitle(d){ return d.title || fmtNightDate(d.date); }
     function nightAv(m){ return avatarBg(m.handle||m.participant_id, m.avatar); }
@@ -2059,12 +2183,14 @@
       document.body.classList.add('page-on');
       pageView.hidden=false;
       window.scrollTo(0,0);
+      if(typeof syncTabs==='function') setTimeout(syncTabs,0); // hash settles after setRoute
     }
     // hidePage is pure UI — it just shows the home grid. History is driven by
     // setRoute (pushState) + goBack (history.back) + the popstate handler.
     function hidePage(){
       if(!document.body.classList.contains('page-on')) return;
       document.body.classList.remove('page-on'); pageView.hidden=true; pageView.innerHTML='';
+      if(typeof syncTabs==='function') setTimeout(syncTabs,0);
     }
     // The in-app "Back" steps one level through real history (matches the
     // browser back button). At the app's first entry it lands on home.
@@ -2784,12 +2910,16 @@
       return seg;
     }
     function cityPath(slug){ return SC_BASE + slug + '/'; }
+    // _cityExplicit: the URL chose the city (path or ?city=). Only when it
+    // didn't may the server-side prefs.city take over after loadMe.
+    var _cityExplicit=false;
     var currentCity=(function(){
       var p=pathCitySlug();
-      if(p) return p;
+      if(p){ _cityExplicit=true; return p; }
       var q=(new URLSearchParams(location.search).get('city')||'').toLowerCase().trim();
-      if(q) return q;
-      try{ return localStorage.getItem('sc_city')||'london'; }catch(_){ return 'london'; }
+      if(q){ _cityExplicit=true; return q; }
+      // legacy localStorage city honoured once (adoption moves it to prefs)
+      try{ return (localStorage.getItem('sc_city')||'london'); }catch(_){ return 'london'; }
     })();
     // Canonicalize to the path form before the first loader writes its query
     // string: legacy ?city= links AND bare /soundcheck/ (every city, London
@@ -2824,7 +2954,7 @@
     function setCity(slug){
       if(slug===currentCity) return;
       currentCity=slug;
-      try{ localStorage.setItem('sc_city',slug); }catch(_){}
+      setPref('city', slug);
       var u=new URL(location.href);
       u.searchParams.delete('city');
       if(onScPath()){
@@ -3050,7 +3180,7 @@
       if(!EMAIL_RE.test(email)||email.length>254){ input.focus(); return; }
       btn.disabled=true;
       try{ await fetch(API_BASE+'/api/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}); }catch(_){}
-      try{ localStorage.setItem('sc_email',email); }catch(_){}
+      setPref('emailGated', true);
       signupForm.hidden=true; signupSuccess.hidden=false;
     });
 
