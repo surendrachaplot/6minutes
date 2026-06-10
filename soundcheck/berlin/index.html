@@ -1338,10 +1338,47 @@
       for(var k=1;k<=2;k++){ var nx=radio.queue[(radio.i+k)%radio.queue.length]; if(nx) radioResolve(nx); } // preload next two
       if(typeof syncTabs==='function') syncTabs();
     }
+    // Mobile autoplay needs the audio iframe created *inside* the tap, before
+    // the browser revokes user-activation. But the station + each YouTube id
+    // are async to fetch, so we prewarm: build the weekend station and resolve
+    // the currently-broadcasting track ahead of time. Then a tap can start
+    // playback synchronously. Keyed by city|weekend so it self-refreshes.
+    var radioWarm={ queue:null, key:'', building:false };
+    function radioWarmKey(){ var wd=weekendDatesFor(0); return currentCity+'|'+wd[0]; }
+    async function prewarmRadio(){
+      var key=radioWarmKey();
+      if(radioWarm.building || (radioWarm.queue && radioWarm.key===key)) return;
+      radioWarm.building=true;
+      try{
+        loadYtApi(); // start the IFrame API loading now so window.YT is ready by tap time
+        var q=await buildStation();
+        if(q.length){
+          var queue=seededShuffle(q, key), pos=broadcastPos(queue.length);
+          await radioResolve(queue[pos.idx]);                       // the track on air right now
+          var nx=queue[(pos.idx+1)%queue.length]; if(nx) radioResolve(nx); // and the next one
+          radioWarm.queue=queue; radioWarm.key=key;
+        }
+      }catch(_){}
+      radioWarm.building=false;
+    }
     async function startRadio(){
       var hb=document.getElementById('hero-radio');
       if(radio.on){ stopActive(); return; } // acts as the off switch
-      if(!(await gateForPlay())) return;
+      if(!(await gateForPlay())) return;    // microtask only — keeps user-activation alive
+      var key=radioWarmKey();
+      // FAST PATH: warm station + API ready + on-air track resolved → start inside
+      // the gesture so mobile autoplay is allowed.
+      if(radioWarm.queue && radioWarm.key===key && window.YT && window.YT.Player){
+        var pos=broadcastPos(radioWarm.queue.length), entry=radioWarm.queue[pos.idx];
+        if(entry && entry.yt){
+          stopActive();
+          radio.queue=radioWarm.queue; radio.on=true; radio.i=pos.idx; radio.station='weekend';
+          if(hb) hb.classList.add('on');
+          radioPlayEntry(entry, pos.within);
+          return;
+        }
+      }
+      // SLOW PATH: cold start (desktop, or warm-up still in flight).
       if(hb){ hb.disabled=true; var hs=hb.querySelector('.hr-sub'); if(hs) hs.textContent='Tuning in…'; }
       var rl=document.getElementById('radio-fab-label'); if(rl) rl.textContent='Tuning…';
       var q=await buildStation();
@@ -1349,9 +1386,9 @@
       if(rl) rl.textContent='Radio';
       if(!q.length){ showToast('No line-ups for this weekend yet — try again shortly.'); radioHeroReset(); return; }
       stopActive();
-      var wd=weekendDatesFor(0);
-      radio.queue=seededShuffle(q, currentCity+'|'+wd[0]); // same order for the whole city, all weekend
+      radio.queue=seededShuffle(q, key); // same order for the whole city, all weekend
       radio.on=true; radio.i=-1; radio.station='weekend';
+      radioWarm.queue=radio.queue; radioWarm.key=key; // remember for next time
       if(hb) hb.classList.add('on');
       radioTuneIn();
     }
@@ -2940,6 +2977,9 @@
       applyShared();
       maybeCoach();
       decorateProof(ordered);
+      // Warm the weekend radio in the background so a tap can start playback
+      // synchronously (mobile autoplay). Self-guards per city|weekend.
+      if(typeof prewarmRadio==='function' && !radio.on) setTimeout(prewarmRadio, 1200);
     }
     // Phase 5: social proof — save counts + friends-going on event cards.
     async function decorateProof(events){
