@@ -357,6 +357,14 @@
     .radio-fab svg { width:16px; height:16px; }
     .radio-fab.onair { background:var(--surface); color:var(--accent); border:1px solid var(--accent); }
     .radio-fab.onair svg { animation:radio-pulse 1.6s ease-in-out infinite; }
+    .radio-fab .rf-tx { display:flex; flex-direction:column; align-items:flex-start; text-align:left; min-width:0; }
+    .radio-fab .rf-t { line-height:1.2; }
+    .radio-fab .rf-sub { display:block; font:600 0.62rem var(--body); letter-spacing:0.04em; text-transform:none; opacity:0.75; margin-top:2px; max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .radio-fab.onair { max-width:320px; }
+    .radio-fab.onair .rf-t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px; text-transform:none; letter-spacing:0.02em; }
+    /* while on air the pill shows on mobile too (above the nav) — the radio has no overlay */
+    body.radio-on .fab-stack { display:flex; }
+    @media (max-width:620px){ body.radio-on .fab-stack { bottom:calc(72px + env(safe-area-inset-bottom)); } }
     /* per-event "tune in" radio button (above each lineup) */
     .ev-radio { display:inline-flex; align-items:center; gap:8px; margin:10px 0 2px; background:rgba(255,122,107,0.08); border:1px solid rgba(255,122,107,0.35); color:var(--accent); border-radius:999px; padding:7px 13px; font:700 0.66rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
     .ev-radio svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
@@ -832,7 +840,7 @@
   <div class="fab-stack" id="fab-stack">
     <button class="radio-fab" id="radio-fab" type="button" aria-label="Play the weekend radio">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-      <span id="radio-fab-label">Radio</span>
+      <span class="rf-tx"><span class="rf-t" id="radio-fab-label">Radio</span><span class="rf-sub" id="radio-fab-sub" hidden></span></span>
     </button>
   </div>
 
@@ -1227,6 +1235,8 @@
     function radioStop(){
       if(radio.tick){ clearInterval(radio.tick); radio.tick=null; }
       radio.on=false; radio.queue=[]; radio.i=-1; radio.played=0;
+      document.body.classList.remove('radio-on');
+      var sub=document.getElementById('radio-fab-sub'); if(sub){ sub.hidden=true; sub.textContent=''; }
       radioHeroReset();
       if(typeof syncTabs==='function') syncTabs();
     }
@@ -1281,15 +1291,36 @@
       showToast('Couldn’t find sets to play.');
       stopActive();
     }
+    // Radio playback is AMBIENT: a hidden iframe carries the audio, no player
+    // overlay opens — the bottom-right pill is the whole UI (on air + next up).
+    function radioQuietPlay(entry, startSec){
+      clearPlayers(); currentType='yt';
+      var f=document.createElement('iframe');
+      f.id='yt-player'; f.className='yt';
+      f.allow='autoplay; encrypted-media';
+      f.width='200'; f.height='113';
+      f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(entry.yt)+
+            '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&start='+(Math.max(0,Math.floor(startSec||360)))+'&origin='+encodeURIComponent(location.origin);
+      dockMedia.innerHTML=''; dockMedia.appendChild(f); // dock stays hidden; iframe just plays
+      var fb=document.createElement('button'); fb.dataset.name=entry.name; fb.dataset.slug=entry.slug;
+      active={ button:fb }; bumpPlayCount();
+      function build(){ ytPlayer=new YT.Player(f,{ events:{
+        onReady:function(e){ try{ e.target.playVideo(); }catch(_){} },
+        onStateChange:function(e){ if(e.data===YT.PlayerState.ENDED && radio.on) radioAdvance(1); }
+      }}); }
+      if(window.YT && YT.Player) build(); else { pendingYt=build; loadYtApi(); }
+    }
+    function radioFabUpdate(entry){
+      var t=document.getElementById('radio-fab-label'), sub=document.getElementById('radio-fab-sub');
+      if(t) t.textContent='On air — '+entry.name+(entry.venue?(' at '+entry.venue):'');
+      var nx=radio.queue.length>1 ? radio.queue[(radio.i+1)%radio.queue.length] : null;
+      if(sub){ if(nx){ sub.hidden=false; sub.textContent='Next up — '+nx.name+(nx.venue?(' at '+nx.venue):''); } else sub.hidden=true; }
+    }
     function radioPlayEntry(entry, within){
       radio.played=within||0; // joining mid-slot leaves only the remainder
-      var fb=document.createElement('button'); // detached: feeds the dock plumbing
-      fb.dataset.name=entry.name; fb.dataset.slug=entry.slug;
-      if(entry.poster) fb.dataset.poster=entry.poster;
-      playYt(fb, entry.yt, 360+(within||0)); // slot plays minutes 6→12 of the set
-      dockSrc.textContent='RADIO '+(radio.i+1)+'/'+radio.queue.length+(entry.venue?(' · '+entry.day+' at '+entry.venue):'');
-      var hb=document.getElementById('hero-radio');
-      if(hb){ hb.querySelector('.hr-t').textContent='On air — tap to stop'; hb.querySelector('.hr-sub').textContent=(radio.i+1)+'/'+radio.queue.length+' · '+entry.name; }
+      radioQuietPlay(entry, 360+(within||0)); // slot plays minutes 6→12 of the set
+      document.body.classList.add('radio-on');
+      radioFabUpdate(entry);
       radio.tick=setInterval(function(){
         if(!radio.on){ clearInterval(radio.tick); radio.tick=null; return; }
         var playing = currentType==='yt' && ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState()===1;
@@ -1345,7 +1376,7 @@
       var r=document.getElementById('bnav-radio');
       if(r){ r.classList.toggle('on', !!radio.on); r.classList.toggle('onair', !!radio.on); }
       var rf=document.getElementById('radio-fab');
-      if(rf){ rf.classList.toggle('onair', !!radio.on); var rl=document.getElementById('radio-fab-label'); if(rl) rl.textContent=radio.on?'On air':'Radio'; }
+      if(rf){ rf.classList.toggle('onair', !!radio.on); if(!radio.on){ var rl=document.getElementById('radio-fab-label'); if(rl) rl.textContent='Radio'; } }
     }
     document.getElementById('bnav-home').addEventListener('click',function(){
       if(document.body.classList.contains('page-on')) goGrid();
