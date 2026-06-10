@@ -1610,7 +1610,6 @@
       if(has) h+='<div style="display:flex;gap:9px;margin-bottom:20px;max-width:520px"><button class="btn solid" id="mp-share" type="button" style="flex:1;border:none;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Share my picks</button><button class="btn ghost" id="mp-copy" type="button" style="flex:1;background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:999px;font:700 0.7rem var(--body);letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer">Copy link</button></div>';
       var hasArt=Object.keys(picks.artists).length>0;
       if(hasArt) h+='<button class="tc-cta" id="mp-taste" type="button">◆ Share your taste card</button>';
-      if(currentUser) h+='<div id="mp-nights" style="margin:6px 0 26px"></div>';
       h+='<div id="mp-shelves">'+picksShelvesHTML()+'</div><div id="mp-diary" style="margin-top:24px"></div>';
       if(has) h+='<button class="hub-row danger" id="mp-clear" type="button" style="max-width:520px;margin-top:22px"><span class="hr-tx"><span class="hr-t">Clear all picks</span></span></button>';
       showPage(h);
@@ -1623,7 +1622,7 @@
         var v=e.target.closest('[data-rm-evt]'); if(v){ setEvent(v.dataset.rmEvt,null); document.getElementById('mp-shelves').innerHTML=picksShelvesHTML(); return; }
         var o=e.target.closest('[data-open-evt]'); if(o){ var ev=lookup.byEvent[o.dataset.openEvt]; if(ev) openSheet(ev); return; }
       });
-      if(currentUser){ loadMyNights(); appendPicksDiary(); }
+      if(currentUser) appendPicksDiary();
     }
     async function appendPicksDiary(){
       try{
@@ -1634,7 +1633,13 @@
       }catch(_){}
     }
     document.getElementById('picks-chip').addEventListener('click',openMyPicks);
-    document.getElementById('plan-fab').addEventListener('click',function(){ createNight(currentDate||todayISO()); });
+    // FAB: open your night-in-progress if you have one; only create when you
+    // don't. (Creating duplicates lives behind '＋ Plan a night' in the hub.)
+    document.getElementById('plan-fab').addEventListener('click',function(){
+      var c=activeNight();
+      if(c){ openNight(c); return; }
+      createNight(currentDate||todayISO());
+    });
 
     // ════════════ Nights: collaborative night plans ════════════
     // A "Night" = a shareable plan for one night out. Owner (signed-in) creates
@@ -1687,7 +1692,7 @@
     async function loadNight(code){
       try{
         var r=await authedFetch('/api/night?code='+encodeURIComponent(code)+'&pid='+encodeURIComponent(myPid()));
-        if(r.status===404){ openPanel('<div class="empty">That night isn’t around anymore.</div>'); return; }
+        if(r.status===404){ if(activeNight()===code) setActiveNight(null); openPanel('<div class="empty">That night isn’t around anymore.</div>'); return; }
         if(!r.ok) throw 0;
         var d=await r.json();
         if(location.hash.indexOf('n/')<0) return;
@@ -1805,15 +1810,17 @@
       var arts=(ev.lineup||[]).map(function(a){ return {slug:a.slug, name:a.name}; });
       openLog({ date: d.date?String(d.date).slice(0,10):null, venue: ev.venue||'', artists: arts });
     }
-    async function loadMyNights(){
-      var el=document.getElementById('mp-nights'); if(!el) return;
+    // Renders "Your nights" into the given container (lives in the ACCOUNT HUB —
+    // deliberately not in My Picks; picks are your taste library, nights are plans).
+    async function loadMyNights(containerId){
+      var el=document.getElementById(containerId||'hub-nights'); if(!el) return;
       el.innerHTML='<div class="sec-h" style="margin-top:4px">Your nights</div>'+
-        '<button class="hub-row" id="mp-plan" type="button" style="max-width:520px"><span class="hr-tx"><span class="hr-t">＋ Plan a night</span><span class="hr-s">Pick events, share with your mates, decide together</span></span></button>'+
-        '<div id="mp-nights-list"></div>';
-      document.getElementById('mp-plan').addEventListener('click',function(){ createNight(currentDate||todayISO()); });
+        '<button class="hub-row" id="mn-plan" type="button" style="max-width:520px"><span class="hr-tx"><span class="hr-t">＋ Plan a night</span><span class="hr-s">Pick events, share with your mates, decide together</span></span></button>'+
+        '<div id="mn-list"></div>';
+      document.getElementById('mn-plan').addEventListener('click',function(){ createNight(currentDate||todayISO()); });
       try{
         var r=await authedFetch('/api/nights'); var j=await r.json(); var rows=j.nights||[];
-        var list=document.getElementById('mp-nights-list'); if(!list) return;
+        var list=document.getElementById('mn-list'); if(!list) return;
         list.innerHTML=rows.map(function(n){ return '<button class="hub-row open-night" data-code="'+esc(n.code)+'" type="button" style="max-width:520px"><span class="hr-tx"><span class="hr-t">'+esc(n.title||fmtNightDate(n.night_date))+'</span><span class="hr-s">'+n.events+' event'+(n.events===1?'':'s')+' &middot; '+n.members+' in</span></span></button>'; }).join('');
         list.querySelectorAll('.open-night').forEach(function(b){ b.addEventListener('click',function(){ openNight(b.dataset.code); }); });
       }catch(_){}
@@ -1929,6 +1936,7 @@
             diary.slice(0,3).map(function(d){ var arts=(d.artists||[]).map(function(a){return a.name||a.slug;}).join(', '); return '<div class="row" data-open-prof="1"><div class="th" style="background:'+artGrad(d.venue||arts||'x')+'"></div><div style="flex:1;min-width:0"><div style="font-weight:600">'+esc(d.venue||'Gig')+'</div><div class="muted" style="font-size:0.76rem">'+esc(arts)+'</div></div>'+(d.rating?starStr(d.rating):'')+'</div>'; }).join('')+
           '</div>';
         }
+        h+='<div id="hub-nights" style="margin-top:22px"></div>';
         h+='<div style="margin-top:22px;max-width:520px">'+
           '<button class="hub-row" id="hub-handle" type="button"><span class="hr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></span><span class="hr-tx"><span class="hr-t">Change handle</span><span class="hr-d">u/'+esc(currentUser.handle)+'</span></span><span class="hr-ch">&rsaquo;</span></button>'+
           '<button class="hub-row danger" id="hub-out" type="button" style="margin-top:10px"><span class="hr-ic">'+HUB_IC.out+'</span><span class="hr-tx"><span class="hr-t">Sign out</span></span></button>'+
@@ -1940,6 +1948,7 @@
         document.getElementById('hub-feed').addEventListener('click',openFeed);
         document.getElementById('hub-log').addEventListener('click',openLog);
         document.getElementById('hub-out').addEventListener('click',signOut);
+        loadMyNights('hub-nights');
         var all=document.getElementById('hub-diary-all'); if(all) all.addEventListener('click',function(){ openProfile(currentUser.handle); });
         rest.querySelectorAll('[data-open-prof]').forEach(function(b){ b.addEventListener('click',function(){ openProfile(currentUser.handle); }); });
       }).catch(function(){ var rest=document.getElementById('hub-rest'); if(rest) rest.innerHTML='<div class="empty">Couldn&rsquo;t load your account.</div>'; });
