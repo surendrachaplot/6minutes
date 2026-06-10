@@ -2678,7 +2678,7 @@
       if(!seg || seg.indexOf('.')>=0) return null; // '' or index.html → no city segment
       return seg;
     }
-    function cityPath(slug){ return SC_BASE + (slug==='london' ? '' : slug+'/'); }
+    function cityPath(slug){ return SC_BASE + slug + '/'; }
     var currentCity=(function(){
       var p=pathCitySlug();
       if(p) return p;
@@ -2686,10 +2686,10 @@
       if(q) return q;
       try{ return localStorage.getItem('sc_city')||'london'; }catch(_){ return 'london'; }
     })();
-    // Canonicalize legacy ?city= links to the path form before the first
-    // loader writes its query string. (Bare /soundcheck/ with a remembered
-    // city stays put — the path only changes on explicit navigation.)
-    if(onScPath() && (new URLSearchParams(location.search).get('city'))){
+    // Canonicalize to the path form before the first loader writes its query
+    // string: legacy ?city= links AND bare /soundcheck/ (every city, London
+    // included, lives at /soundcheck/<slug>/).
+    if(onScPath() && (!pathCitySlug() || (new URLSearchParams(location.search).get('city')))){
       var _cu=new URL(location.href); _cu.searchParams.delete('city');
       history.replaceState(history.state,'', cityPath(currentCity)+_cu.search+_cu.hash);
     }
