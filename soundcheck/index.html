@@ -617,6 +617,13 @@
     .claim-banner .cb-btn:hover { background:var(--accent); color:var(--ink); }
     @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:14px; } .claim-banner .cb-btn { width:100%; } }
     .venue-addr { color:var(--muted); font-size:0.88rem; line-height:1.45; margin:0 0 12px; }
+    /* city picker */
+    .city-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:54vh; overflow-y:auto; margin-top:6px; }
+    .city-row { display:flex; align-items:center; gap:9px; background:var(--bg); border:1px solid var(--border); color:var(--fg); border-radius:10px; padding:11px 12px; font:600 0.9rem var(--body); cursor:pointer; text-align:left; }
+    .city-row:hover { border-color:var(--accent); }
+    .city-row.on { border-color:var(--accent); color:var(--accent); }
+    .city-row .cf { font-size:1.05rem; line-height:1; }
+    #pick-city svg { width:14px; height:14px; }
     /* ── Nights: collaborative board ── */
     .toast-act { background:none; border:none; color:var(--accent); font-weight:700; font-size:inherit; cursor:pointer; padding:0 0 0 10px; }
     .nstack { display:inline-flex; vertical-align:middle; }
@@ -710,12 +717,13 @@
     <div class="hero">
       <div>
         <p class="eyebrow" id="eyebrow">Tonight</p>
-        <h1><span class="ac">Soundcheck</span> London.</h1>
+        <h1><span class="ac">Soundcheck</span> <span id="hero-city">London</span>.</h1>
         <p class="lede">Hit <span class="lede-play">&#9654;</span> next to any DJ to preview their music &mdash; heart any artist or event to add to your picks &amp; share with your mates.</p>
       </div>
     </div>
 
     <div class="datebar">
+      <button class="qchip alt" id="pick-city" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span id="pick-city-label">London</span> <span style="opacity:.6">▾</span></button>
       <button class="qchip" id="pick-tonight" type="button">Tonight</button>
       <button class="qchip" id="pick-weekend" type="button">This weekend</button>
       <button class="qchip" id="pick-next" type="button">Next weekend</button>
@@ -1521,6 +1529,8 @@
     }
     function shareUrl(params){
       var u=location.origin+location.pathname, qs=[];
+      // carry the sender's city so a Berlin share opens Berlin
+      if(params.city==null && typeof currentCity!=='undefined' && currentCity!=='london') params.city=currentCity;
       Object.keys(params).forEach(function(k){ if(params[k]!=null&&params[k]!=='') qs.push(encodeURIComponent(k)+'='+encodeURIComponent(params[k])); });
       return u+(qs.length?'?'+qs.join('&'):'');
     }
@@ -2087,7 +2097,7 @@
         var q=input.value.trim();
         if(q.length<2){ results.innerHTML=''; return; }
         results.innerHTML='<div class="empty" style="padding:20px 0"><span class="spinner"></span> Searching…</div>';
-        var j; try{ j=await pubGet('/api/search?q='+encodeURIComponent(q)); }catch(_){ j={}; }
+        var j; try{ j=await pubGet('/api/search?q='+encodeURIComponent(q)+'&city='+encodeURIComponent(currentCity)); }catch(_){ j={}; }
         if(input.value.trim()!==q) return; // a newer keystroke is in flight
         renderSearch(results, j, q);
       },220);
@@ -2129,15 +2139,16 @@
     }
     async function openMap(){
       setRoute('map');
-      showPage('<h3>Venue map</h3><div class="sub" style="margin-bottom:14px">London clubs &amp; venues with upcoming nights &mdash; tap a pin.</div><div id="venue-map" class="venue-map"></div>');
+      var cm=cityMeta();
+      showPage('<h3>Venue map</h3><div class="sub" style="margin-bottom:14px">'+esc(cm.name)+' clubs &amp; venues with upcoming nights &mdash; tap a pin.</div><div id="venue-map" class="venue-map"></div>');
       var el=document.getElementById('venue-map');
       loadLeaflet(async function(){
         if(location.hash!=='#map' || !document.getElementById('venue-map')) return; // navigated away while loading
-        var map=L.map(el).setView([51.5074,-0.1278], 11);
+        var map=L.map(el).setView([cm.lat||51.5074, cm.lng||-0.1278], 11);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{ attribution:'&copy; OpenStreetMap, &copy; CARTO', subdomains:'abcd', maxZoom:19 }).addTo(map);
-        var j; try{ j=await pubGet('/api/venues/map'); }catch(_){ j={}; }
-        // London bounding box — never plot a venue with bad/out-of-town coords.
-        var vs=(j.venues||[]).filter(function(v){ return v.lat>=51.25 && v.lat<=51.72 && v.lng>=-0.55 && v.lng<=0.34; }), pts=[];
+        var j; try{ j=await pubGet('/api/venues/map?city='+encodeURIComponent(currentCity)); }catch(_){ j={}; }
+        // server bbox-filters per city; trust it
+        var vs=(j.venues||[]), pts=[];
         function pinDate(iso){ if(!iso) return ''; var d=new Date(String(iso).slice(0,10)+'T12:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'}); }
         function popupHTML(v){ var up=v.upcoming?(v.upcoming+' upcoming night'+(v.upcoming===1?'':'s')):'no dates yet'; return '<b>'+esc(v.name)+'</b><br><span style="color:#9292a0">'+esc(up)+'</span><br><span class="map-link" data-venue="'+esc(v.name)+'">View venue &rsaquo;</span>'; }
         var dots=L.layerGroup(), pills=L.layerGroup();
@@ -2652,15 +2663,82 @@
     // session-length client cache so re-fetched days (weekend reuse, prefetch,
     // back-and-forth between dates) are instant and never re-hit the network.
     var _dayCache={};
+    // ── multi-city ──
+    // Minimal fallback registry so the picker works even if /api/cities is
+    // unreachable; replaced by the server list (the source of truth) on boot.
+    var CITY_LIST=[
+      {slug:'london',name:'London',country:'UK'},{slug:'berlin',name:'Berlin',country:'DE'},
+      {slug:'amsterdam',name:'Amsterdam',country:'NL'},{slug:'paris',name:'Paris',country:'FR'},
+      {slug:'barcelona',name:'Barcelona',country:'ES'},{slug:'ibiza',name:'Ibiza',country:'ES'}
+    ];
+    var currentCity=(function(){
+      var q=(new URLSearchParams(location.search).get('city')||'').toLowerCase().trim();
+      if(q) return q;
+      try{ return localStorage.getItem('sc_city')||'london'; }catch(_){ return 'london'; }
+    })();
+    function cityMeta(){ for(var i=0;i<CITY_LIST.length;i++){ if(CITY_LIST[i].slug===currentCity) return CITY_LIST[i]; } return CITY_LIST[0]; }
+    // append &city= to a loader's query string so replaceState never drops it
+    function withCityQS(qs){ return currentCity!=='london' ? qs+'&city='+encodeURIComponent(currentCity) : qs; }
+    function flagEmoji(cc){ cc=cc==='UK'?'GB':cc; if(!/^[A-Z]{2}$/.test(cc)) return ''; return String.fromCodePoint(0x1F1E6+cc.charCodeAt(0)-65, 0x1F1E6+cc.charCodeAt(1)-65); }
+    function renderCityUI(){
+      var m=cityMeta();
+      var lb=document.getElementById('pick-city-label'); if(lb) lb.textContent=m.name;
+      var hc=document.getElementById('hero-city'); if(hc) hc.textContent=m.name;
+    }
+    async function loadCities(){
+      try{
+        var r=await fetch(API_BASE+'/api/cities'); var j=await r.json();
+        if(Array.isArray(j.cities) && j.cities.length){
+          CITY_LIST=j.cities;
+          if(!CITY_LIST.some(function(c){ return c.slug===currentCity; })) currentCity='london';
+        }
+      }catch(_){}
+      renderCityUI();
+    }
+    function setCity(slug){
+      if(slug===currentCity) return;
+      currentCity=slug;
+      try{ localStorage.setItem('sc_city',slug); }catch(_){}
+      var u=new URL(location.href);
+      if(slug==='london') u.searchParams.delete('city'); else u.searchParams.set('city',slug);
+      history.replaceState(history.state,'',u.pathname+u.search+u.hash);
+      renderCityUI();
+      stopActive();
+      // re-run whatever view is on screen for the new city
+      if(document.body.classList.contains('page-on') && location.hash==='#map'){ openMap(); return; }
+      if(mode==='day' && currentDate) load(currentDate);
+      else if(mode==='range' && currentRange) loadRange(currentRange[0],currentRange[1]);
+      else loadWeekend(activePick==='next'?1:0);
+    }
+    function openCityPicker(){
+      var ov=document.createElement('div'); ov.className='auth-overlay show';
+      var rows=CITY_LIST.map(function(c){
+        return '<button class="city-row'+(c.slug===currentCity?' on':'')+'" data-city="'+esc(c.slug)+'" type="button"><span class="cf">'+flagEmoji(c.country)+'</span>'+esc(c.name)+'</button>';
+      }).join('');
+      ov.innerHTML='<div class="auth-box" style="max-width:420px"><button class="auth-close" type="button" aria-label="Close">&times;</button>'+
+        '<div class="eyebrow">Choose your city</div><h3>Where are you out?</h3>'+
+        '<div class="city-list">'+rows+'</div></div>';
+      document.body.appendChild(ov);
+      function close(){ ov.remove(); }
+      ov.querySelector('.auth-close').addEventListener('click',close);
+      ov.addEventListener('click',function(e){
+        if(e.target===ov){ close(); return; }
+        var b=e.target.closest('.city-row[data-city]');
+        if(b){ close(); setCity(b.dataset.city); }
+      });
+    }
+    document.getElementById('pick-city').addEventListener('click',openCityPicker);
+
     async function fetchDay(date){
-      if(_dayCache[date]) return _dayCache[date];
-      var res=await fetch(API_BASE+'/api/day?date='+encodeURIComponent(date));
+      var key=currentCity+'|'+date;
+      if(_dayCache[key]) return _dayCache[key];
+      var res=await fetch(API_BASE+'/api/day?date='+encodeURIComponent(date)+(currentCity!=='london'?('&city='+encodeURIComponent(currentCity)):''));
       var json=await res.json();
       if(!res.ok) throw new Error(json.error||('HTTP '+res.status));
-      _dayCache[date]=json;
+      _dayCache[key]=json;
       return json;
     }
-    function prefetchDay(date){ if(date && !_dayCache[date]) fetchDay(date).catch(function(){}); }
+    function prefetchDay(date){ if(date && !_dayCache[currentCity+'|'+date]) fetchDay(date).catch(function(){}); }
     // After the first paint, quietly warm the days people switch to next.
     var _prefetched=false;
     function prefetchAround(){
@@ -2684,7 +2762,7 @@
     // single-day mode
     async function load(date){
       mode='day'; currentDate=date; activePick=(date===todayISO()?'tonight':'date'); syncChips();
-      document.title='soundcheck by 6 Minutes · '+date; history.replaceState(null,'','?date='+date);
+      document.title='soundcheck '+cityMeta().name+' · '+date; history.replaceState(null,'',withCityQS('?date='+date));
       setStatus('<span class="spinner"></span> Loading '+esc(fmtDateLabel(date))+'…'); skeletonGrid();
       try{
         var json=await fetchDay(date);
@@ -2703,7 +2781,7 @@
     async function loadWeekend(offset){
       offset=offset||0; mode='weekend'; activePick=offset?'next':'weekend';
       var wd=weekendDatesFor(offset); currentDate=wd[1]; syncChips();
-      document.title='soundcheck by 6 Minutes · '+(offset?'next weekend':'this weekend'); history.replaceState(null,'','?weekend='+(offset+1));
+      document.title='soundcheck '+cityMeta().name+' · '+(offset?'next weekend':'this weekend'); history.replaceState(null,'',withCityQS('?weekend='+(offset+1)));
       setStatus('<span class="spinner"></span> Loading '+(offset?'next':'this')+' weekend…'); skeletonGrid();
       try{
         var res=await Promise.all([fetchDay(wd[0]), fetchDay(wd[1])]);
@@ -2723,7 +2801,7 @@
       if(span<=1) return load(startISO);
       mode='range'; activePick='date'; currentDate=startISO; currentRange=[startISO,endISO]; syncChips();
       document.title='soundcheck by 6 Minutes · '+startISO+' to '+endISO;
-      history.replaceState(null,'','?from='+startISO+'&to='+endISO);
+      history.replaceState(null,'',withCityQS('?from='+startISO+'&to='+endISO));
       setStatus('<span class="spinner"></span> Loading '+span+' days&hellip;'); skeletonGrid();
       try{
         var days=[]; for(var d=new Date(startISO+'T12:00:00'); d<=new Date(endISO+'T12:00:00'); d.setDate(d.getDate()+1)) days.push(isoOf(d));
@@ -2853,6 +2931,7 @@
     //   ?event=<id>[&d=YYYY-MM-DD]    — legacy event deep-link (still → full page)
     //   ?artist=<slug>[&d=YYYY-MM-DD] — deep-link to a single artist
     //   ?picks=v1.<b64>               — a friend's shortlist (encoded payload includes date)
+    renderCityUI(); loadCities();
     var _qs=new URLSearchParams(location.search);
     var _qd=_qs.get('date'), _qe=_qs.get('event'), _qa=_qs.get('artist'), _qp=_qs.get('picks'), _qsd=_qs.get('d');
     var _qfrom=_qs.get('from'), _qto=_qs.get('to');
