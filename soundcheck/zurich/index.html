@@ -3074,7 +3074,7 @@
     }
     function openCityPicker(){
       var ov=document.createElement('div'); ov.className='auth-overlay show';
-      var rows=CITY_LIST.map(function(c){
+      var rows=CITY_LIST.slice().sort(function(a,b){ return a.name.localeCompare(b.name); }).map(function(c){
         return '<button class="city-row'+(c.slug===currentCity?' on':'')+'" data-city="'+esc(c.slug)+'" type="button"><span class="cf">'+flagEmoji(c.country)+'</span>'+esc(c.name)+'</button>';
       }).join('');
       ov.innerHTML='<div class="auth-box" style="max-width:420px"><button class="auth-close" type="button" aria-label="Close">&times;</button>'+
