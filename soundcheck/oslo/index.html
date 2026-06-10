@@ -1084,7 +1084,10 @@
       setExpIcon(); setDockPad();
       btn.classList.add('playing'); setState(btn,'■');
       active={ button:btn };
-      updatePP(true);
+      // Don't assume we're playing — mobile browsers often block autoplay.
+      // The play/pause icon is driven by the actual player state below, so
+      // it stays honest: ▶ until playback truly starts, then pause.
+      updatePP(false);
       bumpPlayCount();
       if(sheetOv && sheetOv.classList.contains('show')) closeSheet();
       updateNavButtons();
@@ -1141,10 +1144,13 @@
       function build(){
         ytPlayer=new YT.Player(f,{
           events:{
-            onReady:function(e){ try{ e.target.playVideo(); }catch(_){} updatePP(true); try{ dur=e.target.getDuration()||0; }catch(_){} pos=0; paintScrub(); startPoll(); },
+            onReady:function(e){ try{ e.target.playVideo(); }catch(_){} try{ dur=e.target.getDuration()||0; }catch(_){} pos=0; paintScrub(); startPoll(); },
             onStateChange:function(e){
-              if(e.data===YT.PlayerState.PLAYING) updatePP(true);
-              else if(e.data===YT.PlayerState.PAUSED) updatePP(false);
+              // Flip to pause as soon as playback actually starts (buffering
+              // counts — autoplay succeeded). If the browser blocked autoplay,
+              // none of these fire and the icon stays ▶, so one tap plays it.
+              if(e.data===YT.PlayerState.PLAYING || e.data===YT.PlayerState.BUFFERING) updatePP(true);
+              else if(e.data===YT.PlayerState.PAUSED || e.data===YT.PlayerState.CUED || e.data===YT.PlayerState.UNSTARTED) updatePP(false);
               else if(e.data===YT.PlayerState.ENDED){ updatePP(false); if(radio.on) radioAdvance(1); }
             }
           }
