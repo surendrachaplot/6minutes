@@ -120,7 +120,7 @@
 
     /* marquee — very slow ambient ticker */
     .marquee { overflow:hidden; border-top:1px solid var(--border); border-bottom:1px solid var(--border); margin-top:6px; }
-    .marquee .track { display:inline-flex; white-space:nowrap; animation:marq 375s linear infinite; padding:12px 0; }
+    .marquee .track { display:inline-flex; white-space:nowrap; animation:marq 750s linear infinite; padding:12px 0; }
     .marquee span { font-family:var(--head); font-weight:800; font-size:1.4rem; letter-spacing:-0.01em; text-transform:uppercase; padding:0 22px; }
     .marquee span.star { color:var(--accent); }
     @keyframes marq { to { transform:translateX(-50%); } }
@@ -2917,9 +2917,14 @@
       document.getElementById('eyebrow').textContent=eyebrowPrefix+' — '+evs.length+' event'+(evs.length===1?'':'s');
       if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; return; }
       var ordered=orderEvents(evs);
-      // ambient marquee of titles (duplicated for a seamless loop)
+      // ambient marquee: "<up to 5 artists> at <venue>" (duplicated for a seamless loop)
+      function marqText(e){
+        var names=(e.artists||[]).map(function(a){ return a.name; }).filter(Boolean).slice(0,5);
+        if(!names.length) return e.title;            // fall back to the event title when no lineup
+        return names.join(', ')+(e.venue?(' at '+e.venue):'');
+      }
       var marq='';
-      for(var k=0;k<2;k++){ ordered.forEach(function(e){ marq+='<span>'+esc(e.title)+'</span><span class="star">&#10039;</span>'; }); }
+      for(var k=0;k<2;k++){ ordered.forEach(function(e){ marq+='<span>'+esc(marqText(e))+'</span><span class="star">&#10039;</span>'; }); }
       trackEl.innerHTML=marq;
       gridEl.innerHTML=ordered.map(function(e){ return cardHTML(e); }).join('');
       wireCard(gridEl);
