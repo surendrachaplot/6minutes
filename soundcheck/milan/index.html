@@ -799,16 +799,6 @@
     </div>
     <div class="grid" id="grid"></div>
 
-    <section class="signup" id="signup">
-      <p class="se">The List</p>
-      <h3>Get a weekly digest.</h3>
-      <p class="sd">London&rsquo;s most interesting nights, picked &amp; sent every Wednesday.</p>
-      <form class="email-form" id="inline-form">
-        <input type="email" required placeholder="you@somewhere.com" autocomplete="email" />
-        <button type="submit">Subscribe</button>
-      </form>
-      <p class="signup-success" id="signup-success" hidden>You&rsquo;re on the list. &#x2713;</p>
-    </section>
     <div class="teaser">
       <span class="tt">Come help us build the first <b>community-owned club in London.</b></span>
       <a href="/">6 Minutes &rarr;</a>
@@ -3495,20 +3485,6 @@
     function closeCal(){ calOverlay.classList.remove('show'); }
     calOverlay.addEventListener('click',function(e){ if(e.target===calOverlay) closeCal(); });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&calOverlay.classList.contains('show')) closeCal(); });
-
-    // ── inline signup ──
-    var signupForm=document.getElementById('inline-form'), signupSuccess=document.getElementById('signup-success');
-    if(hasEmail()){ signupForm.hidden=true; signupSuccess.hidden=false; }
-    signupForm.addEventListener('submit',async function(e){
-      e.preventDefault();
-      var input=signupForm.querySelector('input'), btn=signupForm.querySelector('button');
-      var email=input.value.trim().toLowerCase();
-      if(!EMAIL_RE.test(email)||email.length>254){ input.focus(); return; }
-      btn.disabled=true;
-      try{ await fetch(API_BASE+'/api/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}); }catch(_){}
-      setPref('emailGated', true);
-      signupForm.hidden=true; signupSuccess.hidden=false;
-    });
 
     // Default to this weekend (Fri + Sat combined); ?date= overrides to a single day.
     // Share params:
