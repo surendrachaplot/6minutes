@@ -361,6 +361,7 @@
     .fab-stack { position:fixed; right:16px; bottom:calc(24px + env(safe-area-inset-bottom)); z-index:55; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
     body.has-dock .fab-stack { bottom:calc(var(--dock-pad,96px) + 16px); }
     body.page-on .fab-stack, body.sheet-on .fab-stack { display:none; }
+    body.has-dock:not(.radio-on) .fab-stack { display:none; } /* manual player open → hide the radio pill */
     @media (max-width:520px){ .fab-stack { right:12px; bottom:calc(16px + env(safe-area-inset-bottom)); } }
     .radio-fab { border:none; border-radius:999px; padding:10px 14px; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:inline-flex; align-items:center; gap:8px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; background:var(--accent); color:var(--accent-ink); }
     .rf-main { background:transparent; border:0; color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding:2px 2px; font:700 0.74rem var(--body); letter-spacing:0.06em; text-transform:uppercase; -webkit-tap-highlight-color:transparent; }
@@ -686,8 +687,14 @@
       .bnav { display:flex; }
       body { padding-bottom:calc(72px + env(safe-area-inset-bottom)); }
       .fab-stack { bottom:calc(72px + env(safe-area-inset-bottom)); }  /* radio pill floats above the nav */
-      /* player is an inset, rounded card sitting directly above the glass nav */
-      .dock { left:14px; right:14px; bottom:calc(66px + env(safe-area-inset-bottom)); border-radius:18px; border:1px solid rgba(255,255,255,0.12); overflow:hidden; }
+      /* Player + nav = ONE merged glass unit: the player card sits flush on top
+         of the nav, sharing the same glass; only the outer corners round. */
+      .dock { left:16px; right:16px; bottom:calc(60px + env(safe-area-inset-bottom)); z-index:69;
+        background:rgba(30,28,36,0.55); backdrop-filter:blur(30px) saturate(200%); -webkit-backdrop-filter:blur(30px) saturate(200%);
+        border:1px solid rgba(255,255,255,0.14); border-bottom:none; border-radius:22px 22px 0 0;
+        box-shadow:0 -6px 22px rgba(0,0,0,0.28); overflow:hidden; }
+      body.has-dock .bnav { border-top-left-radius:0; border-top-right-radius:0; border-top:1px solid rgba(255,255,255,0.07); box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+      body.has-dock.dock-collapsed { padding-bottom:calc(122px + env(safe-area-inset-bottom)); }
     }
     @keyframes radio-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
     /* city picker */
