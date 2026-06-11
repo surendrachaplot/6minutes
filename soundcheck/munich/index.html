@@ -1243,6 +1243,7 @@
     function radioStop(){
       if(radio.tick){ clearInterval(radio.tick); radio.tick=null; }
       try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(_){}
+      try{ if(radioWidget && radioWidget.pause) radioWidget.pause(); }catch(_){} // keep widget alive (stays unlocked)
       radio.on=false; radio.queue=[]; radio.i=-1; radio.played=0; radioScPlaying=false;
       document.body.classList.remove('radio-on');
       var sub=document.getElementById('radio-fab-sub'); if(sub){ sub.hidden=true; sub.textContent=''; }
@@ -1312,24 +1313,36 @@
       showToast('Couldn’t find sets to play.');
       stopActive();
     }
-    // Radio playback is AMBIENT: a hidden SoundCloud widget carries the audio,
-    // no player overlay opens — the bottom-right pill is the whole UI (on air +
-    // next up). The iframe autoplays via auto_play=true; the Widget API just
-    // adds play/pause state + finish→advance once api.js loads.
-    function radioQuietPlay(entry){
-      clearPlayers(); currentType='sc'; radioScPlaying=false;
-      var f=document.createElement('iframe'); f.className='sc'; f.allow='autoplay';
-      f.src='https://w.soundcloud.com/player/?url='+encodeURIComponent(entry.sc)+
-            '&auto_play=true&visual=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false';
-      dockMedia.innerHTML=''; dockMedia.appendChild(f); // dock stays hidden; iframe just plays
-      var fb=document.createElement('button'); fb.dataset.name=entry.name; fb.dataset.slug=entry.slug;
-      active={ button:fb }; bumpPlayCount();
+    // Radio playback is AMBIENT and uses ONE persistent SoundCloud widget that
+    // lives in its own hidden host (so a manual dock play, which clears
+    // dockMedia, can't wipe it). SoundCloud ignores auto_play on mobile, so the
+    // only thing that starts audio there is calling .play()/.load(autoplay) on
+    // a READY widget from inside a user tap. We prewarm the widget to READY,
+    // then the tap unlocks it; every later track reuses the same unlocked
+    // widget via .load(url,{auto_play:true}) — which is how advance + the
+    // voiceover transitions keep playing without a fresh gesture.
+    var radioWidget=null, radioIframe=null, radioWidgetReady=false;
+    function radioHostEl(){
+      var h=document.getElementById('radio-audio');
+      if(!h){ h=document.createElement('div'); h.id='radio-audio'; h.style.cssText='position:fixed;left:-9999px;top:0;width:300px;height:80px;pointer-events:none'; document.body.appendChild(h); }
+      return h;
+    }
+    // Create (or rebuild) the persistent widget, loaded with `entry` but NOT
+    // playing. onReady fires once the Widget API is bound and ready.
+    function radioBuildWidget(entry, onReady){
       loadScApi(function(){
-        if(currentType!=='sc' || !f.isConnected) return; // user moved on
-        scWidget=SC.Widget(f);
-        scWidget.bind(SC.Widget.Events.PLAY,  function(){ radioScPlaying=true; });
-        scWidget.bind(SC.Widget.Events.PAUSE, function(){ radioScPlaying=false; });
-        scWidget.bind(SC.Widget.Events.FINISH,function(){ if(radio.on) radioAdvance(1); });
+        if(!radioIframe){ radioIframe=document.createElement('iframe'); radioIframe.className='sc'; radioIframe.allow='autoplay'; radioHostEl().appendChild(radioIframe); }
+        radioWidgetReady=false;
+        radioIframe.src='https://w.soundcloud.com/player/?url='+encodeURIComponent(entry.sc)+
+          '&auto_play=false&visual=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false';
+        radioWidget=SC.Widget(radioIframe);
+        radioWidget.bind(SC.Widget.Events.READY, function(){
+          radioWidgetReady=true;
+          radioWidget.bind(SC.Widget.Events.PLAY,  function(){ radioScPlaying=true; });
+          radioWidget.bind(SC.Widget.Events.PAUSE, function(){ radioScPlaying=false; });
+          radioWidget.bind(SC.Widget.Events.FINISH,function(){ if(radio.on) radioAdvance(1); });
+          if(onReady) onReady();
+        });
       });
     }
     function radioFabUpdate(entry){
@@ -1339,10 +1352,16 @@
       if(sub){ if(nx){ sub.hidden=false; sub.textContent='Next up — '+nx.name+(nx.venue?(' at '+nx.venue):''); } else sub.hidden=true; }
     }
     function radioPlayEntry(entry){
-      radio.played=0; // each DJ's set plays from the start, up to six minutes
-      radioQuietPlay(entry);
+      radio.played=0; radioScPlaying=false; // each DJ's set plays from the start, up to six minutes
+      var fb=document.createElement('button'); fb.dataset.name=entry.name; fb.dataset.slug=entry.slug; active={ button:fb }; bumpPlayCount();
+      // Load the track into the (ideally already-unlocked) persistent widget.
+      // If the widget isn't built/ready yet, build it and play in onReady — the
+      // first time on mobile this only succeeds when called from a tap.
+      if(radioWidget && radioWidgetReady){ try{ radioWidget.load(entry.sc, { auto_play:true }); }catch(_){} }
+      else { radioBuildWidget(entry, function(){ try{ radioWidget.play(); }catch(_){} }); }
       document.body.classList.add('radio-on');
       radioFabUpdate(entry);
+      if(radio.tick) clearInterval(radio.tick);
       radio.tick=setInterval(function(){
         if(!radio.on){ clearInterval(radio.tick); radio.tick=null; return; }
         if(radioScPlaying) radio.played++;          // clock only runs while audio plays
@@ -1350,11 +1369,10 @@
       },1000);
       if(typeof syncTabs==='function') syncTabs();
     }
-    // Mobile autoplay needs the audio iframe created *inside* the tap, before
-    // the browser revokes user-activation. Building the station is async (it
-    // reads the day feeds), so we prewarm: build the weekend station ahead of
-    // time and load the SoundCloud widget API. Then a tap can start playback
-    // synchronously. Keyed by city|weekend so it self-refreshes.
+    // Prewarm so a tap can start audio on mobile: build the weekend station,
+    // then build the persistent SC widget to READY loaded with the DJ who's on
+    // air right now (paused). The tap then unlocks + plays it from inside the
+    // gesture. Keyed by city|weekend so it self-refreshes.
     var radioWarm={ queue:null, key:'', building:false };
     function radioWarmKey(){ var wd=weekendDatesFor(0); return currentCity+'|'+wd[0]; }
     async function prewarmRadio(){
@@ -1362,9 +1380,16 @@
       if(radioWarm.building || (radioWarm.queue && radioWarm.key===key)) return;
       radioWarm.building=true;
       try{
-        loadScApi(function(){}); // start the SoundCloud Widget API loading now
         var q=await buildStation();
-        if(q.length){ radioWarm.queue=seededShuffle(q, key); radioWarm.key=key; }
+        if(q.length){
+          radioWarm.queue=seededShuffle(q, key); radioWarm.key=key;
+          // Build the widget for the on-air DJ (first with a SoundCloud), paused.
+          if(!radio.on){
+            var n=radioWarm.queue.length, start=broadcastPos(n).idx, entry=null;
+            for(var t=0;t<n;t++){ var c=radioWarm.queue[(start+t)%n]; if(c && c.sc){ entry=c; break; } }
+            if(entry) radioBuildWidget(entry);
+          }
+        }
       }catch(_){}
       radioWarm.building=false;
     }
