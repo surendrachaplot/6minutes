@@ -1215,7 +1215,7 @@
       art.innerHTML=genPoster(btn.dataset.name||'Now playing')+(btn.dataset.poster?'<img class="real" src="'+imgUrl(btn.dataset.poster,800)+'" alt="" onerror="this.style.display=\'none\'">':'')+'<span class="tint"></span>';
       dockMedia.appendChild(art);
       dockMedia.appendChild(f);
-      openDockUI(btn,btn.dataset.name||'Now playing','SOUNDCLOUD', !isSmallScreen());
+      openDockUI(btn,btn.dataset.name||'Now playing',btn.dataset.venue||'SoundCloud', !isSmallScreen());
       // The iframe already autoplays (auto_play=true); the Widget API just adds
       // the scrubber + play/pause sync, so we bind it lazily once api.js loads.
       loadScApi(function(){
@@ -1238,7 +1238,7 @@
       // inside this tap, so mobile autoplay is allowed — no second press needed.
       var reuse = ytPlayer && ytReadyFlag && currentType==='yt' && f && f.isConnected;
       currentType='yt';
-      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE', !isSmallScreen());
+      openDockUI(btn,btn.dataset.name||'Now playing',btn.dataset.venue||'YouTube', !isSmallScreen());
       if(reuse){
         try{ ytPlayer.loadVideoById({ videoId:videoId, startSeconds:start }); }catch(_){}
         pos=0; paintScrub(); startPoll();
@@ -2798,18 +2798,19 @@
         document.getElementById('ap-seen').addEventListener('click',function(){ toggleSeen(slug,{name:a.name}); openArtist(slug); });
         document.querySelectorAll('#page-body .along-chip').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.along); }); });
         document.querySelectorAll('#page-body .gh-venue[data-venue]').forEach(function(b){ b.addEventListener('click',function(){ if(b.dataset.venue) openVenue(b.dataset.venue); }); });
-        // Real upcoming London gigs (canonical event_artists join), home-style cards.
+        // Real upcoming gigs across every city we cover (canonical event_artists join), home-style cards.
         var up=document.getElementById('ap-upcoming');
         var rows=(a.upcoming||[]).map(function(g){
           return {
             id:g.id, title:g.title, venue:g.venue,
+            _city:g.city?cityLabel(g.city):'',
             _day:fmtDateLabel(String(g.event_date).slice(0,10)),
             startTime:g.start_time, poster:g.poster_url,
             artists:(g.lineup||[]).map(function(x){ return {name:x.name, contentUrl:'/dj/'+x.slug}; })
           };
         });
         if(up && rows.length){
-          up.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming in London ('+rows.length+')</div>'+
+          up.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming ('+rows.length+')</div>'+
             '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">'+rows.map(cardHTML).join('')+'</div>';
           wireCard(up);
           var rmap={}; rows.forEach(function(ev){ if(ev.id!=null) rmap[String(ev.id)]=ev; });
@@ -3093,7 +3094,7 @@
         var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
         var sc=normaliseSc(a.soundcloud);
         var pos=esc(ev.poster||'');
-        var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
+        var ytBtn=slug?'<button class="play yt" data-slug="'+esc(slug)+'" data-name="'+esc(a.name)+'" data-poster="'+pos+'" data-venue="'+esc(ev.venue||'')+'" title="Play full set on YouTube">'+YT_SVG+'<span class="state">▶</span></button>':'<span class="no-sc">&mdash;</span>';
         var picked=slug&&isArtistPicked(slug)?' on':'';
         var heart=slug?'<button class="heart'+picked+'" type="button" data-pick-art="'+esc(slug)+'" data-name="'+esc(a.name)+'" aria-pressed="'+(picked?'true':'false')+'" aria-label="Wanna see '+esc(a.name)+'">'+HEART_SVG+'</button>':'';
         // Seen toggle — only in the roomy event sheet. Account feature.
@@ -3120,7 +3121,7 @@
         '<button class="card-poster" type="button" aria-label="View '+esc(ev.title)+' lineup">'+posterHTML(ev)+'<span class="expand-badge">'+EXPAND_SVG+'</span></button>'+
         pick+
         '<h3><button class="title-btn" type="button">'+esc(ev.title)+'</button></h3>'+
-        '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
+        '<div class="meta"><b>'+esc(ev.venue||'TBA')+'</b>'+(ev._city?' &middot; '+esc(ev._city):'')+(ev._day?' &middot; '+esc(ev._day):'')+(time?' &middot; '+time:'')+'</div>'+
         actions+
         (eid?'<div class="proof" id="proof-'+esc(eid)+'"></div>':'')+
         ((eid&&(ev.artists||[]).length)?'<button class="ev-radio" type="button">'+RADIO_SVG+'<span>Lineup Radio</span></button>':'')+
