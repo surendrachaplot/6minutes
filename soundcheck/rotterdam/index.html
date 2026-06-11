@@ -57,7 +57,7 @@
     }
 
     /* cross-site teaser banner (below nav) */
-    .teaser { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .teaser { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:22px 0; border-top:1px solid var(--border); flex-wrap:wrap; }
     .teaser .tt { font-size:0.95rem; font-weight:500; color:var(--muted); }
     .teaser .tt b { color:var(--fg); font-weight:700; }
     .teaser a { font-family:var(--head); font-size:0.78rem; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); text-decoration:none; white-space:nowrap; }
@@ -320,7 +320,7 @@
     }
 
     @media (max-width:920px)  { .grid { grid-template-columns:repeat(3,1fr); } .wrap{ padding:0 28px; } }
-    @media (max-width:620px)  { .grid { grid-template-columns:repeat(2,1fr); } .wrap{ padding:0 18px; } main.wrap{ display:flex; flex-direction:column; } .teaser{ order:99; border-bottom:none; border-top:1px solid var(--border); margin-top:6px; } }
+    @media (max-width:620px)  { .grid { grid-template-columns:repeat(2,1fr); } .wrap{ padding:0 18px; } }
     @media (max-width:380px)  { .grid { grid-template-columns:1fr; } }
 
     /* ── Picks (Phase 1: heart + shortlist + share) ── */
@@ -741,11 +741,6 @@
     </nav>
 
     <div id="home">
-    <div class="teaser">
-      <span class="tt">Come help us build the first <b>community-owned club in London.</b></span>
-      <a href="/">6 Minutes &rarr;</a>
-    </div>
-
     <div class="hero">
       <div>
         <p class="eyebrow" id="eyebrow">Tonight</p>
@@ -793,6 +788,10 @@
       </form>
       <p class="signup-success" id="signup-success" hidden>You&rsquo;re on the list. &#x2713;</p>
     </section>
+    <div class="teaser">
+      <span class="tt">Come help us build the first <b>community-owned club in London.</b></span>
+      <a href="/">6 Minutes &rarr;</a>
+    </div>
     <footer class="site-foot">
       <span>soundcheck &mdash; a 6 Minutes project</span>
       <span class="dot">&middot;</span>
@@ -1339,6 +1338,17 @@
     // Station-ID drop between DJs: speak "You are listening to Soundcheck
     // Radio", then bring in the next set when the voiceover finishes (with a
     // safety timeout so a missing/blocked speech engine never stalls the radio).
+    // Speak the station ID now (used at tune-in). Calling this from the start
+    // tap also UNLOCKS speechSynthesis on iOS, so the later auto-advance
+    // voiceovers (which fire with no user gesture) are allowed to play.
+    function radioSpeakId(){
+      try{
+        if(!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        var u=new SpeechSynthesisUtterance('You are listening to Soundcheck Radio'); u.rate=0.95;
+        window.speechSynthesis.speak(u);
+      }catch(_){}
+    }
     function radioSayThenPlay(entry){
       var started=false, go=function(){ if(started||!radio.on) return; started=true; radioPlayEntry(entry); };
       try{ if(radioYt && radioYt.pauseVideo) radioYt.pauseVideo(); }catch(_){} // duck the outgoing set under the ID
@@ -1454,6 +1464,7 @@
       if(!(await gateForPlay())) return;    // microtask only — keeps user-activation alive
       try{
         showToast('Tuning in…'); // the FAB is hidden on mobile, so confirm the tap
+        radioSpeakId(); // announce on tune-in + unlock speech for the 6-min handoffs (must be in the tap)
         var key=radioWarmKey();
         // FAST PATH: warm station ready → start inside the gesture so mobile
         // autoplay is allowed. Pick the on-air DJ and the next one with a set.
@@ -1489,6 +1500,7 @@
       if(!ev || !(ev.artists||[]).length){ showToast('No lineup to play yet.'); return; }
       if(radio.on && radio.station==='event:'+ev.id){ stopActive(); return; } // toggle off
       if(!(await gateForPlay())) return;
+      radioSpeakId(); // announce + unlock speech in the tap
       var q=[];
       (ev.artists||[]).forEach(function(a){
         var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
