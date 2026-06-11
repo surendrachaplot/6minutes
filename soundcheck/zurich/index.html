@@ -1192,21 +1192,36 @@
     }
     document.getElementById('dock-prev').addEventListener('click',function(){ playAt(-1); });
     document.getElementById('dock-next').addEventListener('click',function(){ playAt(1); });
+    // Start resolving a button's YouTube id on pointerdown (fires before the
+    // click), so the id is usually ready by tap time. Awaiting an already-
+    // resolved promise is only a microtask, so playback still runs inside the
+    // user gesture — which is what mobile autoplay requires. No extra quota:
+    // it's the same single lookup, just kicked off ~a beat earlier, deduped
+    // per button and cached server-side.
+    function prefetchYt(btn){
+      if(!btn || btn.dataset.yt) return null;
+      if(btn._ytP) return btn._ytP;
+      btn._ytP = fetch(API_BASE+'/api/youtube?slug='+encodeURIComponent(btn.dataset.slug)+'&name='+encodeURIComponent(btn.dataset.name))
+        .then(function(res){ return res.json().catch(function(){return {};}).then(function(j){ return { status:res.status, ok:res.ok, videoId:j.videoId, error:j.error }; }); })
+        .catch(function(err){ return { netErr:err.message }; });
+      return btn._ytP;
+    }
     async function handleYtClick(btn){
       var wasMe=active&&active.button===btn;
       if(wasMe){ stopActive(); return; }
       if(!(await gateForPlay())) return;
       stopActive();
       if(btn.dataset.yt){ playYt(btn,btn.dataset.yt); return; }
+      var p=prefetchYt(btn); // resolved already if pointerdown got a head start
       btn.disabled=true; btn.classList.add('spinning');
       try{
-        var res=await fetch(API_BASE+'/api/youtube?slug='+encodeURIComponent(btn.dataset.slug)+'&name='+encodeURIComponent(btn.dataset.name));
-        var json=await res.json().catch(function(){return {};});
-        if(res.status===404){ showToast('No long-form YouTube set found for '+btn.dataset.name+'.'); return; }
-        if(!res.ok){ showToast('YouTube error: '+(json.error||res.status)); return; }
-        btn.dataset.yt=json.videoId; playYt(btn,json.videoId);
+        var r=await p; if(!r) return;
+        if(r.netErr){ showToast('YouTube request failed: '+r.netErr); return; }
+        if(r.status===404){ showToast('No long-form YouTube set found for '+btn.dataset.name+'.'); return; }
+        if(!r.ok){ showToast('YouTube error: '+(r.error||r.status)); return; }
+        btn.dataset.yt=r.videoId; playYt(btn,r.videoId);
       }catch(err){ showToast('YouTube request failed: '+err.message); }
-      finally{ btn.disabled=false; btn.classList.remove('spinning'); }
+      finally{ btn.disabled=false; btn.classList.remove('spinning'); btn._ytP=null; }
     }
 
     // ── Weekend Radio: 6 minutes with every DJ playing this weekend ──
@@ -1478,6 +1493,7 @@
         });
       });
       scope.querySelectorAll('.play.yt').forEach(function(btn){
+        btn.addEventListener('pointerdown',function(){ prefetchYt(btn); },{passive:true}); // head-start the id resolve
         btn.addEventListener('click',function(){ handleYtClick(btn); dismissCoach(); });
       });
       scope.querySelectorAll('.more-btn').forEach(function(btn){
