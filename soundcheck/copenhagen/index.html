@@ -1059,7 +1059,7 @@
     }
 
     // YouTube IFrame API readiness
-    var ytReady=false, pendingYt=null, ytPlayer=null, scWidget=null, currentType=null;
+    var ytReady=false, pendingYt=null, ytPlayer=null, ytReadyFlag=false, scWidget=null, currentType=null;
     window.onYouTubeIframeAPIReady=function(){ ytReady=true; if(pendingYt){ var f=pendingYt; pendingYt=null; f(); } };
 
     // ── lazy SDK loaders (first play only — keeps both off the critical path) ──
@@ -1082,7 +1082,7 @@
     var active=null;
     function setState(btn,ch){ var s=btn.querySelector('.state'); if(s) s.textContent=ch; }
     function updatePP(playing){ dockPP.innerHTML = playing ? PP_PAUSE : PP_PLAY; dockPP.setAttribute('aria-label', playing?'Pause':'Play'); }
-    function clearPlayers(){ stopPoll(); if(ytPlayer){ try{ ytPlayer.destroy(); }catch(_){} ytPlayer=null; } scWidget=null; currentType=null; pendingYt=null; resetScrub(); }
+    function clearPlayers(){ stopPoll(); if(ytPlayer){ try{ ytPlayer.destroy(); }catch(_){} ytPlayer=null; ytReadyFlag=false; } scWidget=null; currentType=null; pendingYt=null; resetScrub(); }
     function ytSize(){ var w = window.innerWidth<=620 ? Math.min(320, window.innerWidth-40) : 400; return { w:w, h:Math.round(w*9/16) }; }
 
     // ── scrubber (works for both YT IFrame API and SC Widget API) ──
@@ -1158,33 +1158,43 @@
       });
     }
     function playYt(btn,videoId,startSec){
+      if(typeof radio!=='undefined' && radio.on) radioStop();   // taking over from the radio
+      // Clear the previously-playing button if we're switching tracks.
+      if(active && active.button && active.button!==btn){ active.button.classList.remove('playing'); setState(active.button,'▶'); }
+      var start=Math.max(0,Math.floor(startSec||360)); // default 6:00 — a wink to "6 Minutes"
+      var f=document.getElementById('yt-player');
+      // REUSE the persistent player when it's alive & ready: loadVideoById runs
+      // inside this tap, so mobile autoplay is allowed — no second press needed.
+      var reuse = ytPlayer && ytReadyFlag && currentType==='yt' && f && f.isConnected;
+      currentType='yt';
+      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE', !isSmallScreen());
+      if(reuse){
+        try{ ytPlayer.loadVideoById({ videoId:videoId, startSeconds:start }); }catch(_){}
+        pos=0; paintScrub(); startPoll();
+        return;
+      }
+      // First play (or after a stop / SC takeover): build the player fresh.
       clearPlayers(); currentType='yt';
       var sz=ytSize();
-      // Build the iframe ourselves WITH allow="autoplay" so the browser lets
-      // it autoplay with sound off our tap; then bind the IFrame API to it
-      // (enablejsapi=1) so the dock play/pause still works.
-      var f=document.createElement('iframe');
+      f=document.createElement('iframe');
       f.id='yt-player'; f.className='yt';
       f.allow='autoplay; encrypted-media; picture-in-picture';
       f.allowFullscreen=true;
       f.width=String(sz.w); f.height=String(sz.h);
-      // Default start at 6:00 — a wink to "6 Minutes" (sets are all 20min+).
-      // The radio passes its own offset so tuning in joins mid-broadcast.
       f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(videoId)+
-            '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&start='+(Math.max(0,Math.floor(startSec||360)))+'&origin='+encodeURIComponent(location.origin);
+            '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&start='+start+'&origin='+encodeURIComponent(location.origin);
       dockMedia.innerHTML=''; dockMedia.appendChild(f);
-      openDockUI(btn,btn.dataset.name||'Now playing','YOUTUBE', !isSmallScreen());
       function build(){
         ytPlayer=new YT.Player(f,{
           events:{
-            onReady:function(e){ try{ e.target.playVideo(); }catch(_){} try{ dur=e.target.getDuration()||0; }catch(_){} pos=0; paintScrub(); startPoll(); },
+            onReady:function(e){ ytReadyFlag=true; try{ e.target.playVideo(); }catch(_){} try{ dur=e.target.getDuration()||0; }catch(_){} pos=0; paintScrub(); startPoll(); },
             onStateChange:function(e){
               // Flip to pause as soon as playback actually starts (buffering
               // counts — autoplay succeeded). If the browser blocked autoplay,
               // none of these fire and the icon stays ▶, so one tap plays it.
               if(e.data===YT.PlayerState.PLAYING || e.data===YT.PlayerState.BUFFERING) updatePP(true);
               else if(e.data===YT.PlayerState.PAUSED || e.data===YT.PlayerState.CUED || e.data===YT.PlayerState.UNSTARTED) updatePP(false);
-              else if(e.data===YT.PlayerState.ENDED){ updatePP(false); if(radio.on) radioAdvance(1); }
+              else if(e.data===YT.PlayerState.ENDED){ updatePP(false); }
             }
           }
         });
@@ -1230,6 +1240,7 @@
     // it's the same single lookup, just kicked off ~a beat earlier, deduped
     // per button and cached server-side.
     function prefetchYt(btn){
+      try{ loadYtApi(); }catch(_){} // warm the IFrame API on press intent
       if(!btn || btn.dataset.yt) return null;
       if(btn._ytP) return btn._ytP;
       btn._ytP = fetch(API_BASE+'/api/youtube?slug='+encodeURIComponent(btn.dataset.slug)+'&name='+encodeURIComponent(btn.dataset.name))
@@ -1239,9 +1250,10 @@
     }
     async function handleYtClick(btn){
       var wasMe=active&&active.button===btn;
-      if(wasMe){ stopActive(); return; }
+      if(wasMe){ stopActive(); return; }   // tapping the playing one = stop
       if(!(await gateForPlay())) return;
-      stopActive();
+      // No stopActive() here — playYt takes over the persistent player so the
+      // load happens inside this tap (mobile autoplay).
       if(btn.dataset.yt){ playYt(btn,btn.dataset.yt); return; }
       var p=prefetchYt(btn); // resolved already if pointerdown got a head start
       btn.disabled=true; btn.classList.add('spinning');
