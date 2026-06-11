@@ -692,7 +692,9 @@
       .dock { left:16px; right:16px; bottom:calc(60px + env(safe-area-inset-bottom)); z-index:69;
         background:rgba(30,28,36,0.55); backdrop-filter:blur(30px) saturate(200%); -webkit-backdrop-filter:blur(30px) saturate(200%);
         border:1px solid rgba(255,255,255,0.14); border-bottom:none; border-radius:22px 22px 0 0;
-        box-shadow:0 -6px 22px rgba(0,0,0,0.28); overflow:hidden; }
+        box-shadow:0 -6px 22px rgba(0,0,0,0.28); overflow:hidden;
+        transform:translateY(calc(100% + 70px + env(safe-area-inset-bottom))); }  /* hidden: clear the 60px bottom offset too */
+      .dock.show { transform:translateY(0); }
       body.has-dock .bnav { border-top-left-radius:0; border-top-right-radius:0; border-top:1px solid rgba(255,255,255,0.07); box-shadow:0 10px 30px rgba(0,0,0,0.4); }
       body.has-dock.dock-collapsed { padding-bottom:calc(122px + env(safe-area-inset-bottom)); }
     }
