@@ -362,15 +362,23 @@
     body.has-dock .fab-stack { bottom:calc(var(--dock-pad,96px) + 16px); }
     body.page-on .fab-stack, body.sheet-on .fab-stack { display:none; }
     @media (max-width:520px){ .fab-stack { right:12px; bottom:calc(16px + env(safe-area-inset-bottom)); } }
-    .radio-fab { border:none; border-radius:999px; padding:12px 18px; font:700 0.74rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:inline-flex; align-items:center; gap:8px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; background:var(--accent); color:var(--accent-ink); }
-    .radio-fab svg { width:16px; height:16px; }
-    .radio-fab.onair { background:var(--surface); color:var(--accent); border:1px solid var(--accent); }
-    .radio-fab.onair svg { animation:radio-pulse 1.6s ease-in-out infinite; }
+    .radio-fab { border:none; border-radius:999px; padding:10px 14px; box-shadow:0 10px 30px rgba(0,0,0,0.4); display:inline-flex; align-items:center; gap:8px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; background:var(--accent); color:var(--accent-ink); }
+    .rf-main { background:transparent; border:0; color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding:2px 2px; font:700 0.74rem var(--body); letter-spacing:0.06em; text-transform:uppercase; -webkit-tap-highlight-color:transparent; }
+    .rf-main svg { width:16px; height:16px; }
+    .radio-fab.onair { background:var(--surface); color:var(--accent); border:1px solid var(--accent); max-width:330px; padding:6px 7px 6px 13px; }
+    .radio-fab.onair .rf-main svg { animation:radio-pulse 1.6s ease-in-out infinite; }
     .radio-fab .rf-tx { display:flex; flex-direction:column; align-items:flex-start; text-align:left; min-width:0; }
     .radio-fab .rf-t { line-height:1.2; }
-    .radio-fab .rf-sub { display:block; font:600 0.62rem var(--body); letter-spacing:0.04em; text-transform:none; opacity:0.75; margin-top:2px; max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .radio-fab.onair { max-width:320px; }
-    .radio-fab.onair .rf-t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px; text-transform:none; letter-spacing:0.02em; }
+    .radio-fab .rf-sub { display:block; font:600 0.62rem var(--body); letter-spacing:0.04em; text-transform:none; opacity:0.75; margin-top:2px; max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .radio-fab.onair .rf-t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; text-transform:none; letter-spacing:0.02em; }
+    /* inline actions on the on-air pill: heart the DJ + jump to their page */
+    .rf-act { display:none; }
+    .radio-fab.onair .rf-act { display:inline-flex; }
+    .radio-fab .heart { width:30px; height:30px; }
+    .radio-fab .heart svg { width:15px; height:15px; }
+    .rf-go { width:30px; height:30px; border-radius:999px; background:transparent; border:1px solid var(--accent); color:var(--accent); align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    .rf-go svg { width:15px; height:15px; }
+    .rf-go:hover { background:rgba(255,122,107,0.16); }
     /* while on air the pill shows on mobile too (above the nav) — the radio has no overlay */
     body.radio-on .fab-stack { display:flex; }
     @media (max-width:620px){ body.radio-on .fab-stack { bottom:calc(86px + env(safe-area-inset-bottom)); } }
@@ -867,10 +875,14 @@
   </div>
 
   <div class="fab-stack" id="fab-stack">
-    <button class="radio-fab" id="radio-fab" type="button" aria-label="Play the weekend radio">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-      <span class="rf-tx"><span class="rf-t" id="radio-fab-label">Radio</span><span class="rf-sub" id="radio-fab-sub" hidden></span></span>
-    </button>
+    <div class="radio-fab" id="radio-fab">
+      <button class="rf-main" id="radio-fab-main" type="button" aria-label="Play the weekend radio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        <span class="rf-tx"><span class="rf-t" id="radio-fab-label">Radio</span><span class="rf-sub" id="radio-fab-sub" hidden></span></span>
+      </button>
+      <button class="heart rf-act" id="radio-fab-heart" type="button" aria-label="Heart this artist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg></button>
+      <button class="rf-act rf-go" id="radio-fab-go" type="button" aria-label="Open artist page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg></button>
+    </div>
   </div>
 
   <!-- mobile bottom nav -->
@@ -1453,9 +1465,13 @@
     }
     function radioFabUpdate(entry){
       var t=document.getElementById('radio-fab-label'), sub=document.getElementById('radio-fab-sub');
-      if(t) t.textContent='On air — '+entry.name+(entry.venue?(' at '+entry.venue):'');
-      var nx=radio.queue.length>1 ? radio.queue[(radio.i+1)%radio.queue.length] : null;
-      if(sub){ if(nx){ sub.hidden=false; sub.textContent='Next up — '+nx.name+(nx.venue?(' at '+nx.venue):''); } else sub.hidden=true; }
+      if(t) t.textContent='On air — '+entry.name;
+      if(sub){ if(entry.venue){ sub.hidden=false; sub.textContent=entry.venue; } else sub.hidden=true; }
+      // inline actions: heart reflects pick state (kept in sync by refreshArtistButtons
+      // via data-pick-art); the arrow jumps to this DJ's page.
+      var h=document.getElementById('radio-fab-heart');
+      if(h){ h.setAttribute('data-pick-art', entry.slug||''); h.classList.toggle('on', typeof artStatus==='function' && artStatus(entry.slug)==='wanna_see'); h.setAttribute('aria-label','Heart '+entry.name); }
+      var g=document.getElementById('radio-fab-go'); if(g) g.setAttribute('aria-label','Open '+entry.name+'’s page');
     }
     function radioPlayEntry(entry){
       radio.played=0; radioScPlaying=false; // each DJ's set plays from the start, up to six minutes
@@ -2143,7 +2159,13 @@
         var lb=document.getElementById('mp-log'); if(lb) lb.addEventListener('click',function(){ openLog(); });
       }catch(_){}
     }
-    document.getElementById('radio-fab').addEventListener('click',function(){ startRadio(); });
+    document.getElementById('radio-fab-main').addEventListener('click',function(){ startRadio(); });
+    document.getElementById('radio-fab-heart').addEventListener('click',function(e){
+      e.stopPropagation(); var en=radio.queue[radio.i]; if(en && en.slug) toggleArtist(en.slug, { name:en.name });
+    });
+    document.getElementById('radio-fab-go').addEventListener('click',function(e){
+      e.stopPropagation(); var en=radio.queue[radio.i]; if(en && en.slug && typeof openArtist==='function') openArtist(en.slug);
+    });
 
     // ════════════ Nights: collaborative night plans ════════════
     // ⏸ PARKED pending redesign: all entry points (FAB, '＋ Add to night',
