@@ -1258,7 +1258,7 @@
     function radioStop(){
       if(radio.tick){ clearInterval(radio.tick); radio.tick=null; }
       try{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); }catch(_){}
-      try{ if(radioWidget && radioWidget.pause) radioWidget.pause(); }catch(_){} // keep widget alive (stays unlocked)
+      try{ if(radioYt && radioYt.pauseVideo) radioYt.pauseVideo(); }catch(_){} // keep player alive (stays unlocked)
       radio.on=false; radio.queue=[]; radio.i=-1; radio.played=0; radioScPlaying=false;
       document.body.classList.remove('radio-on');
       var sub=document.getElementById('radio-fab-sub'); if(sub){ sub.hidden=true; sub.textContent=''; }
@@ -1274,23 +1274,23 @@
           (ev.artists||[]).forEach(function(a){
             var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
             if(!slug||seen[slug]) return; seen[slug]=1;
-            q.push({ slug:slug, name:a.name, sc:scNorm(a.soundcloud), venue:ev.venue||'', day:days[k].label, poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
+            q.push({ slug:slug, name:a.name, yt:null, tried:false, venue:ev.venue||'', day:days[k].label, poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
           });
         });
       }
       return q;
     }
-    // The feed sometimes returns www./m. hosts or a bare slug; the SC widget's
-    // resolver wants a clean https://soundcloud.com/... URL.
-    function scNorm(u){
-      if(!u) return null; u=String(u).trim(); if(!u) return null;
-      u=u.replace(/^https?:\/\/(www\.|m\.)?soundcloud\.com/i,'https://soundcloud.com');
-      if(!/^https?:\/\//i.test(u)) u='https://soundcloud.com/'+u.replace(/^\/+/,'');
-      return u;
+    // Resolve an artist's long-form YouTube set (cached server-side). An artist
+    // with no findable set is skipped (tune-in/advance fall forward).
+    async function radioResolve(entry){
+      if(entry.yt||entry.tried) return entry.yt;
+      entry.tried=true;
+      try{
+        var res=await fetch(API_BASE+'/api/youtube?slug='+encodeURIComponent(entry.slug)+'&name='+encodeURIComponent(entry.name));
+        if(res.ok){ var j=await res.json().catch(function(){return {};}); entry.yt=j.videoId||null; }
+      }catch(_){}
+      return entry.yt;
     }
-    // SoundCloud URL rides along in the day feed, so "resolving" is instant —
-    // an artist with no SoundCloud is skipped (tune-in/advance fall forward).
-    async function radioResolve(entry){ return entry.sc||null; }
     async function radioAdvance(delta){
       if(!radio.on) return;
       if(radio.tick){ clearInterval(radio.tick); radio.tick=null; }
@@ -1309,7 +1309,7 @@
     // safety timeout so a missing/blocked speech engine never stalls the radio).
     function radioSayThenPlay(entry){
       var started=false, go=function(){ if(started||!radio.on) return; started=true; radioPlayEntry(entry); };
-      try{ if(scWidget && scWidget.pause) scWidget.pause(); }catch(_){} // duck the outgoing set under the ID
+      try{ if(radioYt && radioYt.pauseVideo) radioYt.pauseVideo(); }catch(_){} // duck the outgoing set under the ID
       try{
         if('speechSynthesis' in window){
           window.speechSynthesis.cancel();
@@ -1336,37 +1336,37 @@
       showToast('Couldn’t find sets to play.');
       stopActive();
     }
-    // Radio playback is AMBIENT and uses ONE persistent SoundCloud widget that
+    // Radio playback is AMBIENT and uses ONE persistent YouTube player that
     // lives in its own hidden host (so a manual dock play, which clears
-    // dockMedia, can't wipe it). SoundCloud ignores auto_play on mobile, so the
-    // only thing that starts audio there is calling .play()/.load(autoplay) on
-    // a READY widget from inside a user tap. We prewarm the widget to READY,
-    // then the tap unlocks it; every later track reuses the same unlocked
-    // widget via .load(url,{auto_play:true}) — which is how advance + the
-    // voiceover transitions keep playing without a fresh gesture.
-    var radioWidget=null, radioIframe=null, radioWidgetReady=false;
+    // dockMedia, can't wipe it). YouTube's IFrame API allows programmatic
+    // playback from a parent gesture, so we prewarm a player cued to the on-air
+    // DJ; the tap calls playVideo() to unlock it, and every later track reuses
+    // it via loadVideoById — which is how advance + the voiceover transitions
+    // keep playing without a fresh gesture. Sets play minutes 6→12 (start=360).
+    var radioYt=null, radioIframe=null, radioWidgetReady=false;
     function radioHostEl(){
       var h=document.getElementById('radio-audio');
-      if(!h){ h=document.createElement('div'); h.id='radio-audio'; h.style.cssText='position:fixed;left:-9999px;top:0;width:300px;height:80px;pointer-events:none'; document.body.appendChild(h); }
+      if(!h){ h=document.createElement('div'); h.id='radio-audio'; h.style.cssText='position:fixed;left:-9999px;top:0;width:300px;height:170px;pointer-events:none'; document.body.appendChild(h); }
       return h;
     }
-    // Create (or rebuild) the persistent widget, loaded with `entry` but NOT
-    // playing. onReady fires once the Widget API is bound and ready.
+    // Create the persistent player cued to `entry` (NOT auto-playing). onReady
+    // fires once the IFrame API is bound and ready.
     function radioBuildWidget(entry, onReady){
-      loadScApi(function(){
-        if(!radioIframe){ radioIframe=document.createElement('iframe'); radioIframe.className='sc'; radioIframe.allow='autoplay'; radioHostEl().appendChild(radioIframe); }
-        radioWidgetReady=false;
-        radioIframe.src='https://w.soundcloud.com/player/?url='+encodeURIComponent(entry.sc)+
-          '&auto_play=false&visual=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false';
-        radioWidget=SC.Widget(radioIframe);
-        radioWidget.bind(SC.Widget.Events.READY, function(){
-          radioWidgetReady=true;
-          radioWidget.bind(SC.Widget.Events.PLAY,  function(){ radioScPlaying=true; });
-          radioWidget.bind(SC.Widget.Events.PAUSE, function(){ radioScPlaying=false; });
-          radioWidget.bind(SC.Widget.Events.FINISH,function(){ if(radio.on) radioAdvance(1); });
-          if(onReady) onReady();
-        });
-      });
+      if(!radioIframe){ radioIframe=document.createElement('iframe'); radioIframe.className='yt'; radioIframe.allow='autoplay; encrypted-media'; radioIframe.width='300'; radioIframe.height='170'; radioHostEl().appendChild(radioIframe); }
+      radioWidgetReady=false;
+      radioIframe.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(entry.yt)+
+        '?enablejsapi=1&autoplay=0&rel=0&playsinline=1&start=360&origin='+encodeURIComponent(location.origin);
+      function build(){
+        radioYt=new YT.Player(radioIframe,{ events:{
+          onReady:function(){ radioWidgetReady=true; if(onReady) onReady(); },
+          onStateChange:function(e){
+            if(e.data===YT.PlayerState.PLAYING || e.data===YT.PlayerState.BUFFERING) radioScPlaying=true;
+            else if(e.data===YT.PlayerState.PAUSED) radioScPlaying=false;
+            else if(e.data===YT.PlayerState.ENDED){ radioScPlaying=false; if(radio.on) radioAdvance(1); }
+          }
+        }});
+      }
+      if(window.YT && YT.Player) build(); else { pendingYt=build; loadYtApi(); }
     }
     function radioFabUpdate(entry){
       var t=document.getElementById('radio-fab-label'), sub=document.getElementById('radio-fab-sub');
@@ -1377,11 +1377,11 @@
     function radioPlayEntry(entry){
       radio.played=0; radioScPlaying=false; // each DJ's set plays from the start, up to six minutes
       var fb=document.createElement('button'); fb.dataset.name=entry.name; fb.dataset.slug=entry.slug; active={ button:fb }; bumpPlayCount();
-      // Load the track into the (ideally already-unlocked) persistent widget.
-      // If the widget isn't built/ready yet, build it and play in onReady — the
-      // first time on mobile this only succeeds when called from a tap.
-      if(radioWidget && radioWidgetReady){ try{ radioWidget.load(entry.sc, { auto_play:true }); }catch(_){} }
-      else { radioBuildWidget(entry, function(){ try{ radioWidget.play(); }catch(_){} }); }
+      // Load the set into the (ideally already-unlocked) persistent player.
+      // If it isn't built/ready yet, build it and play in onReady — the first
+      // time on mobile this only succeeds when called from a tap.
+      if(radioYt && radioWidgetReady){ try{ radioYt.loadVideoById({ videoId:entry.yt, startSeconds:360 }); }catch(_){} }
+      else { radioBuildWidget(entry, function(){ try{ radioYt.playVideo(); }catch(_){} }); }
       document.body.classList.add('radio-on');
       radioFabUpdate(entry);
       if(radio.tick) clearInterval(radio.tick);
@@ -1406,10 +1406,10 @@
         var q=await buildStation();
         if(q.length){
           radioWarm.queue=seededShuffle(q, key); radioWarm.key=key;
-          // Build the widget for the on-air DJ (first with a SoundCloud), paused.
+          // Resolve the on-air DJ's set and build the player cued + ready (paused).
           if(!radio.on){
             var n=radioWarm.queue.length, start=broadcastPos(n).idx, entry=null;
-            for(var t=0;t<n;t++){ var c=radioWarm.queue[(start+t)%n]; if(c && c.sc){ entry=c; break; } }
+            for(var t=0;t<n;t++){ var c=radioWarm.queue[(start+t)%n]; var vid=await radioResolve(c); if(vid){ entry=c; break; } }
             if(entry) radioBuildWidget(entry);
           }
         }
@@ -1427,7 +1427,7 @@
         // autoplay is allowed. Pick the on-air DJ and the next one with a set.
         if(radioWarm.queue && radioWarm.key===key){
           var n=radioWarm.queue.length, start=broadcastPos(n).idx, entry=null, idx=-1;
-          for(var t=0;t<n;t++){ var c=radioWarm.queue[(start+t)%n]; if(c && c.sc){ entry=c; idx=(start+t)%n; break; } }
+          for(var t=0;t<n;t++){ var c=radioWarm.queue[(start+t)%n]; if(c && c.yt){ entry=c; idx=(start+t)%n; break; } }
           if(entry){
             stopActive();
             radio.queue=radioWarm.queue; radio.on=true; radio.i=idx; radio.station='weekend';
@@ -1460,7 +1460,7 @@
       var q=[];
       (ev.artists||[]).forEach(function(a){
         var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
-        if(slug) q.push({ slug:slug, name:a.name, sc:scNorm(a.soundcloud), venue:ev.venue||'', day:ev._day||'', poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
+        if(slug) q.push({ slug:slug, name:a.name, yt:null, tried:false, venue:ev.venue||'', day:ev._day||'', poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
       });
       if(!q.length){ showToast('No lineup to play yet.'); return; }
       stopActive();
