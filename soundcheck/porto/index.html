@@ -373,7 +373,7 @@
     .radio-fab.onair .rf-t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:240px; text-transform:none; letter-spacing:0.02em; }
     /* while on air the pill shows on mobile too (above the nav) — the radio has no overlay */
     body.radio-on .fab-stack { display:flex; }
-    @media (max-width:620px){ body.radio-on .fab-stack { bottom:calc(72px + env(safe-area-inset-bottom)); } }
+    @media (max-width:620px){ body.radio-on .fab-stack { bottom:calc(86px + env(safe-area-inset-bottom)); } }
     /* per-event "tune in" radio button (above each lineup) */
     .ev-radio { display:inline-flex; align-self:flex-start; width:fit-content; max-width:100%; align-items:center; gap:8px; margin:10px 0 2px; background:rgba(255,122,107,0.08); border:1px solid rgba(255,122,107,0.35); color:var(--accent); border-radius:999px; padding:7px 13px; font:700 0.66rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
     .ev-radio svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
@@ -643,16 +643,24 @@
     @media (max-width:560px){ .claim-banner { flex-wrap:wrap; gap:14px; } .claim-banner .cb-btn { width:100%; } }
     .venue-addr { color:var(--muted); font-size:0.88rem; line-height:1.45; margin:0 0 12px; }
     /* mobile bottom nav */
-    .bnav { display:none; position:fixed; left:0; right:0; bottom:0; z-index:70; background:rgba(15,15,18,0.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-top:1px solid var(--border); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); }
-    .bnav-tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--muted); font:600 0.6rem var(--body); letter-spacing:0.04em; cursor:pointer; padding:6px 0 4px; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    /* Liquid-glass floating tab bar (iOS) — also the cross-platform
+       glassmorphism look on Android Chrome via backdrop-filter. */
+    .bnav { display:none; position:fixed; left:14px; right:14px; bottom:calc(10px + env(safe-area-inset-bottom)); z-index:70; border-radius:24px; padding:8px 8px; gap:2px;
+      background:rgba(28,26,34,0.55);
+      backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
+      border:1px solid rgba(255,255,255,0.12);
+      box-shadow:0 10px 34px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.18); }
+    @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) { .bnav { background:rgba(22,20,28,0.96); } }
+    .bnav-tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--muted); font:600 0.6rem var(--body); letter-spacing:0.04em; cursor:pointer; padding:8px 0 6px; border-radius:16px; transition:color .15s ease, background .15s ease; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .bnav-tab.on { background:rgba(255,255,255,0.08); }
     .bnav-tab svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
     .bnav-tab.on { color:var(--accent); }
     .bnav-tab.onair svg { animation:radio-pulse 1.6s ease-in-out infinite; }
     @media (max-width:620px){
       .bnav { display:flex; }
-      body { padding-bottom:calc(64px + env(safe-area-inset-bottom)); }
-      .fab-stack { display:none; }                          /* Picks tab replaces the chip */
-      .dock { bottom:calc(58px + env(safe-area-inset-bottom)); }  /* player sits above the nav */
+      body { padding-bottom:calc(86px + env(safe-area-inset-bottom)); }
+      .fab-stack { bottom:calc(86px + env(safe-area-inset-bottom)); }  /* radio pill floats above the nav */
+      .dock { bottom:calc(80px + env(safe-area-inset-bottom)); }       /* player sits above the floating nav */
     }
     @keyframes radio-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
     /* city picker */
@@ -868,7 +876,6 @@
   <!-- mobile bottom nav -->
   <nav class="bnav" id="bnav" aria-label="Main">
     <button class="bnav-tab on" id="bnav-home" type="button"><svg viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
-    <button class="bnav-tab" id="bnav-radio" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg><span>Radio</span></button>
     <button class="bnav-tab" id="bnav-picks" type="button"><svg viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg><span>Picks</span></button>
     <button class="bnav-tab" id="bnav-profile" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></button>
   </nav>
@@ -1555,18 +1562,12 @@
       setTab('bnav-home', !onPage);
       setTab('bnav-picks', hash==='#picks');
       setTab('bnav-profile', hash==='#account' || (currentUser && hash==='#u/'+currentUser.handle));
-      var r=document.getElementById('bnav-radio');
-      if(r){ r.classList.toggle('on', !!radio.on); r.classList.toggle('onair', !!radio.on); }
       var rf=document.getElementById('radio-fab');
       if(rf){ rf.classList.toggle('onair', !!radio.on); if(!radio.on){ var rl=document.getElementById('radio-fab-label'); if(rl) rl.textContent='Radio'; } }
     }
     document.getElementById('bnav-home').addEventListener('click',function(){
       if(document.body.classList.contains('page-on')) goGrid();
       window.scrollTo({top:0,behavior:'smooth'}); syncTabs();
-    });
-    document.getElementById('bnav-radio').addEventListener('click',function(){
-      if(document.body.classList.contains('page-on')) goGrid();
-      startRadio(); // toggles on/off; syncTabs runs from radio start/stop
     });
     document.getElementById('bnav-picks').addEventListener('click',function(){ openMyPicks(); });
     document.getElementById('bnav-profile').addEventListener('click',function(){ if(currentUser) openAccount(); else openAuth(); });
