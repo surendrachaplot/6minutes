@@ -415,6 +415,12 @@
     /* shared-with-you banner */
     .shared-banner { display:none; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:0.88rem; }
     .shared-banner.show { display:flex; }
+    /* genre filter chips (derived from the day's events) */
+    .genre-bar { display:flex; gap:7px; flex-wrap:wrap; margin:2px 0 16px; }
+    .genre-bar[hidden] { display:none; }
+    .gchip-g { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:999px; padding:6px 12px; font:700 0.68rem var(--body); letter-spacing:0.03em; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .gchip-g:hover { color:var(--accent); border-color:var(--accent); }
+    .gchip-g.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
     .signup-banner { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:0.88rem; }
     .signup-banner[hidden] { display:none; }
     .signup-banner .b-h { font-family:var(--head); font-weight:800; color:var(--accent); letter-spacing:0.02em; }
@@ -795,6 +801,7 @@
 
     <div class="marquee" id="marquee"><div class="track" id="track"></div></div>
 
+    <div class="genre-bar" id="genre-bar" hidden></div>
     <div class="status" id="status"></div>
     <div class="signup-banner" id="signup-banner" hidden>
       <div><div class="b-h">Almost there</div><div class="b-t">Check <strong id="signup-banner-email">your inbox</strong> for your magic link to save your picks &amp; claim your profile.</div></div>
@@ -3173,7 +3180,7 @@
       stopActive();
       var evs=(events||[]).slice().sort(function(a,b){ return (b.attending||0)-(a.attending||0); });
       document.getElementById('eyebrow').textContent=eyebrowPrefix+' — '+evs.length+' event'+(evs.length===1?'':'s');
-      if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; return; }
+      if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; var gb0=document.getElementById('genre-bar'); if(gb0){ gb0.hidden=true; gb0.innerHTML=''; } return; }
       var ordered=orderEvents(evs);
       // ambient marquee: "<up to 5 artists> at <venue>" (duplicated for a seamless loop)
       function marqText(e){
@@ -3184,18 +3191,39 @@
       var marq='';
       for(var k=0;k<2;k++){ ordered.forEach(function(e){ marq+='<span>'+esc(marqText(e))+'</span><span class="star">&#10039;</span>'; }); }
       trackEl.innerHTML=marq;
-      gridEl.innerHTML=ordered.map(function(e){ return cardHTML(e); }).join('');
-      wireCard(gridEl);
-      gridEl.querySelectorAll('.gcard').forEach(function(card,i){
-        function open(){ openSheet(ordered[i]); }
-        var p=card.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
-        var t=card.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
-        var rb=card.querySelector('.ev-radio'); if(rb) rb.addEventListener('click',function(e){ e.stopPropagation(); startEventRadio(ordered[i]); });
-      });
+      // Paint (a subset of) the grid; re-runnable for genre filtering.
+      function paintGrid(list){
+        gridEl.innerHTML=list.map(function(e){ return cardHTML(e); }).join('');
+        wireCard(gridEl);
+        gridEl.querySelectorAll('.gcard').forEach(function(card,i){
+          var ev=list[i];
+          function open(){ openSheet(ev); }
+          var p=card.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
+          var t=card.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
+          var rb=card.querySelector('.ev-radio'); if(rb) rb.addEventListener('click',function(e){ e.stopPropagation(); startEventRadio(ev); });
+        });
+        applyShared();
+        decorateProof(list);
+      }
+      // Genre filter — chips from the genres present in today's events (RA).
+      var counts={}; ordered.forEach(function(e){ (e.genres||[]).forEach(function(g){ counts[g]=(counts[g]||0)+1; }); });
+      var genres=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a] || a.localeCompare(b); });
+      var gbar=document.getElementById('genre-bar');
+      if(gbar){
+        if(genres.length>1){
+          gbar.hidden=false;
+          gbar.innerHTML='<button class="gchip-g on" type="button" data-genre="">All</button>'+
+            genres.map(function(g){ return '<button class="gchip-g" type="button" data-genre="'+esc(g)+'">'+esc(g)+'</button>'; }).join('');
+          gbar.querySelectorAll('.gchip-g').forEach(function(b){ b.addEventListener('click',function(){
+            var g=b.dataset.genre||'';
+            gbar.querySelectorAll('.gchip-g').forEach(function(x){ x.classList.toggle('on', x===b); });
+            paintGrid(g ? ordered.filter(function(e){ return (e.genres||[]).indexOf(g)>-1; }) : ordered);
+          }); });
+        } else { gbar.hidden=true; gbar.innerHTML=''; }
+      }
+      paintGrid(ordered);
       rebuildLookup(ordered);
-      applyShared();
       maybeCoach();
-      decorateProof(ordered);
       // Warm the weekend radio in the background so a tap can start playback
       // synchronously (mobile autoplay). Self-guards per city|weekend.
       if(typeof prewarmRadio==='function' && !radio.on) setTimeout(prewarmRadio, 1200);
