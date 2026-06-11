@@ -686,7 +686,8 @@
       .bnav { display:flex; }
       body { padding-bottom:calc(72px + env(safe-area-inset-bottom)); }
       .fab-stack { bottom:calc(72px + env(safe-area-inset-bottom)); }  /* radio pill floats above the nav */
-      .dock { bottom:calc(68px + env(safe-area-inset-bottom)); }       /* player sits above the floating nav */
+      /* player is an inset, rounded card sitting directly above the glass nav */
+      .dock { left:14px; right:14px; bottom:calc(66px + env(safe-area-inset-bottom)); border-radius:18px; border:1px solid rgba(255,255,255,0.12); overflow:hidden; }
     }
     @keyframes radio-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
     /* city picker */
