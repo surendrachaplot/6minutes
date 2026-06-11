@@ -622,6 +622,14 @@
     .hdr-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
     .hdr-icon svg { width:16px; height:16px; }
     .hdr-icon:hover { border-color:var(--accent); color:var(--accent); }
+    /* city switcher pill in the header — mobile only (desktop keeps it in the hero headline) */
+    .hdr-city { display:none; align-items:center; gap:3px; background:var(--surface); border:1px solid rgba(255,122,107,0.5); color:var(--accent); border-radius:999px; padding:5px 7px 5px 11px; font:600 0.72rem var(--body); cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .hdr-city svg { width:13px; height:13px; }
+    @media (max-width:620px){
+      .hdr-city { display:inline-flex; }
+      #home .hero h1 { display:none; }
+      #home .hero { padding:18px 0 14px; }
+    }
     .account { display:inline-flex; align-items:center; gap:8px; }
     .account .signin-btn { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:7px 14px; font:700 0.62rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
     .account .signin-btn:hover { border-color:var(--accent); color:var(--accent); }
@@ -700,6 +708,16 @@
       .dock.show { transform:translateY(0); }
       body.has-dock .bnav { border-top-left-radius:0; border-top-right-radius:0; border-top:1px solid rgba(255,255,255,0.07); box-shadow:0 10px 30px rgba(0,0,0,0.4); }
       body.has-dock.dock-collapsed { padding-bottom:calc(122px + env(safe-area-inset-bottom)); }
+      /* on-air radio = the SAME merged glass unit as the dock: a full-width bar
+         flush on top of the nav (not a floating corner pill). */
+      body.radio-on .fab-stack { left:16px; right:16px; bottom:calc(60px + env(safe-area-inset-bottom)); z-index:69; display:flex; align-items:stretch; gap:0; }
+      body.radio-on .radio-fab { width:100%; max-width:none; padding:11px 14px; border-radius:22px 22px 0 0; border:1px solid rgba(255,255,255,0.14); border-bottom:none;
+        background:rgba(30,28,36,0.55); backdrop-filter:blur(30px) saturate(200%); -webkit-backdrop-filter:blur(30px) saturate(200%);
+        box-shadow:0 -6px 22px rgba(0,0,0,0.28); color:var(--accent); }
+      body.radio-on .radio-fab .rf-main { flex:1; min-width:0; }
+      body.radio-on .radio-fab .rf-t, body.radio-on .radio-fab .rf-sub { max-width:none; }
+      body.radio-on .bnav { border-top-left-radius:0; border-top-right-radius:0; border-top:1px solid rgba(255,255,255,0.07); box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+      body.radio-on { padding-bottom:calc(122px + env(safe-area-inset-bottom)); }
     }
     @keyframes radio-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
     /* city picker */
@@ -789,6 +807,7 @@
   <main class="wrap">
     <nav>
       <a class="logo" href=".">SOUNDCHECK</a>
+      <button class="hdr-city" id="hdr-city" type="button" aria-label="Change city"><span id="hdr-city-name">London</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
       <button class="hdr-icon" id="hdr-search" type="button" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
       <div class="account account-wrap" id="account"></div>
     </nav>
@@ -805,7 +824,6 @@
     <div class="datebar">
       <button class="qchip" id="pick-fri" type="button">Friday</button>
       <button class="qchip" id="pick-sat" type="button">Saturday</button>
-      <button class="qchip" id="pick-next" type="button">Next weekend</button>
       <button class="qchip alt" id="pick-date" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg><span id="pick-date-label">Pick a date</span></button>
       <button class="qchip alt" id="pick-genre" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg><span id="pick-genre-label">Genre</span> <span style="opacity:.6">▾</span></button>
     </div>
@@ -3260,13 +3278,11 @@
     var currentDate=null, currentRange=null, mode='weekend', activePick='weekend';
     var friBtn=document.getElementById('pick-fri'),
         satBtn=document.getElementById('pick-sat'),
-        nextBtn=document.getElementById('pick-next'),
         pickDateBtn=document.getElementById('pick-date');
 
     function syncChips(){
       friBtn.classList.toggle('on', activePick==='fri');
       satBtn.classList.toggle('on', activePick==='sat');
-      nextBtn.classList.toggle('on', activePick==='next');
       var onDate = activePick==='date';
       pickDateBtn.classList.toggle('on', onDate);
       var lbl='Pick a date';
@@ -3329,6 +3345,7 @@
       var m=cityMeta();
       var hn=document.getElementById('hero-city-name'); if(hn) hn.textContent=m.name;
       var hc=document.getElementById('hero-city'); if(hc) hc.setAttribute('aria-label','Change city — currently '+m.name);
+      var hcn=document.getElementById('hdr-city-name'); if(hcn) hcn.textContent=m.name; // mobile header pill
     }
     async function loadCities(){
       try{
@@ -3380,6 +3397,7 @@
       });
     }
     document.getElementById('hero-city').addEventListener('click',openCityPicker);
+    document.getElementById('hdr-city').addEventListener('click',openCityPicker);
 
     async function fetchDay(date){
       var key=currentCity+'|'+date;
@@ -3471,7 +3489,6 @@
     document.getElementById('hdr-search').addEventListener('click',openSearch);
     friBtn.addEventListener('click',function(){ load(weekendDatesFor(0)[0], 'fri'); });
     satBtn.addEventListener('click',function(){ load(weekendDatesFor(0)[1], 'sat'); });
-    nextBtn.addEventListener('click',function(){ loadWeekend(1); });
     pickDateBtn.addEventListener('click',openCal);
 
     // ── on-brand calendar (Pick a date — single day or range) ──
