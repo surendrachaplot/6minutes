@@ -370,7 +370,7 @@
     body.radio-on .fab-stack { display:flex; }
     @media (max-width:620px){ body.radio-on .fab-stack { bottom:calc(72px + env(safe-area-inset-bottom)); } }
     /* per-event "tune in" radio button (above each lineup) */
-    .ev-radio { display:inline-flex; align-items:center; gap:8px; margin:10px 0 2px; background:rgba(255,122,107,0.08); border:1px solid rgba(255,122,107,0.35); color:var(--accent); border-radius:999px; padding:7px 13px; font:700 0.66rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .ev-radio { display:inline-flex; align-self:flex-start; width:fit-content; max-width:100%; align-items:center; gap:8px; margin:10px 0 2px; background:rgba(255,122,107,0.08); border:1px solid rgba(255,122,107,0.35); color:var(--accent); border-radius:999px; padding:7px 13px; font:700 0.66rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
     .ev-radio svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
     .ev-radio:hover { background:rgba(255,122,107,0.16); }
 
