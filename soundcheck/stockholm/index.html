@@ -415,12 +415,11 @@
     /* shared-with-you banner */
     .shared-banner { display:none; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:0.88rem; }
     .shared-banner.show { display:flex; }
-    /* genre filter chips (derived from the day's events) */
-    .genre-bar { display:flex; gap:7px; flex-wrap:wrap; margin:2px 0 16px; }
-    .genre-bar[hidden] { display:none; }
-    .gchip-g { background:var(--surface); border:1px solid var(--border); color:var(--muted); border-radius:999px; padding:6px 12px; font:700 0.68rem var(--body); letter-spacing:0.03em; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
-    .gchip-g:hover { color:var(--accent); border-color:var(--accent); }
-    .gchip-g.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+    /* genre dropdown (datebar) */
+    .genre-menu { position:absolute; z-index:80; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:6px; box-shadow:0 14px 36px rgba(0,0,0,0.5); max-height:300px; overflow:auto; min-width:160px; }
+    .gm-item { display:block; width:100%; text-align:left; background:none; border:0; color:var(--fg); padding:9px 12px; border-radius:8px; font:600 0.84rem var(--body); cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
+    .gm-item:hover { background:rgba(255,255,255,0.06); }
+    .gm-item.on { color:var(--accent); }
     .signup-banner { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:0.88rem; }
     .signup-banner[hidden] { display:none; }
     .signup-banner .b-h { font-family:var(--head); font-weight:800; color:var(--accent); letter-spacing:0.02em; }
@@ -794,6 +793,7 @@
       <button class="qchip" id="pick-sat" type="button">Saturday</button>
       <button class="qchip" id="pick-next" type="button">Next weekend</button>
       <button class="qchip alt" id="pick-date" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg><span id="pick-date-label">Pick a date</span></button>
+      <button class="qchip alt" id="pick-genre" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg><span id="pick-genre-label">Genre</span> <span style="opacity:.6">▾</span></button>
       <button class="qchip alt push" id="pick-search" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Search</span></button>
     </div>
 
@@ -801,7 +801,6 @@
 
     <div class="marquee" id="marquee"><div class="track" id="track"></div></div>
 
-    <div class="genre-bar" id="genre-bar" hidden></div>
     <div class="status" id="status"></div>
     <div class="signup-banner" id="signup-banner" hidden>
       <div><div class="b-h">Almost there</div><div class="b-t">Check <strong id="signup-banner-email">your inbox</strong> for your magic link to save your picks &amp; claim your profile.</div></div>
@@ -3176,11 +3175,52 @@
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&sheetOv.classList.contains('show')) closeSheet(); });
 
     var gridEl=document.getElementById('grid'), trackEl=document.getElementById('track');
+    // Grid state lives at module scope so the datebar genre dropdown can re-filter.
+    var _gridEvents=[], _genreFilter=null;
+    function gridFiltered(){ return _genreFilter ? _gridEvents.filter(function(e){ return (e.genres||[]).indexOf(_genreFilter)>-1; }) : _gridEvents; }
+    function paintCurrentGrid(){
+      var list=gridFiltered();
+      gridEl.innerHTML=list.length ? list.map(function(e){ return cardHTML(e); }).join('') : '<div class="status">No '+esc(_genreFilter||'')+' events in this view.</div>';
+      wireCard(gridEl);
+      gridEl.querySelectorAll('.gcard').forEach(function(card,i){
+        var ev=list[i];
+        function open(){ openSheet(ev); }
+        var p=card.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
+        var t=card.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
+        var rb=card.querySelector('.ev-radio'); if(rb) rb.addEventListener('click',function(e){ e.stopPropagation(); startEventRadio(ev); });
+      });
+      applyShared();
+      decorateProof(list);
+    }
+    function gridGenres(){ var s={}; _gridEvents.forEach(function(e){ (e.genres||[]).forEach(function(g){ s[g]=(s[g]||0)+1; }); }); return Object.keys(s).sort(function(a,b){ return s[b]-s[a] || a.localeCompare(b); }); }
+    function syncGenreChip(){
+      var btn=document.getElementById('pick-genre'); if(!btn) return;
+      var n=gridGenres().length;
+      btn.style.display = n>1 ? '' : 'none';
+      var lbl=document.getElementById('pick-genre-label'); if(lbl) lbl.textContent=_genreFilter||'Genre';
+      btn.classList.toggle('on', !!_genreFilter);
+    }
+    function closeGenreMenu(){ var m=document.getElementById('genre-menu'); if(m) m.remove(); document.removeEventListener('click',_onGenreDoc); }
+    function _onGenreDoc(e){ if(!e.target.closest('#genre-menu') && !e.target.closest('#pick-genre')) closeGenreMenu(); }
+    function openGenreMenu(){
+      closeGenreMenu();
+      var genres=gridGenres(), btn=document.getElementById('pick-genre'), r=btn.getBoundingClientRect();
+      var m=document.createElement('div'); m.className='genre-menu'; m.id='genre-menu';
+      m.innerHTML='<button class="gm-item'+(!_genreFilter?' on':'')+'" type="button" data-g="">All genres</button>'+
+        genres.map(function(g){ return '<button class="gm-item'+(_genreFilter===g?' on':'')+'" type="button" data-g="'+esc(g)+'">'+esc(g)+'</button>'; }).join('');
+      document.body.appendChild(m);
+      var maxLeft=window.scrollX+document.documentElement.clientWidth-m.offsetWidth-8;
+      m.style.top=(window.scrollY+r.bottom+6)+'px';
+      m.style.left=Math.max(window.scrollX+8, Math.min(window.scrollX+r.left, maxLeft))+'px';
+      m.querySelectorAll('.gm-item').forEach(function(b){ b.addEventListener('click',function(){ _genreFilter=b.dataset.g||null; syncGenreChip(); paintCurrentGrid(); closeGenreMenu(); }); });
+      setTimeout(function(){ document.addEventListener('click',_onGenreDoc); },0);
+    }
+    document.getElementById('pick-genre').addEventListener('click',function(e){ e.stopPropagation(); if(document.getElementById('genre-menu')) closeGenreMenu(); else openGenreMenu(); });
     function renderEvents(events, eyebrowPrefix){
       stopActive();
       var evs=(events||[]).slice().sort(function(a,b){ return (b.attending||0)-(a.attending||0); });
       document.getElementById('eyebrow').textContent=eyebrowPrefix+' — '+evs.length+' event'+(evs.length===1?'':'s');
-      if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; var gb0=document.getElementById('genre-bar'); if(gb0){ gb0.hidden=true; gb0.innerHTML=''; } return; }
+      if(evs.length===0){ gridEl.innerHTML='<div class="status">No events found.</div>'; trackEl.innerHTML=''; _gridEvents=[]; _genreFilter=null; syncGenreChip(); return; }
       var ordered=orderEvents(evs);
       // ambient marquee: "<up to 5 artists> at <venue>" (duplicated for a seamless loop)
       function marqText(e){
@@ -3191,37 +3231,8 @@
       var marq='';
       for(var k=0;k<2;k++){ ordered.forEach(function(e){ marq+='<span>'+esc(marqText(e))+'</span><span class="star">&#10039;</span>'; }); }
       trackEl.innerHTML=marq;
-      // Paint (a subset of) the grid; re-runnable for genre filtering.
-      function paintGrid(list){
-        gridEl.innerHTML=list.map(function(e){ return cardHTML(e); }).join('');
-        wireCard(gridEl);
-        gridEl.querySelectorAll('.gcard').forEach(function(card,i){
-          var ev=list[i];
-          function open(){ openSheet(ev); }
-          var p=card.querySelector('.card-poster'); if(p) p.addEventListener('click',open);
-          var t=card.querySelector('.title-btn'); if(t) t.addEventListener('click',open);
-          var rb=card.querySelector('.ev-radio'); if(rb) rb.addEventListener('click',function(e){ e.stopPropagation(); startEventRadio(ev); });
-        });
-        applyShared();
-        decorateProof(list);
-      }
-      // Genre filter — chips from the genres present in today's events (RA).
-      var counts={}; ordered.forEach(function(e){ (e.genres||[]).forEach(function(g){ counts[g]=(counts[g]||0)+1; }); });
-      var genres=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a] || a.localeCompare(b); });
-      var gbar=document.getElementById('genre-bar');
-      if(gbar){
-        if(genres.length>1){
-          gbar.hidden=false;
-          gbar.innerHTML='<button class="gchip-g on" type="button" data-genre="">All</button>'+
-            genres.map(function(g){ return '<button class="gchip-g" type="button" data-genre="'+esc(g)+'">'+esc(g)+'</button>'; }).join('');
-          gbar.querySelectorAll('.gchip-g').forEach(function(b){ b.addEventListener('click',function(){
-            var g=b.dataset.genre||'';
-            gbar.querySelectorAll('.gchip-g').forEach(function(x){ x.classList.toggle('on', x===b); });
-            paintGrid(g ? ordered.filter(function(e){ return (e.genres||[]).indexOf(g)>-1; }) : ordered);
-          }); });
-        } else { gbar.hidden=true; gbar.innerHTML=''; }
-      }
-      paintGrid(ordered);
+      _gridEvents=ordered; _genreFilter=null; closeGenreMenu(); syncGenreChip();
+      paintCurrentGrid();
       rebuildLookup(ordered);
       maybeCoach();
       // Warm the weekend radio in the background so a tap can start playback
