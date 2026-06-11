@@ -1400,7 +1400,7 @@
       try{
         var a=radioVoEl();
         a.onended=fin; a.onerror=fin;
-        a.src=SC_BASE+'audio/'+RADIO_VO[Math.floor(Math.random()*RADIO_VO.length)]+'?v=2'; // bump on new clips to bust caches
+        a.src=SC_BASE+'audio/'+RADIO_VO[Math.floor(Math.random()*RADIO_VO.length)]+'?v=3'; // bump on new clips to bust caches
         a.currentTime=0; a.volume=1;
         var p=a.play(); if(p&&p.catch) p.catch(fin);
         setTimeout(fin, 5000); // safety: never let a stuck clip stall the radio
