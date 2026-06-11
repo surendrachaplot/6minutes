@@ -402,6 +402,14 @@
     /* shared-with-you banner */
     .shared-banner { display:none; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:0.88rem; }
     .shared-banner.show { display:flex; }
+    .signup-banner { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:0.88rem; }
+    .signup-banner[hidden] { display:none; }
+    .signup-banner .b-h { font-family:var(--head); font-weight:800; color:var(--accent); letter-spacing:0.02em; }
+    .signup-banner .b-t { color:var(--fg); }
+    .signup-banner .b-t strong { color:var(--accent); font-weight:700; }
+    .signup-banner .b-actions { margin-left:auto; display:flex; gap:8px; }
+    .signup-banner .b-actions button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:8px; padding:7px 11px; font:600 0.72rem var(--body); cursor:pointer; touch-action:manipulation; }
+    .signup-banner .b-actions button:hover { border-color:var(--accent); color:var(--accent); }
     .shared-banner .b-h { font-family:var(--head); font-weight:800; color:var(--accent); letter-spacing:0.02em; }
     .shared-banner .b-t { color:var(--fg); }
     .shared-banner .b-actions { margin-left:auto; display:flex; gap:8px; }
@@ -759,6 +767,13 @@
     <div class="marquee" id="marquee"><div class="track" id="track"></div></div>
 
     <div class="status" id="status"></div>
+    <div class="signup-banner" id="signup-banner" hidden>
+      <div><div class="b-h">Almost there</div><div class="b-t">Check <strong id="signup-banner-email">your inbox</strong> for your magic link to save your picks &amp; claim your profile.</div></div>
+      <div class="b-actions">
+        <button id="signup-banner-resend" type="button">Resend</button>
+        <button id="signup-banner-dismiss" type="button">Dismiss</button>
+      </div>
+    </div>
     <div class="shared-banner" id="shared-banner">
       <div><div class="b-h" id="shared-h">Shared with you</div><div class="b-t b-list" id="shared-t"></div></div>
       <div class="b-actions">
@@ -967,7 +982,8 @@
       },400);
     }
 
-    function hasEmail(){ return !!prefs.emailGated; }
+    function hasEmail(){ return !!prefs.emailGated || !!currentUser; } // signed-in real users are past the gate
+    var _pendingEmail='';
     // The first successful play is free; from the second, ask for an email.
     function playCount(){ return parseInt(prefs.plays,10)||0; }
     function bumpPlayCount(){ setPref('plays', playCount()+1); }
@@ -976,15 +992,18 @@
       if(playCount() < 1) return Promise.resolve(true);   // first one is free
       return ensureEmailGate();
     }
+    // Signup gate: ask for an email, fire a magic link (real account), and let
+    // them keep going immediately. Tapping the link finishes sign-up + merges
+    // their anonymous picks. Also subscribes the email to the weekly list.
     function ensureEmailGate(){
       if(hasEmail()) return Promise.resolve(true);
       return new Promise(function(resolve){
         var ov=document.createElement('div'); ov.className='email-overlay';
         ov.innerHTML='<div class="email-modal" role="dialog" aria-modal="true">'+
           '<button class="email-close" type="button" aria-label="Close">&times;</button>'+
-          '<h3>One thing <span class="ac">first</span>.</h3>'+
-          '<p>Drop your email to start the music. We&rsquo;ll send the occasional pick &mdash; nothing more.</p>'+
-          '<form class="email-form"><input type="email" required placeholder="you@somewhere.com" autocomplete="email" /><button type="submit">Play</button></form>'+
+          '<h3>Save it with a <span class="ac">free account</span>.</h3>'+
+          '<p>Pop in your email &mdash; we&rsquo;ll send a magic link to save your picks and set up your profile. Nothing stops playing in the meantime.</p>'+
+          '<form class="email-form"><input type="email" required placeholder="you@somewhere.com" autocomplete="email" /><button type="submit">Send my link</button></form>'+
           '<p class="email-err" aria-live="polite"></p></div>';
         document.body.appendChild(ov);
         var input=ov.querySelector('input'), submit=ov.querySelector('button[type=submit]'),
@@ -1000,12 +1019,25 @@
           var email=input.value.trim().toLowerCase();
           if(!EMAIL_RE.test(email)||email.length>254){ errEl.textContent='That doesn’t look like an email.'; return; }
           submit.disabled=true;
-          try{ await fetch(API_BASE+'/api/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}); }catch(_){}
-          setPref('emailGated', true);
-          document.removeEventListener('keydown',onEsc); ov.remove(); resolve(true);
+          var ok=false;
+          try{ var r=await fetch(API_BASE+'/api/auth/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}); ok=r.ok; }catch(_){}
+          if(!ok){ errEl.textContent='Couldn’t send the link — try again.'; submit.disabled=false; return; }
+          try{ fetch(API_BASE+'/api/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}); }catch(_){} // newsletter, best-effort
+          _pendingEmail=email; setPref('emailGated', true); setPref('pendingEmail', email); // optimistic unblock; link finishes the account
+          document.removeEventListener('keydown',onEsc); ov.remove();
+          showSignupBanner(email);
+          resolve(true);
         });
       });
     }
+    // Persistent nudge to finish sign-up; hidden once they're actually signed in.
+    function showSignupBanner(email){
+      if(currentUser) return;
+      var b=document.getElementById('signup-banner'); if(!b) return;
+      document.getElementById('signup-banner-email').textContent=email||_pendingEmail||prefs.pendingEmail||'your inbox';
+      b.hidden=false;
+    }
+    function hideSignupBanner(){ var b=document.getElementById('signup-banner'); if(b) b.hidden=true; }
 
     // ── player dock ──
     var dock=document.getElementById('dock'), dockMedia=document.getElementById('dock-media'),
@@ -1609,9 +1641,21 @@
       savePicks(); afterPicksChanged(); refreshEventButtons(id);
       ensureIdentity().then(function(ok){ if(ok) syncEvent(id, status, meta); });
     }
-    // heart taps = toggle the want-to-go state
-    function toggleArtist(slug, meta){ if(slug) setArtist(slug, artStatus(slug)==='wanna_see' ? null : 'wanna_see', meta&&meta.name); }
-    function toggleEvent(id, meta){ if(id) setEvent(id, evtStatus(id)==='going' ? null : 'going', meta); }
+    // heart taps = toggle the want-to-go state. Saving a pick (turning one ON)
+    // is a sign-up moment: prompt for an email/magic link first if they haven't
+    // started an account — removing a pick never gates.
+    function toggleArtist(slug, meta){
+      if(!slug) return;
+      if(artStatus(slug)==='wanna_see'){ setArtist(slug, null, meta&&meta.name); return; }
+      if(!hasEmail()){ ensureEmailGate().then(function(ok){ if(ok) setArtist(slug,'wanna_see',meta&&meta.name); }); return; }
+      setArtist(slug, 'wanna_see', meta&&meta.name);
+    }
+    function toggleEvent(id, meta){
+      if(!id) return;
+      if(evtStatus(id)==='going'){ setEvent(id, null, meta); return; }
+      if(!hasEmail()){ ensureEmailGate().then(function(ok){ if(ok) setEvent(id,'going',meta); }); return; }
+      setEvent(id, 'going', meta);
+    }
     // Seen / Not-going are account features → nudge sign-in when logged out
     function toggleSeen(slug, meta){ if(!slug) return; if(!currentUser){ openAuth(); return; } setArtist(slug, artStatus(slug)==='seen' ? null : 'seen', meta&&meta.name); }
     function refreshArtistButtons(slug){
@@ -1676,6 +1720,8 @@
         if(j.user && j.user.prefs) prefs=Object.assign({}, j.user.prefs, prefs); // local writes this session win
       }catch(_){ currentUser=null; }
       renderAccount();
+      if(currentUser){ hideSignupBanner(); if(prefs.pendingEmail) setPref('pendingEmail',''); } // signed up — clear the nudge
+      else if(prefs.pendingEmail){ _pendingEmail=prefs.pendingEmail; showSignupBanner(prefs.pendingEmail); } // still pending — re-nudge
       if(currentUser||anonUser) await hydrateShelf();
       if(currentUser) maybePromptHandle();
       applyPrefCity();
@@ -1893,6 +1939,15 @@
         document.getElementById('auth-sent-state').hidden=false;
       }catch(_){ err.textContent='Network error — try again.'; }
       finally{ go.disabled=false; }
+    });
+
+    document.getElementById('signup-banner-dismiss').addEventListener('click', hideSignupBanner);
+    document.getElementById('signup-banner-resend').addEventListener('click', async function(){
+      if(!_pendingEmail) return;
+      var btn=this; btn.disabled=true;
+      try{ await fetch(API_BASE+'/api/auth/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:_pendingEmail})}); showToast('Magic link resent to '+_pendingEmail); }
+      catch(_){ showToast('Couldn’t resend — try again.'); }
+      finally{ btn.disabled=false; }
     });
 
     // On boot: consume #session=… handed back by the magic-link callback
