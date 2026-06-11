@@ -371,7 +371,9 @@
     .radio-fab .rf-tx { display:flex; flex-direction:column; align-items:flex-start; text-align:left; min-width:0; }
     .radio-fab .rf-t { line-height:1.2; }
     .radio-fab .rf-sub { display:block; font:600 0.62rem var(--body); letter-spacing:0.04em; text-transform:none; opacity:0.75; margin-top:2px; max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .radio-fab.onair .rf-t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; text-transform:none; letter-spacing:0.02em; }
+    /* on air, match the dock's now-playing type exactly (.info .nm / .sub) */
+    .radio-fab.onair .rf-t { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; font:700 1.05rem var(--head); text-transform:none; letter-spacing:-0.01em; color:var(--fg); }
+    .radio-fab.onair .rf-sub { font:600 0.76rem var(--body); letter-spacing:0; opacity:1; color:var(--muted); }
     /* inline actions on the on-air pill: heart the DJ + jump to their page */
     .rf-act { display:none; }
     .radio-fab.onair .rf-act { display:inline-flex; }
@@ -622,13 +624,16 @@
     .hdr-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
     .hdr-icon svg { width:16px; height:16px; }
     .hdr-icon:hover { border-color:var(--accent); color:var(--accent); }
-    /* city switcher pill in the header — mobile only (desktop keeps it in the hero headline) */
-    .hdr-city { display:none; align-items:center; gap:3px; background:var(--surface); border:1px solid rgba(255,122,107,0.5); color:var(--accent); border-radius:999px; padding:5px 7px 5px 11px; font:600 0.72rem var(--body); cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
-    .hdr-city svg { width:13px; height:13px; }
+    /* "Soundcheck City ▾" as the header brand — mobile only (desktop keeps the
+       SOUNDCHECK wordmark + the city switcher in the hero headline) */
+    .hdr-brand { display:none; align-items:center; gap:5px; background:none; border:0; padding:0; cursor:pointer; font-family:var(--head); font-weight:800; font-size:0.98rem; letter-spacing:-0.01em; color:var(--fg); -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .hdr-brand .ac { color:var(--accent); }
+    .hdr-brand svg { width:14px; height:14px; color:var(--accent); margin-left:1px; }
     @media (max-width:620px){
-      .hdr-city { display:inline-flex; }
+      .logo { display:none; }
+      .hdr-brand { display:inline-flex; margin-right:auto; }
       #home .hero h1 { display:none; }
-      #home .hero { padding:18px 0 14px; }
+      #home .hero { padding:16px 0 14px; }
     }
     .account { display:inline-flex; align-items:center; gap:8px; }
     .account .signin-btn { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:7px 14px; font:700 0.62rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
@@ -807,7 +812,7 @@
   <main class="wrap">
     <nav>
       <a class="logo" href=".">SOUNDCHECK</a>
-      <button class="hdr-city" id="hdr-city" type="button" aria-label="Change city"><span id="hdr-city-name">London</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+      <button class="hdr-brand" id="hdr-brand" type="button" aria-label="Change city"><span class="ac">Soundcheck</span> <span id="hdr-brand-city">London</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
       <button class="hdr-icon" id="hdr-search" type="button" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
       <div class="account account-wrap" id="account"></div>
     </nav>
@@ -3345,7 +3350,7 @@
       var m=cityMeta();
       var hn=document.getElementById('hero-city-name'); if(hn) hn.textContent=m.name;
       var hc=document.getElementById('hero-city'); if(hc) hc.setAttribute('aria-label','Change city — currently '+m.name);
-      var hcn=document.getElementById('hdr-city-name'); if(hcn) hcn.textContent=m.name; // mobile header pill
+      var hbn=document.getElementById('hdr-brand-city'); if(hbn) hbn.textContent=m.name; // mobile header brand
     }
     async function loadCities(){
       try{
@@ -3397,7 +3402,7 @@
       });
     }
     document.getElementById('hero-city').addEventListener('click',openCityPicker);
-    document.getElementById('hdr-city').addEventListener('click',openCityPicker);
+    document.getElementById('hdr-brand').addEventListener('click',openCityPicker);
 
     async function fetchDay(date){
       var key=currentCity+'|'+date;
