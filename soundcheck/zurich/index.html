@@ -619,6 +619,9 @@
     .sg-drop .sg-empty { padding:10px 12px; color:var(--muted); font-size:0.84rem; }
 
     /* ── account (Phase 2 sign-in) ── */
+    .hdr-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .hdr-icon svg { width:16px; height:16px; }
+    .hdr-icon:hover { border-color:var(--accent); color:var(--accent); }
     .account { display:inline-flex; align-items:center; gap:8px; }
     .account .signin-btn { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:999px; padding:7px 14px; font:700 0.62rem var(--body); letter-spacing:0.12em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
     .account .signin-btn:hover { border-color:var(--accent); color:var(--accent); }
@@ -786,6 +789,7 @@
   <main class="wrap">
     <nav>
       <a class="logo" href=".">SOUNDCHECK</a>
+      <button class="hdr-icon" id="hdr-search" type="button" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
       <div class="account account-wrap" id="account"></div>
     </nav>
 
@@ -804,7 +808,6 @@
       <button class="qchip" id="pick-next" type="button">Next weekend</button>
       <button class="qchip alt" id="pick-date" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg><span id="pick-date-label">Pick a date</span></button>
       <button class="qchip alt" id="pick-genre" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg><span id="pick-genre-label">Genre</span> <span style="opacity:.6">▾</span></button>
-      <button class="qchip alt push" id="pick-search" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Search</span></button>
     </div>
 
     <div class="cal-overlay" id="cal-overlay"><div class="cal" id="cal" role="dialog" aria-modal="true" aria-label="Pick a date"></div></div>
@@ -3465,7 +3468,7 @@
       }catch(err){ setStatus('Error: '+esc(err.message||String(err)),true); }
     }
 
-    document.getElementById('pick-search').addEventListener('click',openSearch);
+    document.getElementById('hdr-search').addEventListener('click',openSearch);
     friBtn.addEventListener('click',function(){ load(weekendDatesFor(0)[0], 'fri'); });
     satBtn.addEventListener('click',function(){ load(weekendDatesFor(0)[1], 'sat'); });
     nextBtn.addEventListener('click',function(){ loadWeekend(1); });
