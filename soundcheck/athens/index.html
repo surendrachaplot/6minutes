@@ -1274,11 +1274,19 @@
           (ev.artists||[]).forEach(function(a){
             var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
             if(!slug||seen[slug]) return; seen[slug]=1;
-            q.push({ slug:slug, name:a.name, sc:a.soundcloud||null, venue:ev.venue||'', day:days[k].label, poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
+            q.push({ slug:slug, name:a.name, sc:scNorm(a.soundcloud), venue:ev.venue||'', day:days[k].label, poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
           });
         });
       }
       return q;
+    }
+    // The feed sometimes returns www./m. hosts or a bare slug; the SC widget's
+    // resolver wants a clean https://soundcloud.com/... URL.
+    function scNorm(u){
+      if(!u) return null; u=String(u).trim(); if(!u) return null;
+      u=u.replace(/^https?:\/\/(www\.|m\.)?soundcloud\.com/i,'https://soundcloud.com');
+      if(!/^https?:\/\//i.test(u)) u='https://soundcloud.com/'+u.replace(/^\/+/,'');
+      return u;
     }
     // SoundCloud URL rides along in the day feed, so "resolving" is instant —
     // an artist with no SoundCloud is skipped (tune-in/advance fall forward).
@@ -1412,33 +1420,36 @@
       var hb=document.getElementById('hero-radio');
       if(radio.on){ stopActive(); return; } // acts as the off switch
       if(!(await gateForPlay())) return;    // microtask only — keeps user-activation alive
-      var key=radioWarmKey();
-      // FAST PATH: warm station ready → start inside the gesture so mobile
-      // autoplay is allowed. Pick the on-air DJ and the next one with a set.
-      if(radioWarm.queue && radioWarm.key===key){
-        var n=radioWarm.queue.length, start=broadcastPos(n).idx, entry=null, idx=-1;
-        for(var t=0;t<n;t++){ var c=radioWarm.queue[(start+t)%n]; if(c && c.sc){ entry=c; idx=(start+t)%n; break; } }
-        if(entry){
-          stopActive();
-          radio.queue=radioWarm.queue; radio.on=true; radio.i=idx; radio.station='weekend';
-          if(hb) hb.classList.add('on');
-          radioPlayEntry(entry);
-          return;
+      try{
+        showToast('Tuning in…'); // the FAB is hidden on mobile, so confirm the tap
+        var key=radioWarmKey();
+        // FAST PATH: warm station ready → start inside the gesture so mobile
+        // autoplay is allowed. Pick the on-air DJ and the next one with a set.
+        if(radioWarm.queue && radioWarm.key===key){
+          var n=radioWarm.queue.length, start=broadcastPos(n).idx, entry=null, idx=-1;
+          for(var t=0;t<n;t++){ var c=radioWarm.queue[(start+t)%n]; if(c && c.sc){ entry=c; idx=(start+t)%n; break; } }
+          if(entry){
+            stopActive();
+            radio.queue=radioWarm.queue; radio.on=true; radio.i=idx; radio.station='weekend';
+            if(hb) hb.classList.add('on');
+            radioPlayEntry(entry);
+            return;
+          }
         }
-      }
-      // SLOW PATH: cold start (desktop, or warm-up still in flight).
-      if(hb){ hb.disabled=true; var hs=hb.querySelector('.hr-sub'); if(hs) hs.textContent='Tuning in…'; }
-      var rl=document.getElementById('radio-fab-label'); if(rl) rl.textContent='Tuning…';
-      var q=await buildStation();
-      if(hb) hb.disabled=false;
-      if(rl) rl.textContent='Radio';
-      if(!q.length){ showToast('No line-ups for this weekend yet — try again shortly.'); radioHeroReset(); return; }
-      stopActive();
-      radio.queue=seededShuffle(q, key); // same order for the whole city, all weekend
-      radio.on=true; radio.i=-1; radio.station='weekend';
-      radioWarm.queue=radio.queue; radioWarm.key=key; // remember for next time
-      if(hb) hb.classList.add('on');
-      radioTuneIn();
+        // SLOW PATH: cold start (desktop, or warm-up still in flight).
+        if(hb){ hb.disabled=true; var hs=hb.querySelector('.hr-sub'); if(hs) hs.textContent='Tuning in…'; }
+        var rl=document.getElementById('radio-fab-label'); if(rl) rl.textContent='Tuning…';
+        var q=await buildStation();
+        if(hb) hb.disabled=false;
+        if(rl) rl.textContent='Radio';
+        if(!q.length){ showToast('No line-ups for this weekend yet — try again shortly.'); radioHeroReset(); return; }
+        stopActive();
+        radio.queue=seededShuffle(q, key); // same order for the whole city, all weekend
+        radio.on=true; radio.i=-1; radio.station='weekend';
+        radioWarm.queue=radio.queue; radioWarm.key=key; // remember for next time
+        if(hb) hb.classList.add('on');
+        radioTuneIn();
+      }catch(err){ showToast('Radio error: '+((err&&err.message)||err)); try{ radioHeroReset(); }catch(_){} }
     }
     // Per-event station: the event's own lineup as a little broadcast — same
     // wall-clock rules, so "tune in" joins whatever of the lineup is on now.
@@ -1449,7 +1460,7 @@
       var q=[];
       (ev.artists||[]).forEach(function(a){
         var slug=a.contentUrl?a.contentUrl.split('/').filter(Boolean).pop():'';
-        if(slug) q.push({ slug:slug, name:a.name, sc:a.soundcloud||null, venue:ev.venue||'', day:ev._day||'', poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
+        if(slug) q.push({ slug:slug, name:a.name, sc:scNorm(a.soundcloud), venue:ev.venue||'', day:ev._day||'', poster:ev.poster||'', eventId:ev.id!=null?String(ev.id):null });
       });
       if(!q.length){ showToast('No lineup to play yet.'); return; }
       stopActive();
