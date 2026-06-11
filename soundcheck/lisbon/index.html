@@ -381,7 +381,7 @@
     .rf-go:hover { background:rgba(255,122,107,0.16); }
     /* while on air the pill shows on mobile too (above the nav) — the radio has no overlay */
     body.radio-on .fab-stack { display:flex; }
-    @media (max-width:620px){ body.radio-on .fab-stack { bottom:calc(86px + env(safe-area-inset-bottom)); } }
+    @media (max-width:620px){ body.radio-on .fab-stack { bottom:calc(72px + env(safe-area-inset-bottom)); } }
     /* per-event "tune in" radio button (above each lineup) */
     .ev-radio { display:inline-flex; align-self:flex-start; width:fit-content; max-width:100%; align-items:center; gap:8px; margin:10px 0 2px; background:rgba(255,122,107,0.08); border:1px solid rgba(255,122,107,0.35); color:var(--accent); border-radius:999px; padding:7px 13px; font:700 0.66rem var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; -webkit-tap-highlight-color:transparent; }
     .ev-radio svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
@@ -671,22 +671,22 @@
     /* mobile bottom nav */
     /* Liquid-glass floating tab bar (iOS) — also the cross-platform
        glassmorphism look on Android Chrome via backdrop-filter. */
-    .bnav { display:none; position:fixed; left:14px; right:14px; bottom:calc(10px + env(safe-area-inset-bottom)); z-index:70; border-radius:24px; padding:8px 8px; gap:2px;
-      background:rgba(28,26,34,0.55);
-      backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
-      border:1px solid rgba(255,255,255,0.12);
-      box-shadow:0 10px 34px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.18); }
-    @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) { .bnav { background:rgba(22,20,28,0.96); } }
-    .bnav-tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--muted); font:600 0.6rem var(--body); letter-spacing:0.04em; cursor:pointer; padding:8px 0 6px; border-radius:16px; transition:color .15s ease, background .15s ease; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
-    .bnav-tab.on { background:rgba(255,255,255,0.08); }
-    .bnav-tab svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .bnav { display:none; position:fixed; left:16px; right:16px; bottom:calc(10px + env(safe-area-inset-bottom)); z-index:70; border-radius:22px; padding:4px 5px; gap:2px;
+      background:rgba(30,28,36,0.42);
+      backdrop-filter:blur(30px) saturate(200%); -webkit-backdrop-filter:blur(30px) saturate(200%);
+      border:1px solid rgba(255,255,255,0.14);
+      box-shadow:0 8px 26px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 1px rgba(0,0,0,0.22); }
+    @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) { .bnav { background:rgba(22,20,28,0.95); } }
+    .bnav-tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; color:var(--muted); font:600 0.55rem var(--body); letter-spacing:0.03em; cursor:pointer; padding:5px 0 4px; border-radius:15px; transition:color .15s ease, background .15s ease; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .bnav-tab.on { background:rgba(255,255,255,0.07); }
+    .bnav-tab svg { width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
     .bnav-tab.on { color:var(--accent); }
     .bnav-tab.onair svg { animation:radio-pulse 1.6s ease-in-out infinite; }
     @media (max-width:620px){
       .bnav { display:flex; }
-      body { padding-bottom:calc(86px + env(safe-area-inset-bottom)); }
-      .fab-stack { bottom:calc(86px + env(safe-area-inset-bottom)); }  /* radio pill floats above the nav */
-      .dock { bottom:calc(80px + env(safe-area-inset-bottom)); }       /* player sits above the floating nav */
+      body { padding-bottom:calc(72px + env(safe-area-inset-bottom)); }
+      .fab-stack { bottom:calc(72px + env(safe-area-inset-bottom)); }  /* radio pill floats above the nav */
+      .dock { bottom:calc(68px + env(safe-area-inset-bottom)); }       /* player sits above the floating nav */
     }
     @keyframes radio-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
     /* city picker */
