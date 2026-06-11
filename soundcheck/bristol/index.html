@@ -1395,7 +1395,7 @@
       var u=new SpeechSynthesisUtterance(RADIO_ID);
       if(!_radioVoice) _radioVoice=radioPickVoice();
       if(_radioVoice) u.voice=_radioVoice;
-      u.rate=0.92; u.pitch=1.02; // a hair slower + warmer than the default
+      u.rate=0.92; u.pitch=1.02; u.volume=0.5; // a hair slower + warmer, at half volume under the music
       return u;
     }
     // Calling this from the start tap also UNLOCKS speechSynthesis on iOS, so the
