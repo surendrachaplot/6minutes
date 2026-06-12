@@ -319,9 +319,13 @@
       /* Collapsed on mobile: drop the scrubber, show play/pause + next instead */
       .dock:not(.expanded) .scrub { display:none; }
       .dock:not(.expanded) #dock-next { display:inline-flex; }
-      .dock:not(.expanded) .main { gap:10px; padding-right:84px; }
+      .dock:not(.expanded) .main { gap:10px; padding-right:0; }
       .dock:not(.expanded) .transport { margin-left:auto; gap:8px; }
-      .corner { top:10px; right:10px; }
+      /* Collapsed: close (✕) flows inline at the end of the control row so it
+         lines up with the transport. Absolute-centering drifted low because the
+         panel's safe-area bottom padding makes the dock asymmetric. */
+      .dock:not(.expanded) .corner { position:static; transform:none; order:9; align-self:center; margin-left:6px; gap:6px; }
+      .dock.expanded .corner { top:10px; right:10px; }
       body.has-dock { padding-bottom:380px; }
       body.has-dock.dock-collapsed { padding-bottom:96px; }
     }
@@ -555,6 +559,10 @@
     .artist-head .artist-av { position:relative; width:66px; height:66px; border-radius:16px; flex-shrink:0; overflow:hidden; background-size:cover; background-position:center; }
     .artist-head .artist-av img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .artist-head-tx h3 { margin:0; }
+    /* artist page: big square hero photo, name underneath (artist only — not venue) */
+    .artist-head.artist-hero { flex-direction:column; align-items:flex-start; gap:16px; }
+    .artist-head.artist-hero .artist-av { width:min(264px,64vw); height:min(264px,64vw); border-radius:22px; }
+    .artist-head.artist-hero .artist-head-tx h3 { font-size:var(--fs-xl); line-height:1.05; }
     /* event page header — same grammar as .artist-head, with a contained poster */
     .event-head { display:flex; align-items:flex-start; gap:16px; }
     .event-head .poster.ev-poster { width:108px; height:144px; aspect-ratio:auto; border-radius:14px; margin-bottom:0; flex-shrink:0; }
@@ -2763,9 +2771,9 @@
         var r=await authedFetch('/api/artist?slug='+encodeURIComponent(slug)); var a=await r.json();
         var mine=artStatus(slug);
         // generated marble underneath; real photo overlays and falls back on error
-        var avImg=a.image?'<img loading="lazy" decoding="async" src="'+imgUrl(a.image,160)+'" alt="" onerror="this.remove()">':'';
+        var avImg=a.image?'<img loading="lazy" decoding="async" src="'+imgUrl(a.image,480)+'" alt="" onerror="this.remove()">':'';
         var av='<span class="artist-av" style="background-image:'+avatarBg(slug,null)+'">'+avImg+'</span>';
-        var h='<div class="artist-head">'+av+'<div class="artist-head-tx"><h3>'+esc(a.name||slug)+'</h3><div class="sub">on soundcheck</div></div></div>';
+        var h='<div class="artist-head artist-hero">'+av+'<div class="artist-head-tx"><h3>'+esc(a.name||slug)+'</h3></div></div>';
         var stats=[];
         if(a.seen) stats.push('<span><b>'+a.seen+'</b> seen live</span>');
         if(a.networkSeen) stats.push('<span class="pf-friends"><b>'+a.networkSeen+'</b> friends seen</span>');
@@ -2776,10 +2784,11 @@
           '<button class="act-btn'+(mine==='wanna_see'?' on':'')+'" id="ap-wanna" type="button" aria-pressed="'+(mine==='wanna_see')+'">'+HEART_SVG+'<span>Wanna see</span></button>'+
           '<button class="act-btn'+(mine==='seen'?' on':'')+'" id="ap-seen" type="button" aria-pressed="'+(mine==='seen')+'">'+CHECK_SVG+'<span>Seen live</span></button>'+
         '</div>';
-        // Plays alongside — frequent collaborators from the lineup graph.
+        // Plays alongside — frequent collaborators from the lineup graph,
+        // shown as the same square photo tiles as the profile shelves.
         if((a.alongside||[]).length){
           h+='<div class="sec-h" style="margin-top:24px">Plays alongside</div>'+
-            '<div class="along-row">'+a.alongside.map(function(x){ return '<button class="along-chip" type="button" data-along="'+esc(x.slug)+'" data-along-name="'+esc(x.name)+'">'+esc(x.name)+'</button>'; }).join('')+'</div>';
+            '<div class="ptiles">'+a.alongside.map(function(x){ return ptile(x.slug,x.name,false,x.image_url); }).join('')+'</div>';
         }
         h+='<div id="ap-upcoming"></div>';
         // Past sets — the gig-history timeline.
@@ -2796,7 +2805,7 @@
         document.getElementById('ap-radio').addEventListener('click',function(){ startArtistRadio(slug, a.name, a.alongside); });
         document.getElementById('ap-wanna').addEventListener('click',function(){ toggleArtist(slug,{name:a.name}); openArtist(slug); });
         document.getElementById('ap-seen').addEventListener('click',function(){ toggleSeen(slug,{name:a.name}); openArtist(slug); });
-        document.querySelectorAll('#page-body .along-chip').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.along); }); });
+        document.querySelectorAll('#page-body .ptile[data-artist]').forEach(function(b){ b.addEventListener('click',function(){ openArtist(b.dataset.artist); }); });
         document.querySelectorAll('#page-body .gh-venue[data-venue]').forEach(function(b){ b.addEventListener('click',function(){ if(b.dataset.venue) openVenue(b.dataset.venue); }); });
         // Real upcoming gigs across every city we cover (canonical event_artists join), home-style cards.
         var up=document.getElementById('ap-upcoming');
