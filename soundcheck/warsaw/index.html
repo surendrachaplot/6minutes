@@ -974,11 +974,13 @@
        autoplay on their own; the SDKs only add the scrubber + dock sync. -->
 
   <script>
-    // First-party API subdomain → HttpOnly Domain=.6minutes.club cookies work
-    // (same-site as the frontend). Falls back to the onrender host if needed.
+    // First-party API subdomain per site → same-site HttpOnly cookies work.
+    // soundcheck.club → api.soundcheck.club; 6minutes.club → api.6minutes.club.
     var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? ''
-      : 'https://api.6minutes.club';
+      : (/(^|\.)soundcheck\.club$/.test(location.hostname)
+          ? 'https://api.soundcheck.club'
+          : 'https://api.6minutes.club');
 
     var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -2447,7 +2449,7 @@
         ctx.fillStyle='#fff'; ctx.font="800 26px 'Bricolage Grotesque', system-ui, sans-serif"; ctx.fillText(tcFit(ctx, arts[i].name||arts[i].slug, cellW-26), x+15, y+cellH-18);
         ctx.restore();
       }
-      ctx.fillStyle='#9292a0'; ctx.font="600 24px 'Inter', system-ui, sans-serif"; ctx.textAlign='left'; ctx.fillText('6minutes.club/soundcheck', P, H-54);
+      ctx.fillStyle='#9292a0'; ctx.font="600 24px 'Inter', system-ui, sans-serif"; ctx.textAlign='left'; ctx.fillText(shareHost(), P, H-54);
       ctx.fillStyle='#ff7a6b'; ctx.textAlign='right'; ctx.fillText(n+(n===1?' artist':' artists'), W-P, H-54); ctx.textAlign='left';
     }
     async function openTasteCard(handle){
@@ -2487,7 +2489,7 @@
       shareBtn.disabled=false; saveBtn.disabled=false;
       function dl(blob){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='soundcheck.png'; a.click(); showToast('Saved'); }
       shareBtn.addEventListener('click',function(){ canvas.toBlob(function(blob){ if(!blob) return; var file=new File([blob],'soundcheck.png',{type:'image/png'});
-        if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file], title:'My soundcheck', text:'My lineup on soundcheck — 6minutes.club/soundcheck'}).catch(function(){}); }
+        if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file], title:'My soundcheck', text:'My lineup on soundcheck — '+shareHost()}).catch(function(){}); }
         else dl(blob); }, 'image/png'); });
       saveBtn.addEventListener('click',function(){ canvas.toBlob(function(blob){ if(blob) dl(blob); }, 'image/png'); });
     }
@@ -3344,11 +3346,14 @@
       {slug:'amsterdam',name:'Amsterdam',country:'NL'},{slug:'paris',name:'Paris',country:'FR'},
       {slug:'barcelona',name:'Barcelona',country:'ES'},{slug:'ibiza',name:'Ibiza',country:'ES'}
     ];
-    // Canonical city URLs are path-based: 6minutes.club/soundcheck/<slug>/…
-    // (London stays at /soundcheck/). Each city path is a real static copy on
-    // Pages, so cold loads get a 200. ?city= is still read for legacy links
-    // and used as the fallback on hosts without the /soundcheck/ prefix (dev).
-    var SC_BASE='/soundcheck/';
+    // Canonical city URLs are path-based. On its own domain the app lives at the
+    // root (soundcheck.club/<slug>/); on 6minutes.club it lives under /soundcheck/.
+    // SC_BASE is the single switch the whole router + asset loader keys off, so
+    // the same build serves both. Each city path is a real static copy on Pages,
+    // so cold loads get a 200. ?city= is still read for legacy links.
+    var SC_BASE = /(^|\.)soundcheck\.club$/.test(location.hostname) ? '/' : '/soundcheck/';
+    // Promo/share URL shown on taste cards + share text — tracks the live domain.
+    function shareHost(){ return /(^|\.)soundcheck\.club$/.test(location.hostname) ? 'soundcheck.club' : '6minutes.club/soundcheck'; }
     function onScPath(){ return location.pathname.indexOf(SC_BASE)===0; }
     function pathCitySlug(){
       if(!onScPath()) return null;
