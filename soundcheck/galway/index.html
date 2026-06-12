@@ -529,7 +529,8 @@
     .sec-h { font-family:var(--head); font-weight:800; font-size:var(--fs-sm); letter-spacing:0.02em; margin:0 0 12px; display:flex; align-items:center; justify-content:space-between; }
     .sec-h .more { font-size:var(--fs-xs); font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent); cursor:pointer; }
     .hub-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:18px 0; max-width:520px; }
-    .hub-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 10px; text-align:center; }
+    .hub-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 10px; text-align:center; cursor:pointer; width:100%; font:inherit; transition:border-color .12s, background .12s; -webkit-tap-highlight-color:transparent; }
+    .hub-stat:hover { border-color:var(--accent); }
     .hub-stat .n { font-family:var(--head); font-weight:800; font-size:var(--fs-xl); color:var(--accent); line-height:1; }
     .hub-stat .l { font-size:var(--fs-xs); letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:5px; }
     .hub-tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:520px; }
@@ -2510,9 +2511,9 @@
         var s=(p&&p.shelves)||{wannaSee:[],seen:[],events:[]}, diary=(p&&p.diary)||[];
         var st=document.getElementById('hub-stat'); if(st&&p&&p.handle) st.innerHTML='<b>'+(p.followers||0)+'</b> followers &middot; <b>'+(p.following||0)+'</b> following';
         var h='<div class="hub-stats">'+
-            '<div class="hub-stat"><div class="n">'+s.wannaSee.length+'</div><div class="l">Wanna see</div></div>'+
-            '<div class="hub-stat"><div class="n">'+s.seen.length+'</div><div class="l">Seen live</div></div>'+
-            '<div class="hub-stat"><div class="n">'+diary.length+'</div><div class="l">Gigs</div></div>'+
+            '<button class="hub-stat" type="button" data-go-prof="1"><div class="n">'+s.wannaSee.length+'</div><div class="l">Wanna see</div></button>'+
+            '<button class="hub-stat" type="button" data-go-prof="1"><div class="n">'+s.seen.length+'</div><div class="l">Seen live</div></button>'+
+            '<button class="hub-stat" type="button" data-go-prof="1"><div class="n">'+diary.length+'</div><div class="l">Gigs</div></button>'+
           '</div>'+
           '<div class="hub-tiles">'+
             hubTile('hub-picks', HUB_IC.picks, 'My picks', 'Wanna-see &amp; saved')+
@@ -2537,7 +2538,7 @@
         document.getElementById('hub-log').addEventListener('click',openLog);
         document.getElementById('hub-out').addEventListener('click',signOut);
         var all=document.getElementById('hub-diary-all'); if(all) all.addEventListener('click',function(){ openProfile(currentUser.handle); });
-        rest.querySelectorAll('[data-open-prof]').forEach(function(b){ b.addEventListener('click',function(){ openProfile(currentUser.handle); }); });
+        rest.querySelectorAll('[data-open-prof],[data-go-prof]').forEach(function(b){ b.addEventListener('click',function(){ openProfile(currentUser.handle); }); });
       }).catch(function(){ var rest=document.getElementById('hub-rest'); if(rest) rest.innerHTML='<div class="empty">Couldn&rsquo;t load your account.</div>'; });
     }
 
