@@ -186,6 +186,7 @@
     }
 
     .gcard .pick { display:inline-block; font-size:var(--fs-xs); font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:2px 6px; margin-bottom:8px; align-self:flex-start; }
+    #vp-cards .pick { display:none; }   /* every card on a pick-venue page is at that venue — the badge is redundant */
     .gcard h3 { font-family:var(--head); font-size:var(--fs-md); font-weight:700; letter-spacing:-0.015em; line-height:1.15; }
     .gcard .meta { font-size:var(--fs-xs); color:var(--muted); font-weight:600; margin-top:4px; }
     .gcard .meta b { color:var(--fg); }
@@ -559,6 +560,7 @@
     .prof-tabs button { background:none; border:none; color:var(--muted); font:700 var(--fs-sm) var(--body); padding:6px 2px 12px; cursor:pointer; border-bottom:2px solid transparent; }
     .prof-tabs button.on { color:var(--fg); border-bottom-color:var(--accent); }
     .ptiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:520px; }
+    .ptiles.ptiles-wide { max-width:none; }   /* plays-alongside: span the full page width */
     .ptile { aspect-ratio:1; border-radius:11px; position:relative; overflow:hidden; display:flex; align-items:flex-end; padding:8px; cursor:pointer; border:none; }
     .artist-head { display:flex; align-items:center; gap:15px; }
     .artist-head .artist-av { position:relative; width:66px; height:66px; border-radius:16px; flex-shrink:0; overflow:hidden; background-size:cover; background-position:center; }
@@ -2809,7 +2811,7 @@
         // shown as the same square photo tiles as the profile shelves.
         if((a.alongside||[]).length){
           h+='<div class="sec-h" style="margin-top:24px">Plays alongside</div>'+
-            '<div class="ptiles">'+a.alongside.map(function(x){ return ptile(x.slug,x.name,false,x.image_url); }).join('')+'</div>';
+            '<div class="ptiles ptiles-wide">'+a.alongside.map(function(x){ return ptile(x.slug,x.name,false,x.image_url); }).join('')+'</div>';
         }
         h+='<div id="ap-upcoming"></div>';
         // Past sets — the gig-history timeline.
