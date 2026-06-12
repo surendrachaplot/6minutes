@@ -416,6 +416,10 @@
     .tray-line .open-ev { background:transparent; border:none; color:var(--fg); font:inherit; cursor:pointer; text-align:left; padding:0; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .tray-line .open-ev:hover { color:var(--accent); }
     .tray-line .open-ev small { color:var(--muted); font-weight:500; }
+    .tray-line .open-prof { display:flex; align-items:center; gap:11px; background:transparent; border:none; color:var(--fg); font:inherit; cursor:pointer; text-align:left; padding:0; flex:1; min-width:0; }
+    .tray-line .open-prof:hover .po-nm { color:var(--accent); }
+    .tray-line .open-prof small { color:var(--muted); font-weight:500; }
+    .tray-line .uav { width:34px; height:34px; border-radius:999px; background-size:cover; background-position:center; flex-shrink:0; background-color:var(--surface); }
     .tray-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:var(--fg); font-size:var(--fs-md); cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
     .picks-tray .clear-all { width:100%; margin-top:18px; background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:9px; padding:9px; font:600 var(--fs-xs) var(--body); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; }
     .picks-tray .clear-all:hover { border-color:var(--accent); color:var(--accent); }
@@ -561,7 +565,7 @@
     .artist-head-tx h3 { margin:0; }
     /* artist page: big square hero photo, name underneath (artist only — not venue) */
     .artist-head.artist-hero { flex-direction:column; align-items:flex-start; gap:16px; }
-    .artist-head.artist-hero .artist-av { width:min(264px,64vw); height:min(264px,64vw); border-radius:22px; }
+    .artist-head.artist-hero .artist-av { width:min(132px,32vw); height:min(132px,32vw); border-radius:18px; }
     .artist-head.artist-hero .artist-head-tx h3 { font-size:var(--fs-xl); line-height:1.05; }
     /* event page header — same grammar as .artist-head, with a contained poster */
     .event-head { display:flex; align-items:flex-start; gap:16px; }
@@ -574,11 +578,16 @@
     .event-head-tx .sheet-actions { margin:14px 0 0; }
     @media (max-width:480px){ .event-head .poster.ev-poster { width:90px; height:120px; } .event-head-tx h3 { font-size:var(--fs-lg); } }
     /* artist wanna-see / seen toggle pills (design-system toggle grammar) */
-    .artist-actions { display:flex; gap:9px; margin:18px 0 4px; max-width:440px; }
-    .act-btn { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--fg); font:700 var(--fs-xs) var(--body); letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:background .12s, border-color .12s, color .12s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    /* two rows: Tune in (radio-style) full-width on top, Wanna see + Seen live below */
+    .artist-actions { display:flex; flex-wrap:wrap; gap:9px; margin:18px 0 4px; max-width:440px; }
+    .act-btn { flex:1; min-width:0; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--fg); font:700 var(--fs-xs) var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; transition:background .12s, border-color .12s, color .12s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
     .act-btn svg { width:var(--icon-sm); height:var(--icon-sm); display:block; }
     .act-btn:hover { border-color:var(--accent); color:var(--accent); }
     .act-btn.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+    /* Tune in matches the radio pill used elsewhere (.ev-radio): full row, accent-tinted */
+    .act-btn.radio { flex-basis:100%; background:rgba(255,122,107,0.08); border-color:rgba(255,122,107,0.35); color:var(--accent); }
+    .act-btn.radio:hover { background:rgba(255,122,107,0.16); color:var(--accent); }
+    .act-btn.radio.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
     .act-btn.on svg { fill:currentColor; stroke:currentColor; }
     .act-btn.radio svg { fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
     .act-btn.radio.on svg { fill:none; stroke:currentColor; }
@@ -1287,7 +1296,12 @@
       } else if(currentType==='sc' && scWidget){ scWidget.toggle(); }
     });
     dockExp.addEventListener('click',function(){ dock.classList.toggle('expanded'); setExpIcon(); setDockPad(); });
-    dockThumb.addEventListener('click',function(){ if(active && !dock.classList.contains('expanded')){ dock.classList.add('expanded'); setExpIcon(); setDockPad(); } });
+    // Tap anywhere on the collapsed bar (not the controls or scrubber) to expand.
+    dock.querySelector('.panel').addEventListener('click',function(e){
+      if(!active || dock.classList.contains('expanded')) return;
+      if(e.target.closest('button') || e.target.closest('.scrub')) return;
+      dock.classList.add('expanded'); setExpIcon(); setDockPad();
+    });
     document.getElementById('dock-close').addEventListener('click',function(){ stopActive(); });
 
     // prev / next — walk the visible grid lineup of the current source type
@@ -2672,8 +2686,8 @@
     // ── public search (events / venues / artists) ──
     function openSearch(){
       setRoute('search');
-      showPage('<h3>Search</h3><div class="sub" style="margin-bottom:14px">Find events, venues and DJs across London.</div>'+
-        '<div class="search-box"><input type="search" id="sx-input" placeholder="Search events, venues, DJs…" autocomplete="off" autocapitalize="off" autocorrect="off"></div>'+
+      showPage('<h3>Search</h3><div class="sub" style="margin-bottom:14px">Find events, venues, DJs and people across '+esc(cityMeta().name)+'.</div>'+
+        '<div class="search-box"><input type="search" id="sx-input" placeholder="Search events, venues, DJs, people…" autocomplete="off" autocapitalize="off" autocorrect="off"></div>'+
         '<div id="sx-results"></div>');
       var input=document.getElementById('sx-input'), results=document.getElementById('sx-results');
       var run=debounce(async function(){
@@ -2688,13 +2702,19 @@
       setTimeout(function(){ input.focus(); },60);
     }
     function renderSearch(el, j, q){
-      var ev=j.events||[], ven=j.venues||[], art=j.artists||[];
-      if(!ev.length && !ven.length && !art.length){ el.innerHTML='<div class="empty" style="padding:20px 0">No matches for &ldquo;'+esc(q)+'&rdquo;.</div>'; return; }
+      var ev=j.events||[], ven=j.venues||[], art=j.artists||[], peo=j.people||[];
+      if(!ev.length && !ven.length && !art.length && !peo.length){ el.innerHTML='<div class="empty" style="padding:20px 0">No matches for &ldquo;'+esc(q)+'&rdquo;.</div>'; return; }
       var h='';
-      if(art.length){ h+='<div class="sec-h" style="margin-top:10px">Artists ('+art.length+')</div><div class="ptiles" id="sx-art"></div>'; }
+      if(peo.length){ h+='<div class="sec-h" style="margin-top:10px">People ('+peo.length+')</div><ul class="tray-line" id="sx-peo"></ul>'; }
+      if(art.length){ h+='<div class="sec-h" style="margin-top:'+(peo.length?'24px':'10px')+'">Artists ('+art.length+')</div><div class="ptiles" id="sx-art"></div>'; }
       if(ven.length){ h+='<div class="sec-h" style="margin-top:24px">Venues ('+ven.length+')</div><ul class="tray-line" id="sx-ven"></ul>'; }
       if(ev.length){ h+='<div class="sec-h" style="margin-top:24px">Events ('+ev.length+')</div><div id="sx-ev"></div>'; }
       el.innerHTML=h;
+      if(peo.length){
+        var pe=document.getElementById('sx-peo');
+        pe.innerHTML=peo.map(function(u){ return '<li><button class="open-prof" data-profile="'+esc(u.handle)+'"><span class="uav" style="background-image:'+avatarBg(u.handle,u.avatar)+'"></span><span class="po-nm">u/'+esc(u.handle)+'</span>'+(u.display_name?' <small>'+esc(u.display_name)+'</small>':'')+'</button></li>'; }).join('');
+        pe.querySelectorAll('[data-profile]').forEach(function(b){ b.addEventListener('click',function(){ openProfile(b.dataset.profile); }); });
+      }
       if(art.length){
         var ae=document.getElementById('sx-art');
         ae.innerHTML=art.map(function(a){ return ptile(a.slug,a.name,false,a.image_url); }).join('');
