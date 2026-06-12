@@ -2673,7 +2673,7 @@
           startTime:g.start_time, poster:g.poster_url,
           artists:(g.lineup||[]).map(function(x){ return {name:x.name, contentUrl:'/dj/'+x.slug}; }) };
       });
-      el.innerHTML='<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">'+evs.map(cardHTML).join('')+'</div>';
+      el.innerHTML='<div class="grid">'+evs.map(cardHTML).join('')+'</div>';
       wireCard(el);
       var rmap={}; evs.forEach(function(ev){ if(ev.id!=null) rmap[String(ev.id)]=ev; });
       el.querySelectorAll('.gcard').forEach(function(c){
@@ -2841,7 +2841,7 @@
         });
         if(up && rows.length){
           up.innerHTML='<div class="sec-h" style="margin-top:26px">Upcoming ('+rows.length+')</div>'+
-            '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">'+rows.map(cardHTML).join('')+'</div>';
+            '<div class="grid">'+rows.map(cardHTML).join('')+'</div>';
           wireCard(up);
           var rmap={}; rows.forEach(function(ev){ if(ev.id!=null) rmap[String(ev.id)]=ev; });
           up.querySelectorAll('.gcard').forEach(function(c){
