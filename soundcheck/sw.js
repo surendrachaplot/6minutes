@@ -6,7 +6,7 @@
 //  - everything cross-origin (api.6minutes.club, the image proxy, CARTO tiles,
 //    YouTube/SoundCloud SDKs, unpkg) → passthrough; we never cache live data.
 // Bump VERSION to invalidate the shell cache on a meaningful release.
-const VERSION = "sc-v2";
+const VERSION = "sc-v3";
 const SHELL = [
   "./",
   "./index.html",
@@ -14,7 +14,6 @@ const SHELL = [
   "./favicon.svg",
   "./icons/icon-192.png",
   "./fonts/bricolage.woff2",
-  "./fonts/inter.woff2",
 ];
 
 self.addEventListener("install", (e) => {
