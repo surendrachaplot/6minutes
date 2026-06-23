@@ -17,6 +17,9 @@
     --accent:#ff7a6b; --border:#28282f;
     --ink:#1a0f0e; --accent-ink:#1a0f0e;          /* text on salmon */
     --head:"Bricolage Grotesque",sans-serif; --body:"Bricolage Grotesque",sans-serif;  /* one family — Bricolage everywhere */
+    --line:#28282f;  /* alias of --border, used by app component CSS */
+    --fs-xs:0.72rem; --fs-sm:0.8rem; --fs-base:0.9rem; --fs-md:1.05rem; --fs-lg:1.4rem; --fs-xl:1.7rem; --fs-2xl:2rem;
+    --icon-xs:12px; --icon-sm:16px; --icon-md:20px; --icon-lg:24px;
   }
   html { color-scheme:dark; scroll-behavior:smooth; }
   body { background:var(--bg); color:var(--fg); font-family:var(--body); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
@@ -148,6 +151,68 @@
   .srail-play.ctr { left:50%; top:50%; transform:translate(-50%,-50%); }
   .srail-play.br { right:8px; bottom:8px; }
 
+  /* hero header (artist / venue / promoter) */
+  .artist-head { display:flex; align-items:center; gap:15px; }
+  .artist-head .artist-av { position:relative; width:66px; height:66px; border-radius:16px; flex-shrink:0; overflow:hidden; background-size:cover; background-position:center; }
+  .artist-head-tx h3 { margin:0; font-family:var(--head); font-weight:800; letter-spacing:-0.02em; }
+  .artist-head.artist-hero { align-items:center; gap:18px 22px; flex-wrap:wrap; }
+  .artist-head.artist-hero .artist-av { width:88px; height:88px; border-radius:18px; }
+  .artist-head.artist-hero .artist-head-tx { flex:0 0 auto; min-width:0; }
+  .artist-head.artist-hero .artist-head-tx h3 { font-size:var(--fs-xl); line-height:1.05; }
+  .artist-head.artist-hero .seo-desc { flex:1 1 280px; margin:0; max-width:620px; }
+  .seo-desc { color:var(--muted); font-size:var(--fs-base); line-height:1.55; margin:14px 0 2px; max-width:680px; }
+  .ah-namerow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .ah-namerow .slinks { margin:0; }
+  .slinks { display:flex; gap:10px; margin:14px 0 2px; flex-wrap:wrap; }
+  .slink { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:999px; border:1px solid var(--border); color:var(--muted); }
+  .slink svg { width:var(--icon-md); height:var(--icon-md); fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .artist-actions { display:flex; flex-wrap:wrap; gap:9px; margin:18px 0 4px; max-width:440px; }
+  .act-btn { flex:1; min-width:0; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--fg); font:700 var(--fs-xs) var(--body); letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; }
+  .act-btn.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .act-btn.radio { flex-basis:100%; background:rgba(255,122,107,0.08); border-color:rgba(255,122,107,0.35); color:var(--accent); }
+
+  /* event bill (ranked line-up) */
+  .ev-bill { margin-top:2px; }
+  .bill-row { display:flex; align-items:center; gap:12px; padding:9px 0; border-top:1px solid var(--line); }
+  .bill-row:first-child { border-top:none; }
+  .bill-play { flex:none; width:38px; height:38px; border-radius:50%; background:var(--accent); color:var(--accent-ink); border:none; font-size:14px; padding-left:2px; cursor:pointer; }
+  .bill-av { flex:none; width:40px; height:40px; border-radius:50%; background:var(--surface); background-size:cover; background-position:center; }
+  .bill-nm-wrap { flex:1; min-width:0; text-align:left; background:none; border:none; padding:0; color:inherit; display:flex; flex-direction:column; gap:2px; }
+  .bill-nm { font:700 var(--fs-base) var(--body); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bill-why { font:500 var(--fs-xs) var(--body); color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bill-badge { flex:none; font:700 var(--fs-xs) var(--body); padding:3px 9px; border-radius:999px; white-space:nowrap; }
+  .bb-hi { background:var(--accent); color:var(--accent-ink); }
+  .bb-mid { color:var(--accent); border:1px solid var(--accent); }
+
+  /* scene tile (scenes hub) */
+  .sct { display:block; width:100%; padding:0; text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:16px; overflow:hidden; cursor:pointer; color:inherit; }
+  .sct-img { position:relative; aspect-ratio:16/9; background-color:#241c24; background-size:cover; background-position:center; }
+  .sct-name { position:absolute; left:0; right:0; bottom:0; padding:18px 16px 13px; background:linear-gradient(to top, rgba(13,9,8,0.9) 32%, rgba(13,9,8,0)); font:800 var(--fs-2xl) var(--head); color:#fff; letter-spacing:-0.02em; line-height:1; }
+  .sct-cc { font:600 var(--fs-sm) var(--body); color:rgba(255,255,255,0.72); letter-spacing:0; }
+  .sct-foot { padding:13px 16px 15px; }
+  .sct-foot-l { font:600 var(--fs-xs) var(--body); color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+  .sct-faces { display:flex; align-items:center; min-height:36px; }
+  .sct-face { width:36px; height:36px; border-radius:50%; border:2px solid var(--surface); background-color:#4a4048; background-size:cover; background-position:center; display:inline-block; margin-right:-8px; }
+  .sct-face-x { margin-left:17px; color:var(--muted); font:600 var(--fs-sm) var(--body); }
+
+  /* route card (find your venue) */
+  .route-intro { color:var(--muted); font:500 var(--fs-sm) var(--body); margin:4px 0 12px; }
+  .route-row { padding:13px 0; border-top:1px solid var(--line); }
+  .route-row:first-of-type { border-top:none; }
+  .route-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:9px; }
+  .route-g { font:800 var(--fs-lg) var(--head); text-transform:capitalize; }
+  .route-like { color:var(--muted); font:500 var(--fs-sm) var(--body); }
+  .route-v { display:flex; flex-wrap:wrap; gap:8px; }
+  .route-vchip { background:#26262d; border:none; border-radius:999px; padding:6px 13px; font:600 var(--fs-sm) var(--body); color:var(--fg); cursor:pointer; }
+  .route-vchip:hover { color:var(--accent); }
+
+  /* banners */
+  .signup-banner, .shared-banner { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:13px 16px; margin:0 0 14px; border:1px solid var(--accent); border-radius:12px; background:rgba(255,122,107,0.08); font-size:var(--fs-base); }
+  .signup-banner .b-h, .shared-banner .b-h { font-family:var(--head); font-weight:800; color:var(--accent); letter-spacing:0.02em; }
+  .signup-banner .b-t strong { color:var(--accent); font-weight:700; }
+  .signup-banner .b-actions { margin-left:auto; display:flex; gap:8px; }
+  .signup-banner .b-actions button { background:transparent; border:1px solid var(--border); color:var(--fg); border-radius:8px; padding:7px 11px; font:600 var(--fs-xs) var(--body); cursor:pointer; }
+
   /* panels / stats */
   .panel-stat { display:flex; gap:20px; margin:4px 0 14px; color:var(--muted); font-size:0.84rem; }
   .panel-stat b { color:var(--fg); font-weight:700; }
@@ -215,6 +280,10 @@
     <a href="#card">Event card</a>
     <a href="#tiles">Artist tiles</a>
     <a href="#rails">Rails</a>
+    <a href="#hero">Hero header</a>
+    <a href="#bill">Event bill</a>
+    <a href="#scenes">Scene &amp; route</a>
+    <a href="#banners">Banners</a>
     <a href="#stats">Stats &amp; aggregates</a>
     <a href="#hub">Hub &amp; profile</a>
     <a href="#forms">Forms &amp; suggest</a>
@@ -568,6 +637,74 @@
           <div class="srail-ven" style="background:linear-gradient(150deg,hsl(342 40% 32%),hsl(4 42% 10%))"><span class="srail-ven-n">fabric</span><span class="srail-play br">▶</span></div>
           <div class="srail-ven" style="background:linear-gradient(150deg,hsl(150 30% 30%),hsl(170 42% 10%))"><span class="srail-ven-n">Corsica Studios</span><span class="srail-play br">▶</span></div>
         </div>
+      </div>
+    </section>
+
+    <!-- ═══ HERO HEADER ═══ -->
+    <section class="ds-sec" id="hero">
+      <div class="ds-eyebrow">Components</div>
+      <h2>Hero header</h2>
+      <p class="ds-p">The top block of the <b>artist</b>, <b>venue</b> and <b>promoter</b> pages: square avatar + name + social pills, with the description flowing alongside on desktop, and an action row underneath (Tune&nbsp;in / Wanna&nbsp;see / Seen, or Follow / Play&nbsp;next). <code>.artist-head.artist-hero</code> + <code>.artist-actions</code>. Currently built inline on all three pages — tracker reuse <b>#1</b>: extract a shared <code>heroHeaderHTML()</code>.</p>
+      <div class="ds-card">
+        <div class="artist-head artist-hero">
+          <div class="artist-av" style="background:linear-gradient(150deg,hsl(342 62% 50%),hsl(4 42% 14%))"></div>
+          <div class="artist-head-tx"><div class="ah-namerow"><h3>Peggy Gou</h3>
+            <div class="slinks"><span class="slink"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg></span></div>
+          </div></div>
+          <p class="seo-desc">Berlin-via-Seoul selector with a magpie ear for disco, acid and Italo — sets that swing from playful to peak-time without losing the thread.</p>
+        </div>
+        <div class="artist-actions">
+          <button class="act-btn radio">▶&nbsp; Tune in</button>
+          <button class="act-btn on">♥&nbsp; Wanna see</button>
+          <button class="act-btn">✓&nbsp; Seen live</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ EVENT BILL ═══ -->
+    <section class="ds-sec" id="bill">
+      <div class="ds-eyebrow">Components</div>
+      <h2>Event bill</h2>
+      <p class="ds-p">The event page line-up as <b>one ranked list</b>, with who-not-to-miss folded in — no name appears twice. Standouts carry a badge (<code>.bb-hi</code> "Do not miss" / <code>.bb-mid</code> "Worth arriving early") + a one-line why; the rest are plain. Play per row queues that DJ on YouTube; the section's header button plays the whole bill. <code>.ev-bill</code> / <code>.bill-row</code> · <code>mountBill()</code>.</p>
+      <div class="ds-card">
+        <div class="ev-bill">
+          <div class="bill-row"><button class="bill-play">▶</button><span class="bill-av" style="background:linear-gradient(150deg,hsl(342 60% 45%),hsl(4 42% 14%))"></span><span class="bill-nm-wrap"><span class="bill-nm">Ben Klock</span><span class="bill-why">a name worth knowing</span></span><span class="bill-badge bb-hi">Do not miss</span></div>
+          <div class="bill-row"><button class="bill-play">▶</button><span class="bill-av" style="background:linear-gradient(150deg,hsl(20 60% 45%),hsl(30 42% 14%))"></span><span class="bill-nm-wrap"><span class="bill-nm">Héctor Oaks</span><span class="bill-why">rising fast</span></span><span class="bill-badge bb-mid">Worth arriving early</span></div>
+          <div class="bill-row"><button class="bill-play">▶</button><span class="bill-av" style="background:linear-gradient(150deg,hsl(210 40% 40%),hsl(230 42% 14%))"></span><span class="bill-nm-wrap"><span class="bill-nm">Marcel Dettmann</span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SCENE & ROUTE ═══ -->
+    <section class="ds-sec" id="scenes">
+      <div class="ds-eyebrow">Components</div>
+      <h2>Scene &amp; route cards</h2>
+      <p class="ds-p"><b>Scene tile</b> (<code>.sct</code> · <code>coverTileHTML()</code>) — a big city name over a banner with a strip of the artist faces playing there this month; the entry into a city guide. <b>Route card</b> (<code>.route-row</code> / <code>.rf-card</code> · <code>sceneRouteHTML()</code>) — the city guide's "Find your venue": a sound and the venues that play it, as tappable chips. No play button.</p>
+      <h3 class="ds-h">Scene tile</h3>
+      <div class="ds-card" style="max-width:380px">
+        <div class="sct">
+          <div class="sct-img" style="background:linear-gradient(150deg,hsl(342 45% 34%),hsl(260 42% 12%))"><div class="sct-name">Berlin<div class="sct-cc">Germany</div></div></div>
+          <div class="sct-foot"><div class="sct-foot-l">Playing this month</div><div class="sct-faces">
+            <span class="sct-face" style="background:hsl(342 50% 45%)"></span><span class="sct-face" style="background:hsl(20 50% 45%)"></span><span class="sct-face" style="background:hsl(150 40% 40%)"></span><span class="sct-face" style="background:hsl(210 40% 45%)"></span><span class="sct-face-x">+38</span>
+          </div></div>
+        </div>
+      </div>
+      <h3 class="ds-h">Route card</h3>
+      <div class="ds-card">
+        <p class="route-intro">If you like a sound, these are the Berlin venues likely to play it.</p>
+        <div class="route-row"><div class="route-head"><span class="route-g">Techno</span><span class="route-like">if you like Ben Klock</span></div><div class="route-v"><span class="route-vchip">Berghain</span><span class="route-vchip">Tresor</span><span class="route-vchip">://about blank</span></div></div>
+        <div class="route-row"><div class="route-head"><span class="route-g">House</span><span class="route-like">if you like Move D</span></div><div class="route-v"><span class="route-vchip">Club der Visionaere</span><span class="route-vchip">Hoppetosse</span></div></div>
+      </div>
+    </section>
+
+    <!-- ═══ BANNERS ═══ -->
+    <section class="ds-sec" id="banners">
+      <div class="ds-eyebrow">Components</div>
+      <h2>Banners</h2>
+      <p class="ds-p">Full-width salmon-bordered callouts that sit above page content. <b>Signup banner</b> (<code>.signup-banner</code>) — the weekly-email capture. <b>Shared-with-you banner</b> (<code>.shared-banner</code>) — attribution when a link came from a known sender. Same frame, different copy + actions.</p>
+      <div class="ds-card">
+        <div class="signup-banner"><span class="b-h">6 Minutes</span><span class="b-t">One email a week — <strong>the nights worth leaving the house for</strong>.</span><span class="b-actions"><button>Sign up</button><button>Not now</button></span></div>
+        <div class="shared-banner show" style="margin:0"><span class="b-h">From Alex</span><span class="b-t">Alex thought you&rsquo;d want to see this one.</span></div>
       </div>
     </section>
 
