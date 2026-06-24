@@ -79,6 +79,11 @@
   .qchip { border:1px solid var(--border); background:var(--surface); color:var(--fg); border-radius:999px; padding:10px 18px; font-family:inherit; font-size:0.85rem; font-weight:600; cursor:pointer; transition:background 0.12s, color 0.12s, border-color 0.12s; }
   .qchip:hover { border-color:var(--accent); color:var(--accent); }
   .qchip.on { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .qchip.alt { display:inline-flex; align-items:center; gap:7px; }
+  .qchip.alt svg { width:16px; height:16px; }
+  /* Price tag — scraped "from £X" / "Free" ticket-price chip (label only, never a ticketing link). */
+  .price-tag { display:inline-block; padding:2px 9px; border:1px solid var(--border); border-radius:999px; font-size:0.72rem; font-weight:700; color:var(--fg); letter-spacing:-0.01em; white-space:nowrap; }
+  .price-tag.free { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); }
 
   .switch { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:3px; gap:2px; }
   .switch a { font-size:0.62rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; padding:6px 12px; border-radius:999px; text-decoration:none; color:var(--muted); cursor:pointer; }
@@ -523,8 +528,13 @@
           <button class="qchip">Tonight</button>
           <button class="qchip">Pick a date</button>
         </div>
+        <div class="ds-chip-row">
+          <button class="qchip alt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>Genre <span style="opacity:.6">▾</span></button>
+          <button class="qchip alt on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>Under £15 <span style="opacity:.6">▾</span></button>
+        </div>
       </div>
       <div class="ds-note">Selected = salmon fill. Hover (idle) = salmon border + salmon text. The same grammar covers the nav site-switch, date quick-picks, calendar modes, and profile tabs.</div>
+      <div class="ds-note"><b>Filter chips</b> (<code>.qchip.alt</code> + leading icon + ▾) open a shared dropdown (<code>.genre-menu</code> / <code>.gm-item</code>) for one-of-many picks. Used by the home grid <b>Genre</b> and <b>Price</b> filters; the chip label reflects the active choice and the chip only appears when the filter is useful (≥2 genres / ≥3 priced events). Price tiers are currency-relative to the city in view.</div>
     </section>
 
     <!-- ═══ BADGES ═══ -->
@@ -536,6 +546,14 @@
         <span class="pick">Pick</span>
         <span class="trend-tag">🔥 Trending</span>
         <span class="lg-chip">Objekt <button>×</button></span>
+      </div>
+      <h3 style="margin:26px 0 6px;font-size:1rem">Price tag</h3>
+      <p class="ds-p">A rounded chip on the event page showing the scraped lowest ticket price as <b>from £X</b> (currency follows the city). <b>Free</b> fills salmon to draw the eye. Best-effort from listings — shown for orientation only, <b>never</b> a ticketing link, and omitted when no price is known.</p>
+      <div class="ds-card ds-demo">
+        <span class="price-tag">from £12</span>
+        <span class="price-tag">from €18.50</span>
+        <span class="price-tag">from 150 SEK</span>
+        <span class="price-tag free">Free</span>
       </div>
     </section>
 
