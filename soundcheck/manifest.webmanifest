@@ -1,7 +1,7 @@
 {
   "name": "Soundcheck",
   "short_name": "Soundcheck",
-  "description": "London nightlife — find tonight's best line-ups, preview DJ sets, and keep a gig diary.",
+  "description": "Find your music for tonight — club nights, DJ line-ups and every artist's sets in 104 cities.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
